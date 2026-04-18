@@ -1,0 +1,134 @@
+<!-- diet-plan/index.wxml -->
+<view class="container">
+  <!-- 未登录状态 -->
+  <view wx:if="{{!isLoggedIn}}" class="login-container">
+    <view class="avatar-placeholder">
+      <text class="avatar-text">登录</text>
+    </view>
+    <text class="login-text">点击登录，查看和管理你的膳食计划</text>
+    <button class="login-btn" bindtap="handleLogin">立即登录</button>
+  </view>
+
+  <!-- 已登录状态 -->
+  <view wx:else>
+    <!-- 顶部导航 -->
+    <view class="top-nav">
+      <view class="nav-item {{activeNav === 'week' ? 'active' : ''}}" bindtap="switchNav" data-nav="week">周计划</view>
+      <view class="nav-item {{activeNav === 'month' ? 'active' : ''}}" bindtap="switchNav" data-nav="month">月计划</view>
+      <view class="nav-item {{activeNav === 'history' ? 'active' : ''}}" bindtap="switchNav" data-nav="history">历史计划</view>
+    </view>
+
+    <!-- 周计划 -->
+    <view wx:if="{{activeNav === 'week'}}">
+      <view class="plan-header">
+        <view class="plan-title">本周膳食计划</view>
+        <view class="plan-actions">
+          <view class="action-btn" bindtap="prevWeek">上一周</view>
+          <view class="action-btn" bindtap="nextWeek">下一周</view>
+          <view class="action-btn primary" bindtap="createPlan">创建计划</view>
+        </view>
+      </view>
+      <view class="week-plan">
+        <view class="week-days">
+          <view class="day-item" wx:for="{{weekDays}}" wx:key="index">
+            <view class="day-header">
+              <view class="day-name">{{item.day}}</view>
+              <view class="day-date">{{item.date}}</view>
+            </view>
+            <view class="day-meals">
+              <view class="meal-item">
+                <view class="meal-type">早餐</view>
+                <view class="meal-content">全麦面包、鸡蛋、牛奶</view>
+                <view class="meal-calories">350kcal</view>
+              </view>
+              <view class="meal-item">
+                <view class="meal-type">午餐</view>
+                <view class="meal-content">糙米饭、鸡胸肉、西兰花</view>
+                <view class="meal-calories">650kcal</view>
+              </view>
+              <view class="meal-item">
+                <view class="meal-type">晚餐</view>
+                <view class="meal-content">红薯、鱼、菠菜</view>
+                <view class="meal-calories">500kcal</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 月计划 -->
+    <view wx:if="{{activeNav === 'month'}}">
+      <view class="plan-header">
+        <view class="plan-title">本月膳食计划</view>
+        <view class="plan-actions">
+          <view class="action-btn" bindtap="prevMonth">上月</view>
+          <view class="action-btn" bindtap="nextMonth">下月</view>
+          <view class="action-btn primary" bindtap="createPlan">创建计划</view>
+        </view>
+      </view>
+      <view class="month-plan">
+        <view class="month-calendar">
+          <view class="calendar-header">
+            <view class="calendar-title">2026年3月</view>
+          </view>
+          <view class="calendar-weekdays">
+            <view class="weekday">日</view>
+            <view class="weekday">一</view>
+            <view class="weekday">二</view>
+            <view class="weekday">三</view>
+            <view class="weekday">四</view>
+            <view class="weekday">五</view>
+            <view class="weekday">六</view>
+          </view>
+          <view class="calendar-days">
+            <view class="day" wx:for="{{31}}" wx:key="index">
+              <view class="day-number">{{index + 1}}</view>
+              <view class="day-indicator" wx:if="index % 2 === 0"></view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 历史计划 -->
+    <view wx:if="{{activeNav === 'history'}}">
+      <view class="plan-header">
+        <view class="plan-title">历史膳食计划</view>
+        <view class="plan-actions">
+          <view class="action-btn" bindtap="exportHistory">导出记录</view>
+        </view>
+      </view>
+      <view class="history-list">
+        <view class="history-item" wx:for="{{historyPlans}}" wx:key="index">
+          <view class="history-header">
+            <view class="history-title">{{item.title}}</view>
+            <view class="history-date">{{item.date}}</view>
+          </view>
+          <view class="history-summary">
+            <view class="summary-item">
+              <view class="summary-label">总热量</view>
+              <view class="summary-value">{{item.calories}}kcal</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">蛋白质</view>
+              <view class="summary-value">{{item.protein}}g</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">碳水化合物</view>
+              <view class="summary-value">{{item.carbohydrate}}g</view>
+            </view>
+            <view class="summary-item">
+              <view class="summary-label">脂肪</view>
+              <view class="summary-value">{{item.fat}}g</view>
+            </view>
+          </view>
+          <view class="history-actions">
+            <view class="action-btn" bindtap="viewPlanDetail">查看详情</view>
+            <view class="action-btn" bindtap="copyPlan">复制计划</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,298 @@
+<view class="dietitian-dashboard">
+  <view class="dashboard-header">
+    <text class="dashboard-title">👋 欢迎，营养师</text>
+    <view class="user-info" bindtap="showPersonalCenter">
+      <text class="welcome-text">{{dietitianName}}</text>
+      <view class="user-avatar">营</view>
+    </view>
+  </view>
+
+  <view class="custom-tab-bar">
+    <view class="tab-item {{activeTab === 'home' ? 'active' : ''}}" bindtap="switchTab" data-tab="home">
+      <text class="tab-icon">🏠</text>
+      <text class="tab-text">工作台首页</text>
+    </view>
+    <view class="tab-item {{activeTab === 'service' ? 'active' : ''}}" bindtap="switchTab" data-tab="service">
+      <text class="tab-icon">📋</text>
+      <text class="tab-text">服务中心</text>
+    </view>
+    <view class="tab-item {{activeTab === 'feedback' ? 'active' : ''}}" bindtap="switchTab" data-tab="feedback">
+      <text class="tab-icon">💬</text>
+      <text class="tab-text">反馈中心</text>
+    </view>
+    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="switchTab" data-tab="mine">
+      <text class="tab-icon">👤</text>
+      <text class="tab-text">我的</text>
+    </view>
+  </view>
+
+  <view class="tab-content">
+    <!-- 工作台首页 -->
+    <view wx:if="{{activeTab === 'home'}}" class="content-panel">
+      <view class="stats-overview">
+        <view class="stat-card" bindtap="navigateToService">
+          <view class="stat-icon plan-icon">📋</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.pendingPlans || 0}}</text>
+            <text class="stat-label">待制定计划</text>
+          </view>
+        </view>
+        <view class="stat-card" bindtap="navigateToArticle">
+          <view class="stat-icon article-icon">📄</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.pendingArticles || 0}}</text>
+            <text class="stat-label">待审核文章</text>
+          </view>
+        </view>
+        <view class="stat-card" bindtap="navigateToFeedback">
+          <view class="stat-icon feedback-icon">💬</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.pendingFeedbacks || 0}}</text>
+            <text class="stat-label">待回复反馈</text>
+          </view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-icon user-icon">👥</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.serviceUsers || 0}}</text>
+            <text class="stat-label">服务用户数</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="quick-access">
+        <text class="section-title">📌 快捷操作</text>
+        <view class="quick-buttons">
+          <view class="quick-btn" bindtap="navigateToService">
+            <view class="btn-icon">👥</view>
+            <text class="btn-text">服务用户</text>
+          </view>
+          <view class="quick-btn" bindtap="navigateToArticle">
+            <view class="btn-icon">✍️</view>
+            <text class="btn-text">撰写文章</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="recent-activity">
+        <text class="section-title">📋 最近活动</text>
+        <view class="activity-list">
+          <view wx:for="{{recentActivities}}" wx:key="index" class="activity-item">
+            <view class="activity-icon">{{item.icon}}</view>
+            <view class="activity-content">
+              <text class="activity-text">{{item.text}}</text>
+              <text class="activity-time">{{item.time}}</text>
+            </view>
+          </view>
+          <view wx:if="{{recentActivities.length === 0}}" class="empty-text">暂无最近活动</view>
+        </view>
+      </view>
+
+      <view class="system-notices">
+        <text class="section-title">🔔 系统通知</text>
+        <view class="notice-list">
+          <view wx:for="{{notices}}" wx:key="index" class="notice-item">
+            <view class="notice-icon">📢</view>
+            <view class="notice-content">
+              <text class="notice-title">{{item.title}}</text>
+              <text class="notice-text">{{item.content}}</text>
+              <text class="notice-time">{{item.time}}</text>
+            </view>
+          </view>
+          <view wx:if="{{notices.length === 0}}" class="empty-text">暂无系统通知</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 服务中心 -->
+    <view wx:if="{{activeTab === 'service'}}" class="content-panel">
+      <view class="service-header">
+        <text class="section-title">服务用户</text>
+        <view class="search-box">
+          <input class="search-input" placeholder="搜索用户..." bindinput="onSearchUser" value="{{searchKeyword}}"/>
+        </view>
+      </view>
+
+      <view class="filter-tabs">
+        <view class="filter-tab {{filterType === 'all' ? 'active' : ''}}" bindtap="switchFilter" data-filter="all">
+          <text>全部</text>
+        </view>
+        <view class="filter-tab {{filterType === 'pending' ? 'active' : ''}}" bindtap="switchFilter" data-filter="pending">
+          <text>待服务</text>
+        </view>
+        <view class="filter-tab {{filterType === 'expired' ? 'active' : ''}}" bindtap="switchFilter" data-filter="expired">
+          <text>评估过期</text>
+        </view>
+      </view>
+
+      <view class="user-list">
+        <view wx:for="{{users}}" wx:key="index" class="user-item" bindtap="enterUserPanel" data-userid="{{item.userId}}">
+          <view class="user-avatar-small">{{item.usernameInitial}}</view>
+          <view class="user-info-small">
+            <text class="user-name">{{item.username}}</text>
+            <view class="user-status">
+              <text class="status-tag {{item.hasProfile ? 'status-ok' : 'status-warning'}}">{{item.hasProfile ? '档案✅' : '档案❌'}}</text>
+              <text class="status-tag {{item.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{item.hasEvaluation ? '评估✅' : '评估❌'}}</text>
+              <text class="status-tag {{item.hasPlan ? 'status-ok' : 'status-warning'}}">{{item.hasPlan ? '计划✅' : '计划❌'}}</text>
+            </view>
+            <text class="user-last-service">最后服务：{{item.lastServiceTime}}</text>
+          </view>
+          <text class="arrow">></text>
+        </view>
+        <view wx:if="{{users.length === 0}}" class="empty-state">
+          <text class="empty-icon">👥</text>
+          <text class="empty-text">暂无用户数据</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 反馈中心 -->
+    <view wx:if="{{activeTab === 'feedback'}}" class="content-panel">
+      <view class="feedback-tabs">
+        <view class="feedback-tab {{feedbackSubTab === 'pending' ? 'active' : ''}}" bindtap="switchFeedbackSubTab" data-subtab="pending">
+          <text>待回复</text>
+          <text class="badge" wx:if="{{pendingFeedbackCount > 0}}">{{pendingFeedbackCount}}</text>
+        </view>
+        <view class="feedback-tab {{feedbackSubTab === 'replied' ? 'active' : ''}}" bindtap="switchFeedbackSubTab" data-subtab="replied">
+          <text>已回复</text>
+        </view>
+      </view>
+
+      <view class="feedback-list">
+        <view wx:for="{{feedbacks}}" wx:key="index" class="feedback-item" bindtap="viewFeedbackDetail" data-index="{{index}}">
+          <view class="feedback-header">
+            <view class="feedback-user">
+              <text class="feedback-avatar">{{item.userInitial}}</text>
+              <text class="feedback-username">{{item.username}}</text>
+            </view>
+            <text class="feedback-status {{item.status === '待回复' ? 'status-pending' : 'status-replied'}}">{{item.status}}</text>
+          </view>
+          <view class="feedback-body">
+            <text class="feedback-title">{{item.title}}</text>
+            <text class="feedback-content">{{item.content}}</text>
+          </view>
+          <view class="feedback-footer">
+            <text class="feedback-time">{{item.time}}</text>
+            <text class="feedback-type">{{item.type}}</text>
+          </view>
+        </view>
+        <view wx:if="{{feedbacks.length === 0}}" class="empty-state">
+          <text class="empty-icon">💬</text>
+          <text class="empty-text">暂无反馈数据</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 我的 -->
+    <view wx:if="{{activeTab === 'mine'}}" class="content-panel">
+      <view class="mine-header">
+        <view class="personal-info-card">
+          <view class="personal-avatar-large" bindtap="chooseAvatar">营</view>
+          <view class="personal-details">
+            <text class="personal-name-large">{{dietitianName}}</text>
+            <text class="personal-role-large">营养师</text>
+            <view class="personal-stats">
+              <view class="stat-item">
+                <text class="stat-number">{{stats.serviceUsers || 0}}</text>
+                <text class="stat-label">服务用户</text>
+              </view>
+              <view class="stat-item">
+                <text class="stat-number">{{stats.totalPlans || 0}}</text>
+                <text class="stat-label">制定计划</text>
+              </view>
+              <view class="stat-item">
+                <text class="stat-number">{{stats.avgRating || 0}}</text>
+                <text class="stat-label">平均评分</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="mine-menu">
+        <view class="menu-section">
+          <text class="section-title">账户管理</text>
+          <view class="menu-item" bindtap="editProfile">
+            <text class="menu-icon">👤</text>
+            <text class="menu-text">个人资料</text>
+            <text class="menu-arrow">→</text>
+          </view>
+          <view class="menu-item" bindtap="changePassword">
+            <text class="menu-icon">�</text>
+            <text class="menu-text">修改密码</text>
+            <text class="menu-arrow">→</text>
+          </view>
+        </view>
+
+        <view class="menu-section">
+          <text class="section-title">工作统计</text>
+          <view class="menu-item" bindtap="viewServiceStats">
+            <text class="menu-icon">📊</text>
+            <text class="menu-text">服务统计</text>
+            <text class="menu-arrow">→</text>
+          </view>
+          <view class="menu-item" bindtap="viewPlanStats">
+            <text class="menu-icon">�</text>
+            <text class="menu-text">计划统计</text>
+            <text class="menu-arrow">→</text>
+          </view>
+        </view>
+
+        <view class="menu-section">
+          <text class="section-title">其他</text>
+          <view class="menu-item" bindtap="viewHelp">
+            <text class="menu-icon">❓</text>
+            <text class="menu-text">帮助中心</text>
+            <text class="menu-arrow">→</text>
+          </view>
+          <view class="menu-item" bindtap="viewAbout">
+            <text class="menu-icon">ℹ️</text>
+            <text class="menu-text">关于我们</text>
+            <text class="menu-arrow">→</text>
+          </view>
+        </view>
+
+        <view class="logout-section">
+          <view class="logout-btn" bindtap="handleLogout">
+            <text class="logout-icon">🚪</text>
+            <text class="logout-text">退出登录</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 个人中心弹窗 -->
+  <view wx:if="{{showPersonalCenterModal}}" class="modal-mask" bindtap="hidePersonalCenter">
+    <view class="personal-center-modal" catchtap="stopPropagation">
+      <view class="personal-header">
+        <text class="personal-title">个人中心</text>
+        <view class="modal-close" bindtap="hidePersonalCenter">×</view>
+      </view>
+      <view class="personal-content">
+        <view class="personal-info">
+          <view class="personal-avatar" bindtap="chooseAvatar">营</view>
+          <text class="personal-name">{{dietitianName}}</text>
+          <text class="personal-role">营养师</text>
+        </view>
+        <view class="personal-menu">
+          <view class="menu-item" bindtap="editProfile">
+            <text class="menu-icon">👤</text>
+            <text class="menu-text">个人资料</text>
+            <text class="menu-arrow">→</text>
+          </view>
+          <view class="menu-item" bindtap="changePassword">
+            <text class="menu-icon">🔒</text>
+            <text class="menu-text">修改密码</text>
+            <text class="menu-arrow">→</text>
+          </view>
+          <view class="menu-item" bindtap="handleLogout">
+            <text class="menu-icon">🚪</text>
+            <text class="menu-text logout-text">退出登录</text>
+            <text class="menu-arrow">→</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

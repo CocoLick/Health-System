@@ -1,0 +1,440 @@
+/* home/index.wxss */
+
+/* 全局样式 */
+.container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f8f9fa"/><circle cx="20" cy="20" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="80" cy="80" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="40" cy="60" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="60" cy="40" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="30" cy="80" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="70" cy="20" r="0.5" fill="%23e9ecef" opacity="0.5"/></svg>');
+  padding: 20rpx;
+  font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 顶部用户信息 */
+.user-info {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.user-info:hover {
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  transform: translateY(-2rpx);
+}
+
+.user-avatar {
+  margin-right: 20rpx;
+}
+
+.avatar-circle {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background-color: #4caf50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 36rpx;
+  font-weight: 600;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 8rpx;
+}
+
+.user-role {
+  font-size: 24rpx;
+  color: #6c757d;
+}
+
+.user-stats {
+  display: flex;
+  align-items: center;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.stat-label {
+  font-size: 20rpx;
+  color: #6c757d;
+  margin-top: 4rpx;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 40rpx;
+  background-color: #e9ecef;
+  margin: 0 20rpx;
+}
+
+/* 通用部分标题 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.section-action {
+  font-size: 24rpx;
+  color: #4caf50;
+  font-weight: 500;
+}
+
+/* 营养状态卡片 */
+.nutrition-status {
+  margin-bottom: 20rpx;
+}
+
+.status-cards {
+  display: flex;
+  gap: 16rpx;
+}
+
+.status-card {
+  flex: 1;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.status-card:hover {
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  transform: translateY(-2rpx);
+}
+
+.status-icon {
+  font-size: 40rpx;
+  margin-bottom: 16rpx;
+}
+
+.status-info {
+  margin-bottom: 16rpx;
+}
+
+.status-value {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 4rpx;
+}
+
+.status-label {
+  font-size: 20rpx;
+  color: #6c757d;
+}
+
+.status-progress {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8rpx;
+  background-color: #e9ecef;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4caf50;
+  border-radius: 4rpx;
+  transition: width 0.5s ease-out;
+}
+
+.progress-text {
+  font-size: 20rpx;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* 今日膳食计划 */
+.diet-plan {
+  margin-bottom: 20rpx;
+}
+
+.plan-timeline {
+  position: relative;
+  padding-left: 60rpx;
+}
+
+.plan-timeline::before {
+  content: '';
+  position: absolute;
+  left: 20rpx;
+  top: 0;
+  bottom: 0;
+  width: 2rpx;
+  background-color: #e9ecef;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 32rpx;
+}
+
+.timeline-time {
+  position: absolute;
+  left: -50rpx;
+  top: 4rpx;
+  font-size: 20rpx;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -58rpx;
+  top: 0;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background-color: #4caf50;
+  border: 4rpx solid #ffffff;
+  box-shadow: 0 0 0 2rpx #4caf50;
+}
+
+.timeline-content {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.timeline-content:hover {
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  transform: translateY(-2rpx);
+}
+
+.meal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.meal-type {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.meal-calories {
+  font-size: 20rpx;
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.meal-foods {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.food-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 0;
+  border-bottom: 1rpx solid #f1f3f5;
+}
+
+.food-item:last-child {
+  border-bottom: none;
+}
+
+.food-name {
+  font-size: 22rpx;
+  color: #495057;
+}
+
+.food-amount {
+  font-size: 20rpx;
+  color: #6c757d;
+}
+
+/* 快捷功能入口 */
+.quick-functions {
+  margin-bottom: 20rpx;
+}
+
+.function-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16rpx;
+}
+
+.function-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 24rpx 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.function-item:hover {
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  transform: translateY(-2rpx);
+}
+
+.function-icon {
+  font-size: 40rpx;
+  margin-bottom: 12rpx;
+}
+
+.function-name {
+  font-size: 20rpx;
+  color: #343a40;
+  text-align: center;
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .container {
+    padding: 16rpx;
+  }
+  
+  .user-info {
+    padding: 24rpx;
+  }
+  
+  .status-card {
+    padding: 20rpx;
+  }
+  
+  .timeline-content {
+    padding: 20rpx;
+  }
+  
+  .function-item {
+    padding: 20rpx 8rpx;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-info,
+.nutrition-status,
+.diet-plan,
+.quick-functions {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.user-info {
+  animation-delay: 0.1s;
+}
+
+.nutrition-status {
+  animation-delay: 0.2s;
+}
+
+.diet-plan {
+  animation-delay: 0.3s;
+}
+
+.quick-functions {
+  animation-delay: 0.4s;
+}
+
+/* 登录引导页样式 */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 0 40rpx;
+  text-align: center;
+}
+
+.avatar-placeholder {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40rpx;
+  box-shadow: 0 8rpx 30rpx rgba(76, 175, 80, 0.3);
+}
+
+.avatar-text {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: white;
+}
+
+.login-text {
+  font-size: 32rpx;
+  color: #6c757d;
+  margin-bottom: 60rpx;
+  line-height: 1.5;
+}
+
+.login-btn {
+  width: 80%;
+  height: 90rpx;
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+  color: white;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 45rpx;
+  border: none;
+  box-shadow: 0 4rpx 20rpx rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
+}
+
+.login-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 10rpx rgba(76, 175, 80, 0.3);
+}

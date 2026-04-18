@@ -1,0 +1,111 @@
+<view class="user-panel">
+  <view class="panel-header">
+    <view class="back-btn" bindtap="goBack">
+      <text class="back-icon">&lt;</text>
+      <text class="back-text">返回</text>
+    </view>
+    <text class="panel-title">用户服务面板</text>
+  </view>
+
+  <view class="user-info-card">
+    <view class="user-avatar-large">{{userInfo.usernameInitial}}</view>
+    <view class="user-detail">
+      <text class="user-name">{{userInfo.username}}</text>
+      <text class="user-meta">性别：{{userInfo.gender}}  年龄：{{userInfo.age}}  电话：{{userInfo.phone}}</text>
+    </view>
+  </view>
+
+  <view class="service-cards">
+    <view class="service-card {{userInfo.hasProfile ? 'card-ok' : 'card-warning'}}" bindtap="viewProfile">
+      <view class="card-header">
+        <text class="card-icon">👤</text>
+        <text class="card-title">健康档案</text>
+        <text class="card-status {{userInfo.hasProfile ? 'status-ok' : 'status-warning'}}">
+          {{userInfo.hasProfile ? '✅ 已完善' : '❌ 未完善'}}
+        </text>
+      </view>
+      <view class="card-body" wx:if="{{userInfo.hasProfile}}">
+        <view class="health-item">
+          <text class="health-label">身高：</text>
+          <text class="health-value">{{userInfo.healthData.height}}cm</text>
+        </view>
+        <view class="health-item">
+          <text class="health-label">体重：</text>
+          <text class="health-value">{{userInfo.healthData.weight}}kg</text>
+        </view>
+        <view class="health-item">
+          <text class="health-label">血压：</text>
+          <text class="health-value">{{userInfo.healthData.bloodPressure}}</text>
+        </view>
+        <view class="health-item">
+          <text class="health-label">血糖：</text>
+          <text class="health-value">{{userInfo.healthData.bloodSugar}}</text>
+        </view>
+      </view>
+      <view class="card-footer">
+        <text class="card-action">{{userInfo.hasProfile ? '查看/编辑档案' : '请完善档案'}}</text>
+      </view>
+    </view>
+
+    <view class="service-card {{userInfo.hasEvaluation ? 'card-ok' : 'card-warning'}}" bindtap="doEvaluation">
+      <view class="card-header">
+        <text class="card-icon">🔍</text>
+        <text class="card-title">营养评估</text>
+        <text class="card-status {{userInfo.hasEvaluation ? 'status-ok' : 'status-warning'}}">
+          {{userInfo.hasEvaluation ? '✅ 有效' : '❌ 未评估'}}
+        </text>
+      </view>
+      <view class="card-body" wx:if="{{userInfo.hasEvaluation}}">
+        <view class="evaluation-info">
+          <text class="evaluation-time">最新评估：{{userInfo.evaluationTime}}</text>
+          <text class="evaluation-hint" wx:if="{{userInfo.evaluationExpired}}">⚠️ 已过期，建议更新</text>
+        </view>
+      </view>
+      <view class="card-footer">
+        <text class="card-action">{{userInfo.hasEvaluation ? '进行新评估 / 查看历史' : '进行评估'}}</text>
+      </view>
+    </view>
+
+    <view class="service-card {{userInfo.hasPlan ? 'card-ok' : 'card-warning'}}" bindtap="managePlan">
+      <view class="card-header">
+        <text class="card-icon">📋</text>
+        <text class="card-title">膳食计划</text>
+        <text class="card-status {{userInfo.hasPlan ? 'status-ok' : 'status-warning'}}">
+          {{userInfo.hasPlan ? '✅ 有效' : '❌ 无计划'}}
+        </text>
+      </view>
+      <view class="card-body" wx:if="{{userInfo.hasPlan}}">
+        <view class="plan-info">
+          <text class="plan-title">{{userInfo.planTitle}}</text>
+          <text class="plan-status">{{userInfo.planStatus}}</text>
+        </view>
+      </view>
+      <view class="card-footer">
+        <text class="card-action">{{userInfo.hasPlan ? '查看/修改计划' : '生成新计划'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="quick-service">
+    <text class="section-title">🚀 一键服务</text>
+    <view class="service-btn primary" bindtap="startServiceWizard">
+      <text class="btn-icon">▶️</text>
+      <text class="btn-text">开始服务向导</text>
+      <text class="btn-hint">按流程完成服务</text>
+    </view>
+  </view>
+
+  <view class="service-history">
+    <text class="section-title">📋 服务记录</text>
+    <view class="history-list">
+      <view wx:for="{{serviceHistory}}" wx:key="index" class="history-item">
+        <view class="history-icon">{{item.icon}}</view>
+        <view class="history-content">
+          <text class="history-title">{{item.title}}</text>
+          <text class="history-time">{{item.time}}</text>
+        </view>
+      </view>
+      <view wx:if="{{serviceHistory.length === 0}}" class="empty-text">暂无服务记录</view>
+    </view>
+  </view>
+</view>

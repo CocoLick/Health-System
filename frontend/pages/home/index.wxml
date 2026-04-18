@@ -1,0 +1,205 @@
+<!-- home/index.wxml -->
+<view class="container">
+  <!-- 未登录状态 -->
+  <view wx:if="{{!isLoggedIn}}" class="login-container">
+    <view class="avatar-placeholder">
+      <text class="avatar-text">登录</text>
+    </view>
+    <text class="login-text">点击登录，开始你的营养健康之旅</text>
+    <button class="login-btn" bindtap="handleLogin">立即登录</button>
+  </view>
+
+  <!-- 已登录状态 -->
+  <view wx:else>
+    <!-- 顶部用户信息 -->
+    <view class="user-info">
+      <view class="user-avatar">
+        <view class="avatar-circle">
+          <text>{{userInfo.username.charAt(0)}}</text>
+        </view>
+      </view>
+      <view class="user-details">
+        <view class="user-name">{{userInfo.username || '未登录'}}</view>
+        <view class="user-role">{{userInfo.role_type === 'admin' ? '管理员' : userInfo.role_type === 'dietitian' ? '营养师' : '用户'}}</view>
+      </view>
+      <view class="user-stats">
+        <view class="stat-item">
+          <view class="stat-value">{{userInfo.age || '--'}}</view>
+          <view class="stat-label">年龄</view>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <view class="stat-value">{{userInfo.gender || '--'}}</view>
+          <view class="stat-label">性别</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 个人营养状态卡片 -->
+    <view class="nutrition-status">
+      <view class="section-header">
+        <text class="section-title">营养状态</text>
+        <text class="section-action" bindtap="viewNutritionDetail">查看详情</text>
+      </view>
+      <view class="status-cards">
+        <view class="status-card">
+          <view class="status-icon">
+            <text>🔥</text>
+          </view>
+          <view class="status-info">
+            <view class="status-value">1800</view>
+            <view class="status-label">今日热量</view>
+          </view>
+          <view class="status-progress">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: 60%"></view>
+            </view>
+            <view class="progress-text">60%</view>
+          </view>
+        </view>
+        <view class="status-card">
+          <view class="status-icon">
+            <text>💪</text>
+          </view>
+          <view class="status-info">
+            <view class="status-value">60g</view>
+            <view class="status-label">蛋白质</view>
+          </view>
+          <view class="status-progress">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: 80%"></view>
+            </view>
+            <view class="progress-text">80%</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 今日智能膳食计划 -->
+    <view class="diet-plan">
+      <view class="section-header">
+        <text class="section-title">今日膳食计划</text>
+        <text class="section-action" bindtap="adjustDietPlan">调整计划</text>
+      </view>
+      <view class="plan-timeline">
+        <view class="timeline-item">
+          <view class="timeline-time">07:30</view>
+          <view class="timeline-dot"></view>
+          <view class="timeline-content">
+            <view class="meal-card">
+              <view class="meal-header">
+                <view class="meal-type">早餐</view>
+                <view class="meal-calories">350kcal</view>
+              </view>
+              <view class="meal-foods">
+                <view class="food-item">
+                  <view class="food-name">全麦面包</view>
+                  <view class="food-amount">2片</view>
+                </view>
+                <view class="food-item">
+                  <view class="food-name">鸡蛋</view>
+                  <view class="food-amount">1个</view>
+                </view>
+                <view class="food-item">
+                  <view class="food-name">牛奶</view>
+                  <view class="food-amount">200ml</view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="timeline-item">
+          <view class="timeline-time">12:00</view>
+          <view class="timeline-dot"></view>
+          <view class="timeline-content">
+            <view class="meal-card">
+              <view class="meal-header">
+                <view class="meal-type">午餐</view>
+                <view class="meal-calories">650kcal</view>
+              </view>
+              <view class="meal-foods">
+                <view class="food-item">
+                  <view class="food-name">糙米饭</view>
+                  <view class="food-amount">1碗</view>
+                </view>
+                <view class="food-item">
+                  <view class="food-name">鸡胸肉</view>
+                  <view class="food-amount">100g</view>
+                </view>
+                <view class="food-item">
+                  <view class="food-name">西兰花</view>
+                  <view class="food-amount">100g</view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="timeline-item">
+          <view class="timeline-time">18:30</view>
+          <view class="timeline-dot"></view>
+          <view class="timeline-content">
+            <view class="meal-card">
+              <view class="meal-header">
+                <view class="meal-type">晚餐</view>
+                <view class="meal-calories">500kcal</view>
+              </view>
+              <view class="meal-foods">
+                <view class="food-item">
+                  <view class="food-name">红薯</view>
+                  <view class="food-amount">1个</view>
+                </view>
+                <view class="food-item">
+                  <view class="food-name">鱼</view>
+                  <view class="food-amount">100g</view>
+                </view>
+                <view class="food-item">
+                  <view class="food-name">菠菜</view>
+                  <view class="food-amount">100g</view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷功能入口 -->
+    <view class="quick-functions">
+      <view class="section-header">
+        <text class="section-title">快捷功能</text>
+      </view>
+      <view class="function-grid">
+        <view class="function-item" data-index="0" bindtap="handleFunctionClick">
+          <view class="function-icon">
+            <text>📊</text>
+          </view>
+          <view class="function-name">营养分析</view>
+        </view>
+        <view class="function-item" data-index="1" bindtap="handleFunctionClick">
+          <view class="function-icon">
+            <text>📅</text>
+          </view>
+          <view class="function-name">膳食计划</view>
+        </view>
+        <view class="function-item" data-index="2" bindtap="handleFunctionClick">
+          <view class="function-icon">
+            <text>💡</text>
+          </view>
+          <view class="function-name">智能推荐</view>
+        </view>
+        <view class="function-item" data-index="3" bindtap="handleFunctionClick">
+          <view class="function-icon">
+            <text>🏥</text>
+          </view>
+          <view class="function-name">健康管理</view>
+        </view>
+        <view class="function-item" data-index="4" bindtap="handleFunctionClick">
+          <view class="function-icon">
+            <text>🥬</text>
+          </view>
+          <view class="function-name">食材管理</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,121 @@
+<view class="register-page">
+  <view class="bg-decoration">
+    <view class="bg-circle bg-circle-1"></view>
+    <view class="bg-circle bg-circle-2"></view>
+    <view class="bg-circle bg-circle-3"></view>
+  </view>
+
+  <view class="register-header">
+    <view class="logo-wrapper">
+      <view class="logo-icon">🍽️</view>
+    </view>
+    <text class="app-title">营养膳食规划</text>
+    <text class="app-subtitle">科学饮食，健康生活</text>
+  </view>
+
+  <view class="register-card">
+    <view class="card-inner">
+      <view class="welcome-text">
+        <text class="welcome-title">创建账户</text>
+        <text class="welcome-desc">填写以下信息完成注册</text>
+      </view>
+
+      <view class="input-group">
+        <view class="input-wrapper">
+          <view class="input-icon">👤</view>
+          <input
+            class="login-input"
+            placeholder="请输入用户名"
+            placeholder-class="placeholder"
+            bindinput="bindUsername"
+            value="{{username}}"
+          />
+        </view>
+
+        <view class="input-wrapper">
+          <view class="input-icon">🔒</view>
+          <input
+            class="login-input password-input"
+            placeholder="请输入密码"
+            placeholder-class="placeholder"
+            bindinput="bindPassword"
+            value="{{password}}"
+            type="text"
+            password="{{!showPassword}}"
+          />
+          <view class="password-toggle" bindtap="togglePassword">
+            {{showPassword ? '👁️' : '👁️‍🗨️'}}
+          </view>
+        </view>
+
+        <view class="input-wrapper">
+          <view class="input-icon">📱</view>
+          <input
+            class="login-input"
+            placeholder="请输入手机号"
+            placeholder-class="placeholder"
+            bindinput="bindPhone"
+            value="{{phone}}"
+          />
+        </view>
+
+        <view class="input-wrapper">
+          <view class="input-icon">⚥</view>
+          <picker bindchange="bindGenderChange" range="{{genderOptions}}" value="{{genderIndex}}">
+            <view class="picker-view">
+              {{genderOptions[genderIndex] || '请选择性别'}}
+            </view>
+          </picker>
+        </view>
+
+        <view class="input-wrapper">
+          <view class="input-icon">🎂</view>
+          <picker bindchange="bindAgeChange" range="{{ageOptions}}" value="{{ageIndex}}">
+            <view class="picker-view">
+              {{ageOptions[ageIndex] || '请选择年龄'}}
+            </view>
+          </picker>
+        </view>
+
+        <view class="input-wrapper">
+          <view class="input-icon">📧</view>
+          <input
+            class="login-input"
+            placeholder="请输入邮箱"
+            placeholder-class="placeholder"
+            bindinput="bindEmail"
+            value="{{email}}"
+          />
+        </view>
+      </view>
+
+      <view class="message-area">
+        <view wx:if="{{errorMessage}}" class="error-tip">{{errorMessage}}</view>
+        <view wx:if="{{successMessage}}" class="success-tip">{{successMessage}}</view>
+      </view>
+
+      <view class="btn-register" bindtap="handleRegister">
+        <text class="btn-text">注 册</text>
+      </view>
+
+      <view class="card-footer">
+        <view class="divider">
+          <view class="divider-line"></view>
+          <text class="divider-text">或</text>
+          <view class="divider-line"></view>
+        </view>
+        <view class="login-hint">
+          <text class="hint-text">已有账号？</text>
+          <text class="login-link" bindtap="navigateToLogin">立即登录</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="register-footer">
+    <text class="footer-text">注册即表示同意</text>
+    <text class="footer-link">《用户协议》</text>
+    <text class="footer-text">和</text>
+    <text class="footer-link">《隐私政策》</text>
+  </view>
+</view>

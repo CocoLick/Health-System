@@ -1,0 +1,447 @@
+<view class="admin-dashboard">
+  <view class="dashboard-header">
+    <text class="dashboard-title">管理员工作台</text>
+    <view class="user-info" bindtap="showPersonalCenter">
+      <text class="welcome-text">欢迎，管理员</text>
+      <view class="user-avatar">管</view>
+    </view>
+  </view>
+
+  <view class="custom-tab-bar">
+    <view class="tab-item {{activeTab === 'home' ? 'active' : ''}}" bindtap="switchTab" data-tab="home">
+      <text class="tab-icon">🏠</text>
+      <text class="tab-text">工作台首页</text>
+    </view>
+    <view class="tab-item {{activeTab === 'audit' ? 'active' : ''}}" bindtap="switchTab" data-tab="audit">
+      <text class="tab-icon">✅</text>
+      <text class="tab-text">审核中心</text>
+    </view>
+    <view class="tab-item {{activeTab === 'manage' ? 'active' : ''}}" bindtap="switchTab" data-tab="manage">
+      <text class="tab-icon">⚙️</text>
+      <text class="tab-text">管理中心</text>
+    </view>
+    <view class="tab-item {{activeTab === 'statistics' ? 'active' : ''}}" bindtap="switchTab" data-tab="statistics">
+      <text class="tab-icon">📊</text>
+      <text class="tab-text">统计中心</text>
+    </view>
+  </view>
+
+  <view class="tab-content">
+    <!-- 工作台首页 -->
+    <view wx:if="{{activeTab === 'home'}}" class="content-panel">
+      <view class="stats-overview">
+        <view class="stat-card">
+          <view class="stat-icon user-icon">👥</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.userCount || 0}}</text>
+            <text class="stat-label">总用户数</text>
+          </view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-icon dietitian-icon">👨‍⚕️</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.dietitianCount || 0}}</text>
+            <text class="stat-label">规划师数</text>
+          </view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-icon plan-icon">📋</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.pendingPlans || 0}}</text>
+            <text class="stat-label">待审核计划</text>
+          </view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-icon article-icon">📄</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.pendingArticles || 0}}</text>
+            <text class="stat-label">待审核文章</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="recent-activity">
+        <text class="section-title">最近活动</text>
+        <view class="activity-list">
+          <view wx:for="{{recentActivities}}" wx:key="index" class="activity-item">
+            <view class="activity-icon">{{item.icon}}</view>
+            <view class="activity-content">
+              <text class="activity-text">{{item.text}}</text>
+              <text class="activity-time">{{item.time}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="system-notices">
+        <text class="section-title">系统通知</text>
+        <view class="notice-list">
+          <view wx:for="{{notices}}" wx:key="index" class="notice-item">
+            <view class="notice-icon">📢</view>
+            <view class="notice-content">
+              <text class="notice-title">{{item.title}}</text>
+              <text class="notice-text">{{item.content}}</text>
+              <text class="notice-time">{{item.time}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 审核中心 -->
+    <view wx:if="{{activeTab === 'audit'}}" class="content-panel">
+      <view class="audit-tabs">
+        <view class="audit-tab {{auditSubTab === 'plans' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="plans">
+          <text>膳食计划</text>
+          <text class="badge" wx:if="{{pendingPlansCount > 0}}">{{pendingPlansCount}}</text>
+        </view>
+        <view class="audit-tab {{auditSubTab === 'articles' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="articles">
+          <text>健康文章</text>
+          <text class="badge" wx:if="{{pendingArticlesCount > 0}}">{{pendingArticlesCount}}</text>
+        </view>
+        <view class="audit-tab {{auditSubTab === 'history' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="history">
+          <text>审核历史</text>
+        </view>
+      </view>
+
+      <view class="audit-list">
+        <view wx:if="{{auditSubTab === 'plans'}}">
+          <view wx:for="{{pendingPlans}}" wx:key="index" class="audit-item">
+            <view class="item-header">
+              <text class="item-title">{{item.title}}</text>
+              <text class="item-status">待审核</text>
+            </view>
+            <view class="item-body">
+              <view class="item-info">
+                <text class="info-label">用户：</text>
+                <text class="info-value">{{item.user}}</text>
+              </view>
+              <view class="item-info">
+                <text class="info-label">规划师：</text>
+                <text class="info-value">{{item.dietitian}}</text>
+              </view>
+              <view class="item-info">
+                <text class="info-label">提交时间：</text>
+                <text class="info-value">{{item.submitTime}}</text>
+              </view>
+            </view>
+            <view class="item-footer">
+              <view class="btn-primary" bindtap="approvePlan" data-index="{{index}}">通过</view>
+              <view class="btn-secondary" bindtap="rejectPlan" data-index="{{index}}">驳回</view>
+            </view>
+          </view>
+          <view wx:if="{{pendingPlans.length === 0}}" class="empty-state">
+            <text class="empty-icon">📋</text>
+            <text class="empty-text">暂无待审核的膳食计划</text>
+          </view>
+        </view>
+
+        <view wx:if="{{auditSubTab === 'articles'}}">
+          <view wx:for="{{pendingArticles}}" wx:key="index" class="audit-item">
+            <view class="item-header">
+              <text class="item-title">{{item.title}}</text>
+              <text class="item-status">待审核</text>
+            </view>
+            <view class="item-body">
+              <view class="item-info">
+                <text class="info-label">规划师：</text>
+                <text class="info-value">{{item.dietitian}}</text>
+              </view>
+              <view class="item-info">
+                <text class="info-label">分类：</text>
+                <text class="info-value">{{item.category}}</text>
+              </view>
+              <view class="article-preview">
+                <text class="preview-text">{{item.preview}}</text>
+              </view>
+            </view>
+            <view class="item-footer">
+              <view class="btn-primary" bindtap="approveArticle" data-index="{{index}}">通过</view>
+              <view class="btn-secondary" bindtap="rejectArticle" data-index="{{index}}">驳回</view>
+            </view>
+          </view>
+          <view wx:if="{{pendingArticles.length === 0}}" class="empty-state">
+            <text class="empty-icon">📄</text>
+            <text class="empty-text">暂无待审核的健康文章</text>
+          </view>
+        </view>
+
+        <view wx:if="{{auditSubTab === 'history'}}">
+          <view wx:for="{{auditHistory}}" wx:key="index" class="audit-item">
+            <view class="item-header">
+              <text class="item-title">{{item.title}}</text>
+              <text class="item-status {{item.status === '通过' ? 'status-approved' : 'status-rejected'}}">{{item.status}}</text>
+            </view>
+            <view class="item-body">
+              <view class="item-info">
+                <text class="info-label">类型：</text>
+                <text class="info-value">{{item.type}}</text>
+              </view>
+              <view class="item-info">
+                <text class="info-label">审核时间：</text>
+                <text class="info-value">{{item.auditTime}}</text>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{auditHistory.length === 0}}" class="empty-state">
+            <text class="empty-icon">📋</text>
+            <text class="empty-text">暂无审核历史</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 管理中心 -->
+    <view wx:if="{{activeTab === 'manage'}}" class="content-panel">
+      <view class="manage-tabs">
+        <view class="manage-tab {{manageSubTab === 'users' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="users">
+          <text>用户管理</text>
+        </view>
+        <view class="manage-tab {{manageSubTab === 'dietitians' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="dietitians">
+          <text>规划师管理</text>
+        </view>
+        <view class="manage-tab {{manageSubTab === 'feedback' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="feedback">
+          <text>反馈管理</text>
+        </view>
+        <view class="manage-tab {{manageSubTab === 'settings' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="settings">
+          <text>设置</text>
+        </view>
+      </view>
+
+      <view class="manage-list">
+        <view wx:if="{{manageSubTab === 'users'}}">
+          <view wx:for="{{users}}" wx:key="index" class="manage-item">
+            <view class="item-header">
+              <view class="user-avatar-small">{{item.usernameInitial}}</view>
+              <view class="user-info-small">
+                <text class="item-title">{{item.username}}</text>
+                <text class="item-subtitle">{{item.role}}</text>
+              </view>
+              <text class="item-status {{item.status === '正常' ? 'status-active' : 'status-inactive'}}">{{item.status}}</text>
+            </view>
+            <view class="item-footer">
+              <view class="btn-text" bindtap="editUser" data-index="{{index}}">编辑</view>
+              <view class="btn-text" bindtap="toggleUserStatus" data-index="{{index}}">{{item.status === '正常' ? '禁用' : '启用'}}</view>
+            </view>
+          </view>
+          <view wx:if="{{users.length === 0}}" class="empty-state">
+            <text class="empty-icon">👥</text>
+            <text class="empty-text">暂无用户数据</text>
+          </view>
+        </view>
+
+        <view wx:if="{{manageSubTab === 'dietitians'}}">
+          <view class="add-dietitian-btn" bindtap="showAddDietitianForm">
+            <text class="add-icon">+</text>
+            <text class="add-text">添加规划师</text>
+          </view>
+          <view wx:for="{{dietitians}}" wx:key="index" class="manage-item">
+            <view class="item-header">
+              <view class="dietitian-avatar">{{item.nameInitial}}</view>
+              <view class="user-info-small">
+                <text class="item-title">{{item.name}}</text>
+                <text class="item-subtitle">{{item.title}} · {{item.specialty}}</text>
+              </view>
+              <text class="item-status {{item.status === '启用' ? 'status-active' : 'status-inactive'}}">{{item.status}}</text>
+            </view>
+            <view class="item-body">
+              <view class="item-info">
+                <text class="info-label">工号：</text>
+                <text class="info-value">{{item.dietitian_id}}</text>
+              </view>
+              <view class="item-info">
+                <text class="info-label">联系方式：</text>
+                <text class="info-value">{{item.contact}}</text>
+              </view>
+            </view>
+            <view class="item-footer">
+              <view class="btn-text" bindtap="toggleDietitianStatus" data-index="{{index}}">{{item.status === '启用' ? '禁用' : '启用'}}</view>
+              <view class="btn-text btn-danger" bindtap="deleteDietitian" data-index="{{index}}">删除</view>
+            </view>
+          </view>
+          <view wx:if="{{dietitians.length === 0}}" class="empty-state">
+            <text class="empty-icon">👨‍⚕️</text>
+            <text class="empty-text">暂无规划师</text>
+          </view>
+        </view>
+
+        <view wx:if="{{manageSubTab === 'feedback'}}">
+          <view wx:for="{{feedbacks}}" wx:key="index" class="manage-item">
+            <view class="item-header">
+              <text class="item-title">{{item.title}}</text>
+              <text class="item-status {{item.status === '已处理' ? 'status-approved' : ''}}">{{item.status}}</text>
+            </view>
+            <view class="item-body">
+              <text class="item-desc">{{item.content}}</text>
+              <text class="item-time">{{item.time}}</text>
+            </view>
+            <view class="item-footer">
+              <view class="btn-primary" bindtap="replyFeedback" data-index="{{index}}">回复</view>
+              <view class="btn-secondary" bindtap="markFeedback" data-index="{{index}}">标记已处理</view>
+            </view>
+          </view>
+          <view wx:if="{{feedbacks.length === 0}}" class="empty-state">
+            <text class="empty-icon">💬</text>
+            <text class="empty-text">暂无反馈数据</text>
+          </view>
+        </view>
+
+        <view wx:if="{{manageSubTab === 'settings'}}">
+          <view class="settings-list">
+            <view class="settings-item" bindtap="navigateToSettings">
+              <text class="settings-icon">🔔</text>
+              <text class="settings-text">消息通知设置</text>
+              <text class="settings-arrow">></text>
+            </view>
+            <view class="settings-item" bindtap="navigateToSettings">
+              <text class="settings-icon">🔒</text>
+              <text class="settings-text">修改密码</text>
+              <text class="settings-arrow">></text>
+            </view>
+            <view class="settings-item" bindtap="navigateToSettings">
+              <text class="settings-icon">🛡️</text>
+              <text class="settings-text">安全设置</text>
+              <text class="settings-arrow">></text>
+            </view>
+            <view class="settings-item" bindtap="navigateToSettings">
+              <text class="settings-icon">ℹ️</text>
+              <text class="settings-text">系统信息</text>
+              <text class="settings-arrow">></text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 统计中心 -->
+    <view wx:if="{{activeTab === 'statistics'}}" class="content-panel">
+      <view class="stats-overview">
+        <view class="stat-card">
+          <view class="stat-icon user-icon">📈</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.todayUsers || 0}}</text>
+            <text class="stat-label">今日新增用户</text>
+          </view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-icon dietitian-icon">📉</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.activeUsers || 0}}</text>
+            <text class="stat-label">活跃用户</text>
+          </view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-icon plan-icon">✅</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.completedPlans || 0}}</text>
+            <text class="stat-label">已完成计划</text>
+          </view>
+        </view>
+        <view class="stat-card">
+          <view class="stat-icon article-icon">👍</view>
+          <view class="stat-content">
+            <text class="stat-number">{{stats.likedArticles || 0}}</text>
+            <text class="stat-label">文章点赞数</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="chart-section">
+        <text class="section-title">用户增长趋势</text>
+        <view class="chart-placeholder">
+          <text class="chart-text">图表区域</text>
+        </view>
+      </view>
+
+      <view class="chart-section">
+        <text class="section-title">膳食计划统计</text>
+        <view class="chart-placeholder">
+          <text class="chart-text">图表区域</text>
+        </view>
+      </view>
+
+      <view class="chart-section">
+        <text class="section-title">营养记录统计</text>
+        <view class="chart-placeholder">
+          <text class="chart-text">图表区域</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 添加规划师弹窗 -->
+  <view wx:if="{{showAddDietitianModal}}" class="modal-mask" bindtap="hideAddDietitianForm">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">添加规划师</text>
+        <view class="modal-close" bindtap="hideAddDietitianForm">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <text class="form-label">姓名</text>
+          <input class="form-input" placeholder="请输入规划师姓名" bindinput="bindDietitianName" value="{{newDietitian.name}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">职称</text>
+          <input class="form-input" placeholder="如：高级营养师" bindinput="bindDietitianTitle" value="{{newDietitian.title}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">专业领域</text>
+          <input class="form-input" placeholder="如：临床营养" bindinput="bindDietitianSpecialty" value="{{newDietitian.specialty}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">联系方式</text>
+          <input class="form-input" placeholder="手机号或邮箱" bindinput="bindDietitianContact" value="{{newDietitian.contact}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">登录密码</text>
+          <input class="form-input" type="text" password placeholder="请输入初始密码" bindinput="bindDietitianPassword" value="{{newDietitian.password}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">状态</text>
+          <picker bindchange="bindDietitianStatusChange" range="{{statusOptions}}" value="{{statusIndex}}">
+            <view class="picker-view">
+              {{statusOptions[statusIndex] || '请选择状态'}}
+            </view>
+          </picker>
+        </view>
+        <view class="form-message">
+          <text wx:if="{{formError}}" class="error-text">{{formError}}</text>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <view class="btn-cancel" bindtap="hideAddDietitianForm">取消</view>
+        <view class="btn-confirm" bindtap="confirmAddDietitian">确认添加</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 个人中心弹窗 -->
+  <view wx:if="{{showPersonalCenterModal}}" class="modal-mask" bindtap="hidePersonalCenter">
+    <view class="personal-center-modal" catchtap="stopPropagation">
+      <view class="personal-header">
+        <text class="personal-title">个人中心</text>
+        <view class="modal-close" bindtap="hidePersonalCenter">×</view>
+      </view>
+      <view class="personal-content">
+        <view class="personal-info">
+          <view class="personal-avatar" bindtap="chooseAvatar">管</view>
+          <text class="personal-name">管理员</text>
+          <text class="personal-role">系统管理员</text>
+        </view>
+        <view class="personal-menu">
+          <view class="menu-item" bindtap="changePassword">
+            <text class="menu-icon">🔒</text>
+            <text class="menu-text">修改密码</text>
+            <text class="menu-arrow">→</text>
+          </view>
+          <view class="menu-item" bindtap="handleLogout">
+            <text class="menu-icon">🚪</text>
+            <text class="menu-text logout-text">退出登录</text>
+            <text class="menu-arrow">→</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

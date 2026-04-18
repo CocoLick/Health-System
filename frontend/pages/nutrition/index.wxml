@@ -1,0 +1,259 @@
+<!-- nutrition/index.wxml -->
+<view class="container">
+  <!-- 未登录状态 -->
+  <view wx:if="{{!isLoggedIn}}" class="login-container">
+    <view class="avatar-placeholder">
+      <text class="avatar-text">登录</text>
+    </view>
+    <text class="login-text">点击登录，查看和分析你的营养摄入数据</text>
+    <button class="login-btn" bindtap="handleLogin">立即登录</button>
+  </view>
+
+  <!-- 已登录状态 -->
+  <view wx:else>
+    <!-- 顶部导航 -->
+    <view class="top-nav">
+      <view class="nav-item {{activeNav === 'overview' ? 'active' : ''}}" bindtap="switchNav" data-nav="overview">概览</view>
+      <view class="nav-item {{activeNav === 'details' ? 'active' : ''}}" bindtap="switchNav" data-nav="details">详情</view>
+      <view class="nav-item {{activeNav === 'suggestions' ? 'active' : ''}}" bindtap="switchNav" data-nav="suggestions">建议</view>
+    </view>
+
+    <!-- 概览 -->
+    <view wx:if="{{activeNav === 'overview'}}">
+      <view class="overview-header">
+        <view class="overview-title">营养摄入概览</view>
+        <view class="overview-actions">
+          <view class="action-btn" bindtap="selectPeriod">选择周期</view>
+        </view>
+      </view>
+      <view class="overview-content">
+        <!-- 总热量 -->
+        <view class="nutrition-card">
+          <view class="card-header">
+            <view class="card-title">总热量</view>
+            <view class="card-value">1800kcal</view>
+          </view>
+          <view class="card-body">
+            <view class="progress-container">
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: 60%"></view>
+              </view>
+              <view class="progress-text">60%</view>
+            </view>
+            <view class="progress-info">
+              <view class="info-item">
+                <view class="info-label">目标</view>
+                <view class="info-value">3000kcal</view>
+              </view>
+              <view class="info-item">
+                <view class="info-label">剩余</view>
+                <view class="info-value">1200kcal</view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 三大营养素 -->
+        <view class="nutrition-card">
+          <view class="card-header">
+            <view class="card-title">三大营养素</view>
+          </view>
+          <view class="card-body">
+            <view class="nutrition-items">
+              <view class="nutrition-item">
+                <view class="nutrition-name">蛋白质</view>
+                <view class="nutrition-value">60g</view>
+                <view class="nutrition-percentage">80%</view>
+                <view class="nutrition-progress">
+                  <view class="progress-bar">
+                    <view class="progress-fill protein" style="width: 80%"></view>
+                  </view>
+                </view>
+              </view>
+              <view class="nutrition-item">
+                <view class="nutrition-name">碳水化合物</view>
+                <view class="nutrition-value">200g</view>
+                <view class="nutrition-percentage">67%</view>
+                <view class="nutrition-progress">
+                  <view class="progress-bar">
+                    <view class="progress-fill carbohydrate" style="width: 67%"></view>
+                  </view>
+                </view>
+              </view>
+              <view class="nutrition-item">
+                <view class="nutrition-name">脂肪</view>
+                <view class="nutrition-value">40g</view>
+                <view class="nutrition-percentage">50%</view>
+                <view class="nutrition-progress">
+                  <view class="progress-bar">
+                    <view class="progress-fill fat" style="width: 50%"></view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 微量元素 -->
+        <view class="nutrition-card">
+          <view class="card-header">
+            <view class="card-title">微量元素</view>
+          </view>
+          <view class="card-body">
+            <view class="micronutrient-grid">
+              <view class="micronutrient-item">
+                <view class="micronutrient-name">维生素C</view>
+                <view class="micronutrient-value">80mg</view>
+                <view class="micronutrient-status sufficient">充足</view>
+              </view>
+              <view class="micronutrient-item">
+                <view class="micronutrient-name">钙</view>
+                <view class="micronutrient-value">600mg</view>
+                <view class="micronutrient-status insufficient">不足</view>
+              </view>
+              <view class="micronutrient-item">
+                <view class="micronutrient-name">铁</view>
+                <view class="micronutrient-value">12mg</view>
+                <view class="micronutrient-status sufficient">充足</view>
+              </view>
+              <view class="micronutrient-item">
+                <view class="micronutrient-name">锌</view>
+                <view class="micronutrient-value">8mg</view>
+                <view class="micronutrient-status sufficient">充足</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 详情 -->
+    <view wx:if="{{activeNav === 'details'}}">
+      <view class="details-header">
+        <view class="details-title">营养摄入详情</view>
+        <view class="details-actions">
+          <view class="action-btn" bindtap="exportData">导出数据</view>
+        </view>
+      </view>
+      <view class="details-content">
+        <!-- 每日摄入趋势 -->
+        <view class="chart-card">
+          <view class="card-header">
+            <view class="card-title">每日摄入趋势</view>
+          </view>
+          <view class="card-body">
+            <view class="chart-placeholder">
+              <view class="chart-bar" style="height: 60%"></view>
+              <view class="chart-bar" style="height: 80%"></view>
+              <view class="chart-bar" style="height: 70%"></view>
+              <view class="chart-bar" style="height: 90%"></view>
+              <view class="chart-bar" style="height: 75%"></view>
+              <view class="chart-bar" style="height: 85%"></view>
+              <view class="chart-bar" style="height: 65%"></view>
+            </view>
+            <view class="chart-labels">
+              <view class="chart-label">周一</view>
+              <view class="chart-label">周二</view>
+              <view class="chart-label">周三</view>
+              <view class="chart-label">周四</view>
+              <view class="chart-label">周五</view>
+              <view class="chart-label">周六</view>
+              <view class="chart-label">周日</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 食物来源分析 -->
+        <view class="chart-card">
+          <view class="card-header">
+            <view class="card-title">食物来源分析</view>
+          </view>
+          <view class="card-body">
+            <view class="food-sources">
+              <view class="food-source">
+                <view class="source-name">谷物</view>
+                <view class="source-percentage">30%</view>
+                <view class="source-bar">
+                  <view class="source-fill" style="width: 30%"></view>
+                </view>
+              </view>
+              <view class="food-source">
+                <view class="source-name">蔬菜</view>
+                <view class="source-percentage">25%</view>
+                <view class="source-bar">
+                  <view class="source-fill" style="width: 25%"></view>
+                </view>
+              </view>
+              <view class="food-source">
+                <view class="source-name">肉类</view>
+                <view class="source-percentage">20%</view>
+                <view class="source-bar">
+                  <view class="source-fill" style="width: 20%"></view>
+                </view>
+              </view>
+              <view class="food-source">
+                <view class="source-name">水果</view>
+                <view class="source-percentage">15%</view>
+                <view class="source-bar">
+                  <view class="source-fill" style="width: 15%"></view>
+                </view>
+              </view>
+              <view class="food-source">
+                <view class="source-name">其他</view>
+                <view class="source-percentage">10%</view>
+                <view class="source-bar">
+                  <view class="source-fill" style="width: 10%"></view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 建议 -->
+    <view wx:if="{{activeNav === 'suggestions'}}">
+      <view class="suggestions-header">
+        <view class="suggestions-title">饮食建议</view>
+      </view>
+      <view class="suggestions-content">
+        <view class="suggestion-card">
+          <view class="suggestion-icon">
+            <text>🥛</text>
+          </view>
+          <view class="suggestion-content">
+            <view class="suggestion-title">增加钙的摄入</view>
+            <view class="suggestion-text">您的钙摄入不足，建议增加牛奶、豆制品等含钙丰富的食物。</view>
+          </view>
+        </view>
+        <view class="suggestion-card">
+          <view class="suggestion-icon">
+            <text>🥗</text>
+          </view>
+          <view class="suggestion-content">
+            <view class="suggestion-title">增加蔬菜摄入</view>
+            <view class="suggestion-text">建议每天摄入300-500g蔬菜，以保证维生素和膳食纤维的摄入。</view>
+          </view>
+        </view>
+        <view class="suggestion-card">
+          <view class="suggestion-icon">
+            <text>🍎</text>
+          </view>
+          <view class="suggestion-content">
+            <view class="suggestion-title">增加水果摄入</view>
+            <view class="suggestion-text">建议每天摄入200-350g水果，以补充维生素和矿物质。</view>
+          </view>
+        </view>
+        <view class="suggestion-card">
+          <view class="suggestion-icon">
+            <text>💧</text>
+          </view>
+          <view class="suggestion-content">
+            <view class="suggestion-title">多喝水</view>
+            <view class="suggestion-text">建议每天饮用1500-2000ml水，保持身体水分平衡。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

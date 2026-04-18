@@ -1,0 +1,129 @@
+<view class="audit-center">
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab === 'plans' ? 'active' : ''}}" bindtap="switchTab" data-tab="plans">
+      <text class="tab-text">膳食计划审核</text>
+    </view>
+    <view class="tab-item {{activeTab === 'articles' ? 'active' : ''}}" bindtap="switchTab" data-tab="articles">
+      <text class="tab-text">健康文章审核</text>
+    </view>
+    <view class="tab-item {{activeTab === 'history' ? 'active' : ''}}" bindtap="switchTab" data-tab="history">
+      <text class="tab-text">审核历史</text>
+    </view>
+  </view>
+
+  <!-- 膳食计划审核 -->
+  <view wx:if="{{activeTab === 'plans'}}" class="audit-content">
+    <view wx:for="{{pendingPlans}}" wx:key="index" class="audit-item">
+      <view class="item-header">
+        <text class="item-title">{{item.title}}</text>
+        <text class="item-status">待审核</text>
+      </view>
+      <view class="item-body">
+        <view class="item-info">
+          <text class="info-label">用户：</text>
+          <text class="info-value">{{item.user}}</text>
+        </view>
+        <view class="item-info">
+          <text class="info-label">规划师：</text>
+          <text class="info-value">{{item.dietitian}}</text>
+        </view>
+        <view class="item-info">
+          <text class="info-label">饮食目标：</text>
+          <text class="info-value">{{item.goal}}</text>
+        </view>
+        <view class="item-info">
+          <text class="info-label">提交时间：</text>
+          <text class="info-value">{{item.submitTime}}</text>
+        </view>
+      </view>
+      <view class="item-footer">
+        <view class="btn-primary" bindtap="approvePlan" data-index="{{index}}">通过</view>
+        <view class="btn-secondary" bindtap="rejectPlan" data-index="{{index}}">驳回</view>
+        <view class="btn-text" bindtap="viewPlanDetail" data-index="{{index}}">查看详情</view>
+      </view>
+    </view>
+    <view wx:if="{{pendingPlans.length === 0}}" class="empty-state">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无待审核的膳食计划</text>
+    </view>
+  </view>
+
+  <!-- 健康文章审核 -->
+  <view wx:if="{{activeTab === 'articles'}}" class="audit-content">
+    <view wx:for="{{pendingArticles}}" wx:key="index" class="audit-item">
+      <view class="item-header">
+        <text class="item-title">{{item.title}}</text>
+        <text class="item-status">待审核</text>
+      </view>
+      <view class="item-body">
+        <view class="item-info">
+          <text class="info-label">规划师：</text>
+          <text class="info-value">{{item.dietitian}}</text>
+        </view>
+        <view class="item-info">
+          <text class="info-label">分类：</text>
+          <text class="info-value">{{item.category}}</text>
+        </view>
+        <view class="item-info">
+          <text class="info-label">提交时间：</text>
+          <text class="info-value">{{item.submitTime}}</text>
+        </view>
+        <view class="article-preview">
+          <text class="preview-text">{{item.preview}}</text>
+        </view>
+      </view>
+      <view class="item-footer">
+        <view class="btn-primary" bindtap="approveArticle" data-index="{{index}}">通过</view>
+        <view class="btn-secondary" bindtap="rejectArticle" data-index="{{index}}">驳回</view>
+        <view class="btn-text" bindtap="viewArticleDetail" data-index="{{index}}">查看详情</view>
+      </view>
+    </view>
+    <view wx:if="{{pendingArticles.length === 0}}" class="empty-state">
+      <text class="empty-icon">📄</text>
+      <text class="empty-text">暂无待审核的健康文章</text>
+    </view>
+  </view>
+
+  <!-- 审核历史 -->
+  <view wx:if="{{activeTab === 'history'}}" class="audit-content">
+    <view class="history-filter">
+      <picker bindchange="bindFilterChange" range="{{filterOptions}}" value="{{filterIndex}}">
+        <view class="filter-btn">
+          <text class="filter-text">{{filterOptions[filterIndex]}}</text>
+          <text class="filter-icon">▼</text>
+        </view>
+      </picker>
+    </view>
+    <view wx:for="{{auditHistory}}" wx:key="index" class="audit-item">
+      <view class="item-header">
+        <text class="item-title">{{item.title}}</text>
+        <text class="item-status {{item.status === '通过' ? 'status-approved' : 'status-rejected'}}">{{item.status}}</text>
+      </view>
+      <view class="item-body">
+        <view class="item-info">
+          <text class="info-label">类型：</text>
+          <text class="info-value">{{item.type}}</text>
+        </view>
+        <view class="item-info">
+          <text class="info-label">审核人：</text>
+          <text class="info-value">{{item.auditor}}</text>
+        </view>
+        <view class="item-info">
+          <text class="info-label">审核时间：</text>
+          <text class="info-value">{{item.auditTime}}</text>
+        </view>
+        <view wx:if="{{item.reason}}" class="reject-reason">
+          <text class="reason-label">驳回原因：</text>
+          <text class="reason-text">{{item.reason}}</text>
+        </view>
+      </view>
+      <view class="item-footer">
+        <view class="btn-text" bindtap="viewAuditDetail" data-index="{{index}}">查看详情</view>
+      </view>
+    </view>
+    <view wx:if="{{auditHistory.length === 0}}" class="empty-state">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无审核历史记录</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,68 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/diet-plan/index",
+    "pages/nutrition/index",
+    "pages/ingredients/index",
+    "pages/profile/index",
+    "pages/auth/login/login",
+    "pages/auth/register/register",
+    "pages/settings/index",
+    "pages/favorites/index",
+    "pages/history/index",
+    "pages/help/index",
+    "pages/admin/dashboard/index",
+    "pages/admin/audit/index",
+    "pages/admin/user-management/index",
+    "pages/admin/system-settings/index",
+    "pages/admin/data-statistics/index",
+    "pages/admin/ingredient-management/index",
+    "pages/dietitian/dashboard/index",
+    "pages/dietitian/service/user-panel"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "营养膳食规划",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#6c757d",
+    "selectedColor": "#4caf50",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home-selected.png"
+      },
+      {
+        "pagePath": "pages/diet-plan/index",
+        "text": "膳食计划",
+        "iconPath": "images/diet-plan.png",
+        "selectedIconPath": "images/diet-plan-selected.png"
+      },
+      {
+        "pagePath": "pages/nutrition/index",
+        "text": "营养分析",
+        "iconPath": "images/nutrition.png",
+        "selectedIconPath": "images/nutrition-selected.png"
+      },
+      {
+        "pagePath": "pages/ingredients/index",
+        "text": "食材管理",
+        "iconPath": "images/ingredients.png",
+        "selectedIconPath": "images/ingredients-selected.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "images/profile.png",
+        "selectedIconPath": "images/profile-selected.png"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json"
+}

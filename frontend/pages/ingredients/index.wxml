@@ -1,0 +1,63 @@
+<!-- ingredients/index.wxml -->
+<view class="container">
+  <!-- 未登录状态 -->
+  <view wx:if="{{!isLoggedIn}}" class="login-container">
+    <view class="avatar-placeholder">
+      <text class="avatar-text">登录</text>
+    </view>
+    <text class="login-text">点击登录，查看和管理食材信息</text>
+    <button class="login-btn" bindtap="handleLogin">立即登录</button>
+  </view>
+
+  <!-- 已登录状态 -->
+  <view wx:else>
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <view class="search-input">
+        <text class="search-icon">🔍</text>
+        <input type="text" placeholder="搜索食材" bindinput="handleSearchInput" value="{{searchQuery}}" />
+      </view>
+      <view class="filter-btn" bindtap="handleSearchSubmit">筛选</view>
+    </view>
+
+    <!-- 分类导航 -->
+    <view class="category-nav">
+      <scroll-view scroll-x="true" class="category-scroll">
+        <view class="category-item {{currentCategory === 'all' ? 'active' : ''}}" bindtap="switchCategory" data-category="all">全部</view>
+        <view class="category-item {{currentCategory === 'grain' ? 'active' : ''}}" bindtap="switchCategory" data-category="grain">谷物</view>
+        <view class="category-item {{currentCategory === 'vegetables' ? 'active' : ''}}" bindtap="switchCategory" data-category="vegetables">蔬菜</view>
+        <view class="category-item {{currentCategory === 'fruits' ? 'active' : ''}}" bindtap="switchCategory" data-category="fruits">水果</view>
+        <view class="category-item {{currentCategory === 'meat' ? 'active' : ''}}" bindtap="switchCategory" data-category="meat">肉类</view>
+        <view class="category-item {{currentCategory === 'dairy' ? 'active' : ''}}" bindtap="switchCategory" data-category="dairy">乳制品</view>
+        <view class="category-item {{currentCategory === 'nut' ? 'active' : ''}}" bindtap="switchCategory" data-category="nut">坚果</view>
+        <view class="category-item {{currentCategory === 'other' ? 'active' : ''}}" bindtap="switchCategory" data-category="other">其他</view>
+      </scroll-view>
+    </view>
+
+    <!-- 食材列表 -->
+    <view class="ingredients-list">
+      <view class="ingredient-item" wx:for="{{getFilteredIngredients()}}" wx:key="index" bindtap="viewIngredientDetail" data-id="{{item.id}}">
+        <view class="ingredient-image">
+          <image src="{{item.image}}" mode="aspectFill" />
+        </view>
+        <view class="ingredient-info">
+          <view class="ingredient-name">{{item.name}}</view>
+          <view class="ingredient-nutrition">
+            <view class="nutrition-item">
+              <view class="nutrition-label">营养</view>
+              <view class="nutrition-value">{{item.nutrition}}</view>
+            </view>
+          </view>
+        </view>
+        <view class="ingredient-action">
+          <view class="action-btn">详情</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" bindtap="loadMore">
+      <text>加载更多</text>
+    </view>
+  </view>
+</view>

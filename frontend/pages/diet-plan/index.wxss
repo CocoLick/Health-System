@@ -1,0 +1,414 @@
+/* diet-plan/index.wxss */
+
+/* 全局样式 */
+.container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f8f9fa"/><circle cx="20" cy="20" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="80" cy="80" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="40" cy="60" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="60" cy="40" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="30" cy="80" r="0.5" fill="%23e9ecef" opacity="0.5"/><circle cx="70" cy="20" r="0.5" fill="%23e9ecef" opacity="0.5"/></svg>');
+  padding: 20rpx;
+  font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 顶部导航 */
+.top-nav {
+  display: flex;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+}
+
+.nav-item {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #6c757d;
+  transition: all 0.3s ease-out;
+}
+
+.nav-item.active {
+  background-color: #4caf50;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* 计划头部 */
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.plan-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.action-btn {
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 20rpx;
+  color: #6c757d;
+  background-color: #ffffff;
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.action-btn.primary {
+  background-color: #4caf50;
+  color: #ffffff;
+  border-color: #4caf50;
+}
+
+.action-btn:hover {
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  transform: translateY(-1rpx);
+}
+
+/* 周计划 */
+.week-plan {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+}
+
+.week-days {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.day-item {
+  border-radius: 8rpx;
+  padding: 16rpx;
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.day-item:hover {
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  transform: translateY(-1rpx);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.day-name {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.day-date {
+  font-size: 20rpx;
+  color: #6c757d;
+}
+
+.day-meals {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 8rpx 0;
+  border-bottom: 1rpx solid #f1f3f5;
+}
+
+.meal-item:last-child {
+  border-bottom: none;
+}
+
+.meal-type {
+  width: 80rpx;
+  font-size: 20rpx;
+  font-weight: 500;
+  color: #495057;
+}
+
+.meal-content {
+  flex: 1;
+  font-size: 20rpx;
+  color: #6c757d;
+}
+
+.meal-calories {
+  font-size: 20rpx;
+  color: #4caf50;
+  font-weight: 500;
+}
+
+/* 月计划 */
+.month-plan {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+}
+
+.month-calendar {
+  width: 100%;
+}
+
+.calendar-header {
+  text-align: center;
+  margin-bottom: 16rpx;
+}
+
+.calendar-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8rpx;
+  margin-bottom: 8rpx;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 20rpx;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 8rpx;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8rpx;
+}
+
+.day {
+  position: relative;
+  text-align: center;
+  padding: 12rpx 8rpx;
+  border-radius: 8rpx;
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.day:hover {
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  transform: translateY(-1rpx);
+}
+
+.day-number {
+  font-size: 20rpx;
+  color: #343a40;
+}
+
+.day-indicator {
+  position: absolute;
+  top: 4rpx;
+  right: 4rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background-color: #4caf50;
+}
+
+/* 历史计划 */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.history-item {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #e9ecef;
+  transition: all 0.3s ease-out;
+}
+
+.history-item:hover {
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+  transform: translateY(-2rpx);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.history-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.history-date {
+  font-size: 20rpx;
+  color: #6c757d;
+}
+
+.history-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+  padding: 16rpx;
+  background-color: #f8f9fa;
+  border-radius: 8rpx;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-label {
+  font-size: 20rpx;
+  color: #6c757d;
+}
+
+.summary-value {
+  font-size: 20rpx;
+  font-weight: 500;
+  color: #343a40;
+}
+
+.history-actions {
+  display: flex;
+  gap: 12rpx;
+  justify-content: flex-end;
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .container {
+    padding: 16rpx;
+  }
+  
+  .week-plan,
+  .month-plan,
+  .history-item {
+    padding: 20rpx;
+  }
+  
+  .day-item {
+    padding: 12rpx;
+  }
+  
+  .history-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.top-nav,
+.plan-header,
+.week-plan,
+.month-plan,
+.history-list {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.top-nav {
+  animation-delay: 0.1s;
+}
+
+.plan-header {
+  animation-delay: 0.2s;
+}
+
+.week-plan,
+.month-plan,
+.history-list {
+  animation-delay: 0.3s;
+}
+
+/* 登录引导页样式 */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 0 40rpx;
+  text-align: center;
+}
+
+.avatar-placeholder {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 40rpx;
+  box-shadow: 0 8rpx 30rpx rgba(76, 175, 80, 0.3);
+}
+
+.avatar-text {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: white;
+}
+
+.login-text {
+  font-size: 32rpx;
+  color: #6c757d;
+  margin-bottom: 60rpx;
+  line-height: 1.5;
+}
+
+.login-btn {
+  width: 80%;
+  height: 90rpx;
+  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+  color: white;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 45rpx;
+  border: none;
+  box-shadow: 0 4rpx 20rpx rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
+}
+
+.login-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 10rpx rgba(76, 175, 80, 0.3);
+}
