@@ -1,4 +1,6 @@
 // register.js
+const api = require('../../../utils/api');
+
 Page({
   data: {
     username: '',
@@ -111,48 +113,42 @@ Page({
 
     // 注册请求
     console.log('注册请求参数:', { username, password, phone, gender, age, email });
-    wx.request({
-      url: 'http://localhost:8000/api/auth/register',
-      method: 'POST',
-      data: {
-        username,
-        password,
-        phone,
-        gender,
-        age: parseInt(age),
-        email
-      },
-      header: {
-        'Content-Type': 'application/json'
-      },
-      success: (res) => {
-        console.log('注册响应:', res);
-        if (res.data.code === 200) {
-          this.setData({
-            successMessage: '注册成功，请登录',
-            errorMessage: ''
-          });
-
-          // 跳转到登录页面
-          setTimeout(() => {
-            wx.redirectTo({
-              url: '/pages/auth/login/login'
-            });
-          }, 1500);
-        } else {
-          this.setData({
-            errorMessage: res.data.message,
-            successMessage: ''
-          });
-        }
-      },
-      fail: (err) => {
-        console.log('注册失败:', err);
+    
+    api.auth.register({
+      username,
+      password,
+      phone,
+      gender,
+      age: parseInt(age),
+      email
+    })
+    .then(res => {
+      console.log('注册响应:', res);
+      if (res.code === 200) {
         this.setData({
-          errorMessage: '注册失败，请检查网络连接',
+          successMessage: '注册成功，请登录',
+          errorMessage: ''
+        });
+
+        // 跳转到登录页面
+        setTimeout(() => {
+          wx.redirectTo({
+            url: '/pages/auth/login/login'
+          });
+        }, 1500);
+      } else {
+        this.setData({
+          errorMessage: res.message,
           successMessage: ''
         });
       }
+    })
+    .catch(err => {
+      console.log('注册失败:', err);
+      this.setData({
+        errorMessage: '注册失败，请检查网络连接',
+        successMessage: ''
+      });
     });
   },
 

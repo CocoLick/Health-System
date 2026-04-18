@@ -1,4 +1,6 @@
 // admin/dashboard/index.js
+const api = require('../../../utils/api');
+
 Page({
   data: {
     activeTab: 'home',
@@ -152,39 +154,32 @@ Page({
   },
 
   loadDietitians() {
-    const token = wx.getStorageSync('token');
-    wx.request({
-      url: 'http://localhost:8080/api/auth/admin/dietitians',
-      method: 'GET',
-      header: {
-        'Authorization': token
-      },
-      success: (res) => {
-        if (res.data.code === 200) {
-          const list = res.data.data || [];
-          const dietitians = list.map(item => ({
-            ...item,
-            nameInitial: item.name ? item.name.charAt(0) : '?'
-          }));
-          this.setData({
-            dietitians: dietitians,
-            'stats.dietitianCount': dietitians.length
-          });
-        }
-      },
-      fail: () => {
+    api.admin.getAllDietitians()
+    .then(res => {
+      if (res.code === 200) {
+        const list = res.data || [];
+        const dietitians = list.map(item => ({
+          ...item,
+          nameInitial: item.name ? item.name.charAt(0) : '?'
+        }));
         this.setData({
-          dietitians: [{
-            dietitian_id: 'D20260325001',
-            name: '张医生',
-            nameInitial: '张',
-            title: '营养师',
-            specialty: '临床营养',
-            contact: '13800138002',
-            status: '启用'
-          }]
+          dietitians: dietitians,
+          'stats.dietitianCount': dietitians.length
         });
       }
+    })
+    .catch(() => {
+      this.setData({
+        dietitians: [{
+          dietitian_id: 'D20260325001',
+          name: '张医生',
+          nameInitial: '张',
+          title: '营养师',
+          specialty: '临床营养',
+          contact: '13800138002',
+          status: '启用'
+        }]
+      });
     });
   },
 
@@ -285,53 +280,44 @@ Page({
       return;
     }
 
-    const token = wx.getStorageSync('token');
-    wx.request({
-      url: 'http://localhost:8080/api/auth/admin/dietitian',
-      method: 'POST',
-      header: {
-        'Authorization': token,
-        'Content-Type': 'application/json'
-      },
-      data: {
-        name: name,
-        title: title,
-        specialty: specialty,
-        contact: contact,
-        password: password,
-        status: status
-      },
-      success: (res) => {
-        if (res.data.code === 200) {
-          wx.showToast({
-            title: '添加成功',
-            icon: 'success'
-          });
-          this.hideAddDietitianForm();
-          this.loadDietitians();
-        } else {
-          this.setData({ formError: res.data.message || '添加失败' });
-        }
-      },
-      fail: () => {
-        const newDietitian = {
-          dietitian_id: 'D' + Date.now(),
-          name: name,
-          nameInitial: name.charAt(0),
-          title: title,
-          specialty: specialty,
-          contact: contact,
-          status: status
-        };
-        this.setData({
-          dietitians: [...this.data.dietitians, newDietitian]
-        });
+    api.admin.createDietitian({
+      name: name,
+      title: title,
+      specialty: specialty,
+      contact: contact,
+      password: password,
+      status: status
+    })
+    .then(res => {
+      if (res.code === 200) {
         wx.showToast({
-          title: '添加成功（模拟）',
+          title: '添加成功',
           icon: 'success'
         });
         this.hideAddDietitianForm();
+        this.loadDietitians();
+      } else {
+        this.setData({ formError: res.message || '添加失败' });
       }
+    })
+    .catch(() => {
+      const newDietitian = {
+        dietitian_id: 'D' + Date.now(),
+        name: name,
+        nameInitial: name.charAt(0),
+        title: title,
+        specialty: specialty,
+        contact: contact,
+        status: status
+      };
+      this.setData({
+        dietitians: [...this.data.dietitians, newDietitian]
+      });
+      wx.showToast({
+        title: '添加成功（模拟）',
+        icon: 'success'
+      });
+      this.hideAddDietitianForm();
     });
   },
 

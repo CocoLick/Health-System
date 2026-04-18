@@ -7,5 +7,9 @@ App({
   globalData: {
     userInfo: null,
     token: null
+  },
+  // API 配置
+  apiConfig: {
+    baseUrl: 'http://localhost:8000'
   }
 })
