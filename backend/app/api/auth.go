@@ -225,6 +225,70 @@ func (h *AuthHandler) GetAllDietitians(c *gin.Context) {
 	})
 }
 
+// UpdateDietitianStatus 更新规划师状态
+// @Summary 更新规划师状态
+// @Description 管理员更新规划师的启用/禁用状态
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param user_id path string true "规划师ID"
+// @Param request body schemas.UpdateDietitianStatusRequest true "状态请求"
+// @Success 200 {object} schemas.Response
+// @Failure 400 {object} schemas.Response
+// @Router /api/auth/admin/dietitian/{user_id}/status [put]
+func (h *AuthHandler) UpdateDietitianStatus(c *gin.Context) {
+	userID := c.Param("user_id")
+	var req schemas.UpdateDietitianStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "请求参数错误",
+		})
+		return
+	}
+
+	err := h.authService.UpdateDietitianStatus(userID, req.Status)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "状态更新成功",
+	})
+}
+
+// DeleteDietitian 删除规划师
+// @Summary 删除规划师
+// @Description 管理员删除规划师
+// @Tags 认证
+// @Produce json
+// @Param user_id path string true "规划师ID"
+// @Success 200 {object} schemas.Response
+// @Failure 400 {object} schemas.Response
+// @Router /api/auth/admin/dietitian/{user_id} [delete]
+func (h *AuthHandler) DeleteDietitian(c *gin.Context) {
+	userID := c.Param("user_id")
+
+	err := h.authService.DeleteDietitian(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "删除成功",
+	})
+}
+
 // RegisterAuthRoutes 注册认证路由
 func RegisterAuthRoutes(router *gin.RouterGroup) {
 	handler := NewAuthHandler()
@@ -237,5 +301,7 @@ func RegisterAuthRoutes(router *gin.RouterGroup) {
 		authGroup.POST("/admin/login", handler.AdminLogin)
 		authGroup.POST("/admin/dietitian", handler.CreateDietitian)
 		authGroup.GET("/admin/dietitians", handler.GetAllDietitians)
+		authGroup.PUT("/admin/dietitian/:user_id/status", handler.UpdateDietitianStatus)
+		authGroup.DELETE("/admin/dietitian/:user_id", handler.DeleteDietitian)
 	}
 }

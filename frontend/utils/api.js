@@ -108,6 +108,14 @@ const admin = {
   // 获取所有规划师
   getAllDietitians: function() {
     return get('/api/auth/admin/dietitians');
+  },
+  // 更新规划师状态
+  updateDietitianStatus: function(userId, status) {
+    return put(`/api/auth/admin/dietitian/${userId}/status`, { status });
+  },
+  // 删除规划师
+  deleteDietitian: function(userId) {
+    return del(`/api/auth/admin/dietitian/${userId}`);
   }
 };
 

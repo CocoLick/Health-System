@@ -12,12 +12,17 @@ import (
 type User struct {
 	UserID     string    `gorm:"column:user_id;primaryKey" json:"user_id"`
 	Username   string    `gorm:"column:username;not null" json:"username"`
+	Name       string    `gorm:"column:name" json:"name"`
 	Password   string    `gorm:"column:password;not null" json:"-"`
-	Phone      string    `gorm:"column:phone;not null" json:"phone"`
-	Gender     string    `gorm:"column:gender;not null" json:"gender"`
-	Age        int       `gorm:"column:age;not null" json:"age"`
-	Email      string    `gorm:"column:email;not null" json:"email"`
+	Phone      string    `gorm:"column:phone" json:"phone"`
+	Gender     string    `gorm:"column:gender" json:"gender"`
+	Age        int       `gorm:"column:age" json:"age"`
+	Email      string    `gorm:"column:email" json:"email"`
 	RoleType   string    `gorm:"column:role_type;not null" json:"role_type"`
+	Title      string    `gorm:"column:title" json:"title"`
+	Specialty  string    `gorm:"column:specialty" json:"specialty"`
+	Contact    string    `gorm:"column:contact" json:"contact"`
+	Status     string    `gorm:"column:status" json:"status"`
 	CreatedAt  time.Time `gorm:"column:created_at;not null" json:"created_at"`
 	UpdatedAt  time.Time `gorm:"column:updated_at;not null" json:"updated_at"`
 }

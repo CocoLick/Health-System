@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/yourusername/nutrition-system/app/models"
@@ -29,20 +31,20 @@ func (s *AuthService) Register(req schemas.RegisterRequest) (*models.User, error
 	}
 
 	// 生成用户ID
-	userID := fmt.Sprintf("U%s%03d", time.Now().Format("20060102"), 1) // 实际应用中应使用更复杂的ID生成逻辑
+	userID := fmt.Sprintf("U%s%03d", time.Now().Format("20060102"), 1)
 
 	// 创建用户
 	user := &models.User{
-		UserID:     userID,
-		Username:   req.Username,
-		Password:   req.Password,
-		Phone:      req.Phone,
-		Gender:     req.Gender,
-		Age:        req.Age,
-		Email:      req.Email,
-		RoleType:   "user", // 默认为普通用户
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		UserID:    userID,
+		Username:  req.Username,
+		Password:  req.Password,
+		Phone:     req.Phone,
+		Gender:    req.Gender,
+		Age:       req.Age,
+		Email:     req.Email,
+		RoleType:  "user",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	// 保存用户
@@ -53,92 +55,27 @@ func (s *AuthService) Register(req schemas.RegisterRequest) (*models.User, error
 	return user, nil
 }
 
-// Login 用户登录
+// Login 用户登录（统一登录接口）
 func (s *AuthService) Login(req schemas.LoginRequest) (*schemas.LoginResponse, error) {
-	// 1. 首先在用户表中查找（包括普通用户和管理员）
+	// 在用户表中查找
 	var user models.User
 	result := config.DB.Where("username = ?", req.Username).First(&user)
-	if result.RowsAffected > 0 {
-		// 检查密码
-		if !user.CheckPassword(req.Password) {
-			return nil, errors.New("用户名或密码错误")
-		}
-
-		// 生成JWT令牌
-		token, err := utils.GenerateToken(user.UserID, user.Username, user.RoleType)
-		if err != nil {
-			return nil, err
-		}
-
-		// 构建响应
-		response := &schemas.LoginResponse{
-			Token: token,
-			UserInfo: map[string]interface{}{
-				"user_id":   user.UserID,
-				"username":  user.Username,
-				"phone":     user.Phone,
-				"gender":    user.Gender,
-				"age":       user.Age,
-				"email":     user.Email,
-				"role_type": user.RoleType,
-			},
-		}
-
-		return response, nil
-	}
-
-	// 2. 如果用户表中没有，在营养师表中查找
-	var dietitian models.Dietitian
-	dietResult := config.DB.Where("dietitian_id = ?", req.Username).First(&dietitian)
-	if dietResult.RowsAffected > 0 {
-		// 检查密码
-		if !dietitian.CheckPassword(req.Password) {
-			return nil, errors.New("用户名或密码错误")
-		}
-
-		// 生成JWT令牌
-		token, err := utils.GenerateToken("", dietitian.Name, "dietitian", dietitian.DietitianID)
-		if err != nil {
-			return nil, err
-		}
-
-		// 构建响应
-		response := &schemas.LoginResponse{
-			Token: token,
-			UserInfo: map[string]interface{}{
-				"dietitian_id": dietitian.DietitianID,
-				"name":         dietitian.Name,
-				"title":        dietitian.Title,
-				"specialty":    dietitian.Specialty,
-				"contact":      dietitian.Contact,
-				"status":       dietitian.Status,
-				"role_type":    "dietitian",
-			},
-		}
-
-		return response, nil
-	}
-
-	// 3. 都没找到，返回错误
-	return nil, errors.New("用户名或密码错误")
-}
-
-// DietitianLogin 规划师登录
-func (s *AuthService) DietitianLogin(req schemas.DietitianLoginRequest) (*schemas.LoginResponse, error) {
-	// 查找规划师
-	var dietitian models.Dietitian
-	result := config.DB.Where("dietitian_id = ?", req.DietitianID).First(&dietitian)
 	if result.RowsAffected == 0 {
-		return nil, errors.New("规划师ID或密码错误")
+		return nil, errors.New("用户名或密码错误")
 	}
 
 	// 检查密码
-	if !dietitian.CheckPassword(req.Password) {
-		return nil, errors.New("规划师ID或密码错误")
+	if !user.CheckPassword(req.Password) {
+		return nil, errors.New("用户名或密码错误")
+	}
+
+	// 检查用户状态（管理员不检查）
+	if user.RoleType != "admin" && user.Status == "禁用" {
+		return nil, errors.New("账号已被禁用，请联系管理员")
 	}
 
 	// 生成JWT令牌
-	token, err := utils.GenerateToken("", dietitian.Name, "dietitian", dietitian.DietitianID)
+	token, err := utils.GenerateToken(user.UserID, user.Username, user.RoleType)
 	if err != nil {
 		return nil, err
 	}
@@ -147,12 +84,56 @@ func (s *AuthService) DietitianLogin(req schemas.DietitianLoginRequest) (*schema
 	response := &schemas.LoginResponse{
 		Token: token,
 		UserInfo: map[string]interface{}{
-			"dietitian_id": dietitian.DietitianID,
-			"name":         dietitian.Name,
-			"title":        dietitian.Title,
-			"specialty":    dietitian.Specialty,
-			"contact":      dietitian.Contact,
-			"status":       dietitian.Status,
+			"user_id":   user.UserID,
+			"username":  user.Username,
+			"name":      user.Name,
+			"phone":     user.Phone,
+			"gender":    user.Gender,
+			"age":       user.Age,
+			"email":     user.Email,
+			"role_type": user.RoleType,
+			"title":     user.Title,
+			"specialty": user.Specialty,
+			"contact":   user.Contact,
+			"status":    user.Status,
+		},
+	}
+
+	return response, nil
+}
+
+// DietitianLogin 规划师登录（保留，兼容旧版）
+func (s *AuthService) DietitianLogin(req schemas.DietitianLoginRequest) (*schemas.LoginResponse, error) {
+	// 查找规划师（现在存储在用户表中），并且状态必须是启用
+	var user models.User
+	result := config.DB.Where("username = ? AND role_type = ? AND status = ?", req.DietitianID, "dietitian", "启用").First(&user)
+	if result.RowsAffected == 0 {
+		return nil, errors.New("规划师ID或密码错误")
+	}
+
+	// 检查密码
+	if !user.CheckPassword(req.Password) {
+		return nil, errors.New("规划师ID或密码错误")
+	}
+
+	// 生成JWT令牌
+	token, err := utils.GenerateToken(user.UserID, user.Username, user.RoleType)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建响应
+	response := &schemas.LoginResponse{
+		Token: token,
+		UserInfo: map[string]interface{}{
+			"user_id":   user.UserID,
+			"username":  user.Username,
+			"name":      user.Name,
+			"title":     user.Title,
+			"specialty": user.Specialty,
+			"contact":   user.Contact,
+			"status":    user.Status,
+			"role_type": user.RoleType,
 		},
 	}
 
@@ -185,6 +166,7 @@ func (s *AuthService) AdminLogin(req schemas.AdminLoginRequest) (*schemas.LoginR
 		UserInfo: map[string]interface{}{
 			"user_id":   user.UserID,
 			"username":  user.Username,
+			"name":      user.Name,
 			"phone":     user.Phone,
 			"gender":    user.Gender,
 			"age":       user.Age,
@@ -197,44 +179,102 @@ func (s *AuthService) AdminLogin(req schemas.AdminLoginRequest) (*schemas.LoginR
 }
 
 // CreateDietitian 管理员创建规划师
-func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*models.Dietitian, error) {
-	// 检查规划师名称是否已存在
-	var existingDietitian models.Dietitian
-	result := config.DB.Where("name = ?", req.Name).First(&existingDietitian)
+func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*models.User, error) {
+	// 检查用户名是否已存在
+	var existingUser models.User
+	result := config.DB.Where("username = ?", req.Username).First(&existingUser)
 	if result.RowsAffected > 0 {
-		return nil, errors.New("规划师名称已存在")
+		return nil, errors.New("用户名已存在")
 	}
 
-	// 生成规划师ID
-	dietitianID := fmt.Sprintf("D%s%03d", time.Now().Format("20060102"), 1)
+	// 生成用户ID（查询最大后缀，确保唯一）
+	userID := s.generateDietitianID()
 
-	// 创建规划师
-	dietitian := &models.Dietitian{
-		DietitianID: dietitianID,
-		Name:        req.Name,
-		Password:    req.Password,
-		Title:       req.Title,
-		Specialty:   req.Specialty,
-		Contact:     req.Contact,
-		Status:      req.Status,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+	// 创建规划师（作为用户）
+	user := &models.User{
+		UserID:    userID,
+		Username:  req.Username,
+		Name:      req.Name,
+		Password:  req.Password,
+		Phone:     req.Contact,
+		Gender:    "",
+		Age:       0,
+		Email:     "",
+		RoleType:  "dietitian",
+		Title:     req.Title,
+		Specialty: req.Specialty,
+		Contact:   req.Contact,
+		Status:    req.Status,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	// 保存规划师
-	if err := config.DB.Create(dietitian).Error; err != nil {
+	// 保存用户
+	if err := config.DB.Create(user).Error; err != nil {
 		return nil, err
 	}
 
-	return dietitian, nil
+	return user, nil
+}
+
+// generateDietitianID 生成规划师ID（查询最大后缀）
+func (s *AuthService) generateDietitianID() string {
+	today := time.Now().Format("20060102")
+	prefix := "D" + today
+
+	// 查询当天所有规划师的user_id
+	var userIDs []string
+	config.DB.Model(&models.User{}).
+		Where("user_id LIKE ?", prefix+"%").
+		Select("user_id").
+		Find(&userIDs)
+
+	// 找出最大后缀
+	maxSuffix := 0
+	for _, id := range userIDs {
+		// 去掉前缀，转换为数字
+		suffixStr := strings.TrimPrefix(id, prefix)
+		suffix, err := strconv.Atoi(suffixStr)
+		if err == nil && suffix > maxSuffix {
+			maxSuffix = suffix
+		}
+	}
+
+	// 生成新的ID
+	newSuffix := maxSuffix + 1
+	return fmt.Sprintf("%s%03d", prefix, newSuffix)
 }
 
 // GetAllDietitians 获取所有规划师
-func (s *AuthService) GetAllDietitians() ([]models.Dietitian, error) {
-	var dietitians []models.Dietitian
-	result := config.DB.Find(&dietitians)
+func (s *AuthService) GetAllDietitians() ([]models.User, error) {
+	var dietitians []models.User
+	result := config.DB.Where("role_type = ?", "dietitian").Find(&dietitians)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	return dietitians, nil
+}
+
+// UpdateDietitianStatus 更新规划师状态
+func (s *AuthService) UpdateDietitianStatus(userID string, status string) error {
+	result := config.DB.Model(&models.User{}).Where("user_id = ? AND role_type = ?", userID, "dietitian").Update("status", status)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("规划师不存在")
+	}
+	return nil
+}
+
+// DeleteDietitian 删除规划师
+func (s *AuthService) DeleteDietitian(userID string) error {
+	result := config.DB.Where("user_id = ? AND role_type = ?", userID, "dietitian").Delete(&models.User{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("规划师不存在")
+	}
+	return nil
 }

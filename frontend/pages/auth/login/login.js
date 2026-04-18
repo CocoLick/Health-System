@@ -39,7 +39,6 @@ Page({
       return;
     }
     
-    // 登录请求
     console.log('登录请求参数:', { username, password });
     
     api.auth.login({ username, password })
@@ -47,7 +46,6 @@ Page({
       console.log('登录响应:', res);
       console.log('响应数据结构:', JSON.stringify(res, null, 2));
       if (res.code === 200) {
-        // 登录成功，存储token和用户信息
         wx.setStorageSync('token', res.data.token);
         wx.setStorageSync('userInfo', res.data.user_info);
         
@@ -56,27 +54,19 @@ Page({
           errorMessage: ''
         });
         
-        // 从响应中获取角色信息
-        console.log('用户信息:', res.data.user_info);
         const roleType = res.data.user_info.role_type || 'user';
         console.log('登录角色:', roleType);
-        console.log('角色类型:', typeof roleType);
         
-        // 根据角色跳转到不同页面
         setTimeout(() => {
-          console.log('开始跳转，角色:', roleType);
           if (roleType === 'admin') {
-            console.log('跳转到管理员工作台');
             wx.reLaunch({
               url: '/pages/admin/dashboard/index'
             });
           } else if (roleType === 'dietitian') {
-            console.log('跳转到营养师工作台');
             wx.reLaunch({
               url: '/pages/dietitian/dashboard/index'
             });
           } else {
-            console.log('跳转到普通用户首页');
             wx.reLaunch({
               url: '/pages/home/index'
             });
@@ -91,8 +81,12 @@ Page({
     })
     .catch(err => {
       console.log('登录失败:', err);
+      let errorMsg = '登录失败，请稍后重试';
+      if (err && err.data && err.data.message) {
+        errorMsg = err.data.message;
+      }
       this.setData({
-        errorMessage: '登录失败，请检查网络连接',
+        errorMessage: errorMsg,
         successMessage: ''
       });
     });

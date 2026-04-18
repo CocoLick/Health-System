@@ -239,7 +239,7 @@
             <view class="item-header">
               <view class="dietitian-avatar">{{item.nameInitial}}</view>
               <view class="user-info-small">
-                <text class="item-title">{{item.name}}</text>
+                <text class="item-title">{{item.displayName}}</text>
                 <text class="item-subtitle">{{item.title}} · {{item.specialty}}</text>
               </view>
               <text class="item-status {{item.status === '启用' ? 'status-active' : 'status-inactive'}}">{{item.status}}</text>
@@ -247,7 +247,7 @@
             <view class="item-body">
               <view class="item-info">
                 <text class="info-label">工号：</text>
-                <text class="info-value">{{item.dietitian_id}}</text>
+                <text class="info-value">{{item.username}}</text>
               </view>
               <view class="item-info">
                 <text class="info-label">联系方式：</text>
@@ -378,8 +378,12 @@
       </view>
       <view class="modal-body">
         <view class="form-item">
-          <text class="form-label">姓名</text>
-          <input class="form-input" placeholder="请输入规划师姓名" bindinput="bindDietitianName" value="{{newDietitian.name}}"/>
+          <text class="form-label">用户名</text>
+          <input class="form-input" placeholder="用于登录的账号" bindinput="bindDietitianUsername" value="{{newDietitian.username}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">真实姓名</text>
+          <input class="form-input" placeholder="规划师真实姓名" bindinput="bindDietitianName" value="{{newDietitian.name}}"/>
         </view>
         <view class="form-item">
           <text class="form-label">职称</text>

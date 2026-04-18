@@ -12,6 +12,7 @@ Page({
     statusIndex: 0,
     formError: '',
     newDietitian: {
+      username: '',
       name: '',
       title: '',
       specialty: '',
@@ -155,32 +156,36 @@ Page({
 
   loadDietitians() {
     api.admin.getAllDietitians()
-    .then(res => {
-      if (res.code === 200) {
-        const list = res.data || [];
-        const dietitians = list.map(item => ({
-          ...item,
-          nameInitial: item.name ? item.name.charAt(0) : '?'
-        }));
+      .then(res => {
+        if (res.code === 200) {
+          const list = res.data || [];
+          const dietitians = list.map(item => ({
+            ...item,
+            nameInitial: (item.name || item.username || '?').charAt(0),
+            dietitian_id: item.user_id,
+            displayName: item.name || item.username
+          }));
+          this.setData({
+            dietitians: dietitians,
+            'stats.dietitianCount': dietitians.length
+          });
+        }
+      })
+      .catch(() => {
         this.setData({
-          dietitians: dietitians,
-          'stats.dietitianCount': dietitians.length
+          dietitians: [{
+            dietitian_id: 'D20260325001',
+            username: 'D20260325001',
+            name: '张医生',
+            displayName: '张医生',
+            nameInitial: '张',
+            title: '营养师',
+            specialty: '临床营养',
+            contact: '13800138002',
+            status: '启用'
+          }]
         });
-      }
-    })
-    .catch(() => {
-      this.setData({
-        dietitians: [{
-          dietitian_id: 'D20260325001',
-          name: '张医生',
-          nameInitial: '张',
-          title: '营养师',
-          specialty: '临床营养',
-          contact: '13800138002',
-          status: '启用'
-        }]
       });
-    });
   },
 
   showAddDietitianForm() {
@@ -188,6 +193,7 @@ Page({
       showAddDietitianModal: true,
       formError: '',
       newDietitian: {
+        username: '',
         name: '',
         title: '',
         specialty: '',
@@ -217,7 +223,13 @@ Page({
     });
   },
 
-  stopPropagation() {},
+  stopPropagation() { },
+
+  bindDietitianUsername(e) {
+    this.setData({
+      'newDietitian.username': e.detail.value
+    });
+  },
 
   bindDietitianName(e) {
     this.setData({
@@ -256,11 +268,15 @@ Page({
   },
 
   confirmAddDietitian() {
-    const { name, title, specialty, contact, password } = this.data.newDietitian;
+    const { username, name, title, specialty, contact, password } = this.data.newDietitian;
     const status = this.data.statusOptions[this.data.statusIndex];
 
+    if (!username) {
+      this.setData({ formError: '请输入用户名' });
+      return;
+    }
     if (!name) {
-      this.setData({ formError: '请输入规划师姓名' });
+      this.setData({ formError: '请输入真实姓名' });
       return;
     }
     if (!title) {
@@ -281,6 +297,7 @@ Page({
     }
 
     api.admin.createDietitian({
+      username: username,
       name: name,
       title: title,
       specialty: specialty,
@@ -288,70 +305,107 @@ Page({
       password: password,
       status: status
     })
-    .then(res => {
-      if (res.code === 200) {
+      .then(res => {
+        if (res.code === 200) {
+          wx.showToast({
+            title: '添加成功',
+            icon: 'success'
+          });
+          this.hideAddDietitianForm();
+          this.loadDietitians();
+        } else {
+          this.setData({ formError: res.message || '添加失败' });
+        }
+      })
+      .catch(() => {
+        const newDietitian = {
+          dietitian_id: 'D' + Date.now(),
+          username: username,
+          name: name,
+          displayName: name,
+          nameInitial: name.charAt(0),
+          title: title,
+          specialty: specialty,
+          contact: contact,
+          status: status
+        };
+        this.setData({
+          dietitians: [...this.data.dietitians, newDietitian]
+        });
         wx.showToast({
-          title: '添加成功',
+          title: '添加成功（模拟）',
           icon: 'success'
         });
         this.hideAddDietitianForm();
-        this.loadDietitians();
-      } else {
-        this.setData({ formError: res.message || '添加失败' });
-      }
-    })
-    .catch(() => {
-      const newDietitian = {
-        dietitian_id: 'D' + Date.now(),
-        name: name,
-        nameInitial: name.charAt(0),
-        title: title,
-        specialty: specialty,
-        contact: contact,
-        status: status
-      };
-      this.setData({
-        dietitians: [...this.data.dietitians, newDietitian]
       });
-      wx.showToast({
-        title: '添加成功（模拟）',
-        icon: 'success'
-      });
-      this.hideAddDietitianForm();
-    });
   },
 
   toggleDietitianStatus(e) {
     const index = e.currentTarget.dataset.index;
     const dietitians = [...this.data.dietitians];
     const dietitian = dietitians[index];
-    dietitian.status = dietitian.status === '启用' ? '禁用' : '启用';
-    this.setData({
-      dietitians: dietitians
-    });
-    wx.showToast({
-      title: dietitian.status === '启用' ? '已启用' : '已禁用',
-      icon: 'success'
-    });
+    const newStatus = dietitian.status === '启用' ? '禁用' : '启用';
+
+    api.admin.updateDietitianStatus(dietitian.dietitian_id, newStatus)
+      .then(res => {
+        if (res.code === 200) {
+          dietitian.status = newStatus;
+          this.setData({
+            dietitians: dietitians
+          });
+          wx.showToast({
+            title: newStatus === '启用' ? '已启用' : '已禁用',
+            icon: 'success'
+          });
+        }
+      })
+      .catch(() => {
+        dietitian.status = newStatus;
+        this.setData({
+          dietitians: dietitians
+        });
+        wx.showToast({
+          title: newStatus === '启用' ? '已启用' : '已禁用',
+          icon: 'success'
+        });
+      });
   },
 
   deleteDietitian(e) {
     const index = e.currentTarget.dataset.index;
+    const dietitians = [...this.data.dietitians];
+    const dietitian = dietitians[index];
+
     wx.showModal({
       title: '确认删除',
       content: '确定要删除该规划师吗？',
       success: (res) => {
         if (res.confirm) {
-          const dietitians = [...this.data.dietitians];
-          dietitians.splice(index, 1);
-          this.setData({
-            dietitians: dietitians,
-            'stats.dietitianCount': dietitians.length
-          });
-          wx.showToast({
-            title: '已删除',
-            icon: 'success'
-          });
+          api.admin.deleteDietitian(dietitian.dietitian_id)
+            .then(res => {
+              if (res.code === 200) {
+                dietitians.splice(index, 1);
+                this.setData({
+                  dietitians: dietitians,
+                  'stats.dietitianCount': dietitians.length
+                });
+                wx.showToast({
+                  title: '已删除',
+                  icon: 'success'
+                });
+              }
+            })
+            .catch(() => {
+              dietitians.splice(index, 1);
+              this.setData({
+                dietitians: dietitians,
+                'stats.dietitianCount': dietitians.length
+              });
+              wx.showToast({
+                title: '已删除（模拟）',
+                icon: 'success'
+              });
+            });
         }
       }
     });

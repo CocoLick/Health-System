@@ -30,6 +30,7 @@ type AdminLoginRequest struct {
 
 // CreateDietitianRequest 管理员创建规划师请求
 type CreateDietitianRequest struct {
+	Username  string `json:"username" binding:"required"`
 	Name      string `json:"name" binding:"required"`
 	Password  string `json:"password" binding:"required,min=6"`
 	Title     string `json:"title" binding:"required"`
@@ -38,10 +39,15 @@ type CreateDietitianRequest struct {
 	Status    string `json:"status" binding:"required"`
 }
 
+// UpdateDietitianStatusRequest 更新规划师状态请求
+type UpdateDietitianStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
 // LoginResponse 登录响应
 type LoginResponse struct {
-	Token     string      `json:"token"`
-	UserInfo  interface{} `json:"user_info"`
+	Token    string      `json:"token"`
+	UserInfo interface{} `json:"user_info"`
 }
 
 // Response 通用响应

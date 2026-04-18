@@ -84,7 +84,6 @@ func autoMigrate() error {
 	// 自动迁移
 	return DB.AutoMigrate(
 		&models.User{},
-		&models.Dietitian{},
 	)
 }
 
@@ -133,18 +132,24 @@ func initTestData() error {
 	}
 
 	// 插入测试规划师
-	dietitian := models.Dietitian{
-		DietitianID: "D20260325001",
-		Name:        "张医生",
-		Password:    "password",
-		Title:       "营养师",
-		Specialty:   "临床营养",
-		Contact:     "13800138002",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Status:      "启用",
+	dietitianUser := models.User{
+		UserID:    "D20260325001",
+		Username:  "D20260325001",
+		Name:      "张医生",
+		Password:  "password",
+		Phone:     "13800138002",
+		Gender:    "",
+		Age:       0,
+		Email:     "",
+		RoleType:  "dietitian",
+		Title:     "营养师",
+		Specialty: "临床营养",
+		Contact:   "13800138002",
+		Status:    "启用",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
-	if err := DB.Create(&dietitian).Error; err != nil {
+	if err := DB.Create(&dietitianUser).Error; err != nil {
 		return err
 	}
 
