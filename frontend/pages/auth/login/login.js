@@ -46,8 +46,12 @@ Page({
       console.log('登录响应:', res);
       console.log('响应数据结构:', JSON.stringify(res, null, 2));
       if (res.code === 200) {
+        console.log('登录成功，设置token和userInfo');
         wx.setStorageSync('token', res.data.token);
         wx.setStorageSync('userInfo', res.data.user_info);
+        
+        console.log('存储的token:', wx.getStorageSync('token'));
+        console.log('存储的userInfo:', wx.getStorageSync('userInfo'));
         
         this.setData({
           successMessage: '登录成功',

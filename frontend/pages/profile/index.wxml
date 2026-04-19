@@ -1,86 +1,37 @@
-<view class="profile-container">
-  <!-- 未登录状态 -->
-  <view wx:if="{{!isLoggedIn}}" class="login-container">
-    <view class="avatar-placeholder">
-      <text class="avatar-text">登录</text>
-    </view>
-    <text class="login-text">点击登录，获取更多功能</text>
-    <button class="login-btn" bindtap="handleLogin">立即登录</button>
-  </view>
-
-  <!-- 已登录状态 - 普通用户 -->
-  <view wx:elif="{{isLoggedIn && userRole === 'user'}}" class="user-profile">
-    <view class="user-header">
+<view class="container">
+  <view class="header">
+    <view class="user-info">
       <view class="avatar">
-        <text class="avatar-text">{{userInfo.username.charAt(0).toUpperCase()}}</text>
+        <text class="avatar-text">{{isLoggedIn ? (userInfo.username ? userInfo.username.charAt(0).toUpperCase() : '用') : '登'}}</text>
       </view>
-      <view class="user-info">
-        <text class="username">{{userInfo.username}}</text>
-        <text class="user-role">普通用户</text>
-      </view>
-    </view>
-
-    <view class="menu-list">
-      <view class="menu-item" bindtap="navigateToSettings">
-        <text class="menu-icon">⚙️</text>
-        <text class="menu-text">设置</text>
-        <text class="menu-arrow">→</text>
-      </view>
-      <view class="menu-item" bindtap="navigateToFavorites">
-        <text class="menu-icon">❤️</text>
-        <text class="menu-text">我的收藏</text>
-        <text class="menu-arrow">→</text>
-      </view>
-      <view class="menu-item" bindtap="navigateToHistory">
-        <text class="menu-icon">📋</text>
-        <text class="menu-text">历史记录</text>
-        <text class="menu-arrow">→</text>
-      </view>
-      <view class="menu-item" bindtap="navigateToHelp">
-        <text class="menu-icon">❓</text>
-        <text class="menu-text">帮助与反馈</text>
-        <text class="menu-arrow">→</text>
+      <view class="info">
+        <view class="username">{{isLoggedIn ? (userInfo.username || '用户') : '请登录'}}</view>
+        <view class="role">{{isLoggedIn ? '普通用户' : '未登录'}}</view>
       </view>
     </view>
-
-    <button class="logout-btn" bindtap="handleLogout">退出登录</button>
   </view>
 
-  <!-- 已登录状态 - 管理员 -->
-  <view wx:else class="admin-profile">
-    <view class="user-header">
-      <view class="avatar admin-avatar">
-        <text class="avatar-text">{{userInfo.username.charAt(0).toUpperCase()}}</text>
+  <view class="menu-section">
+    <view class="menu-item" wx:for="{{menuItems}}" wx:key="text" bindtap="navigateTo" data-path="{{item.path}}">
+      <view class="menu-left">
+        <text class="menu-icon">{{item.icon}}</text>
+        <text class="menu-text">{{item.text}}</text>
       </view>
-      <view class="user-info">
-        <text class="username">{{userInfo.username}}</text>
-        <text class="user-role admin-role">管理员</text>
-      </view>
+      <text class="menu-arrow">›</text>
     </view>
+  </view>
 
-    <view class="menu-list">
-      <view class="menu-item" bindtap="navigateToUserManagement">
-        <text class="menu-icon">👥</text>
-        <text class="menu-text">用户管理</text>
-        <text class="menu-arrow">→</text>
+  <view class="menu-section">
+    <view class="menu-item" bindtap="showAbout">
+      <view class="menu-left">
+        <text class="menu-icon">ℹ️</text>
+        <text class="menu-text">关于</text>
       </view>
-      <view class="menu-item" bindtap="navigateToSystemSettings">
-        <text class="menu-icon">⚙️</text>
-        <text class="menu-text">系统设置</text>
-        <text class="menu-arrow">→</text>
-      </view>
-      <view class="menu-item" bindtap="navigateToDataStatistics">
-        <text class="menu-icon">📊</text>
-        <text class="menu-text">数据统计</text>
-        <text class="menu-arrow">→</text>
-      </view>
-      <view class="menu-item" bindtap="navigateToIngredientManagement">
-        <text class="menu-icon">🥬</text>
-        <text class="menu-text">食材管理</text>
-        <text class="menu-arrow">→</text>
-      </view>
+      <text class="menu-arrow">›</text>
     </view>
+  </view>
 
-    <button class="logout-btn" bindtap="handleLogout">退出登录</button>
+  <view class="logout-section">
+    <button class="logout-btn" bindtap="{{isLoggedIn ? 'handleLogout' : 'handleLogin'}}">{{isLoggedIn ? '退出登录' : '去登录'}}</button>
   </view>
 </view>

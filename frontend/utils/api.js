@@ -16,7 +16,7 @@ function request(options) {
   };
 
   if (token) {
-    headers['Authorization'] = token;
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   return new Promise((resolve, reject) => {
@@ -128,6 +128,18 @@ const dietitian = {
   // 获取服务列表
   getServices: function() {
     return get('/api/dietitian/services');
+  },
+  // 获取规划师列表（用户端）
+  getList: function(params) {
+    return get('/api/dietitians', params);
+  },
+  // 获取规划师详情
+  getDetail: function(id) {
+    return get(`/api/dietitians/${id}`);
+  },
+  // 响应服务请求
+  respondRequest: function(requestId, data) {
+    return put(`/api/dietitian/service-request/${requestId}/respond`, data);
   }
 };
 
@@ -137,6 +149,10 @@ const user = {
   getInfo: function() {
     return get('/api/user/info');
   },
+  // 更新用户信息
+  updateInfo: function(data) {
+    return put('/api/user/info', data);
+  },
   // 获取膳食计划
   getDietPlans: function() {
     return get('/api/user/diet-plans');
@@ -144,6 +160,62 @@ const user = {
   // 获取营养分析
   getNutritionAnalysis: function() {
     return get('/api/user/nutrition-analysis');
+  }
+};
+
+// 健康数据相关API
+const healthData = {
+  // 提交健康数据
+  submit: function(data) {
+    return post('/api/health-data', data);
+  },
+  // 获取健康数据列表
+  getList: function() {
+    return get('/api/health-data');
+  },
+  // 获取最新健康数据
+  getLatest: function() {
+    return get('/api/health-data/latest');
+  },
+  // 更新健康数据
+  update: function(id, data) {
+    return put(`/api/health-data/${id}`, data);
+  }
+};
+
+// 服务请求相关API
+const serviceRequest = {
+  // 提交服务请求
+  submit: function(data) {
+    return post('/api/service-request', data);
+  },
+  // 获取用户的服务请求列表
+  getUserRequests: function() {
+    return get('/api/service-request/user');
+  },
+  // 获取服务请求详情
+  getDetail: function(id) {
+    return get(`/api/service-request/${id}`);
+  },
+  // 取消服务请求
+  cancel: function(id) {
+    return put(`/api/service-request/${id}/cancel`);
+  }
+};
+
+// 评估相关API
+const evaluation = {
+  // 提交评估
+  submit: function(data) {
+    return post('/api/evaluation', data);
+  },
+  // 获取用户的评估记录
+  getUserEvaluations: function() {
+    return get('/api/evaluation/user');
+  },
+  // 获取评估详情
+  getDetail: function(id) {
+    return get(`/api/evaluation/${id}`);
   }
 };
 
@@ -156,6 +228,10 @@ const ingredient = {
   // 获取食材详情
   getDetail: function(id) {
     return get(`/api/ingredients/${id}`);
+  },
+  // 获取食材清单
+  getShoppingList: function(planId) {
+    return get(`/api/ingredients/shopping-list`, { plan_id: planId });
   }
 };
 
@@ -176,6 +252,18 @@ const dietPlan = {
   // 删除膳食计划
   remove: function(id) {
     return del(`/api/diet-plans/${id}`);
+  },
+  // 获取用户的膳食计划
+  getUserPlans: function() {
+    return get('/api/diet-plans/user');
+  },
+  // 更新执行状态
+  updateExecuteStatus: function(id, data) {
+    return put(`/api/diet-plans/${id}/execute-status`, data);
+  },
+  // 申请优化
+  requestOptimization: function(id, data) {
+    return put(`/api/diet-plans/${id}/optimization`, data);
   }
 };
 
@@ -188,6 +276,14 @@ const nutrition = {
   // 获取营养建议
   getSuggestions: function() {
     return get('/api/nutrition/suggestions');
+  },
+  // 添加饮食记录
+  addRecord: function(data) {
+    return post('/api/nutrition/record', data);
+  },
+  // 获取饮食记录
+  getRecords: function(params) {
+    return get('/api/nutrition/records', params);
   }
 };
 
@@ -197,6 +293,9 @@ module.exports = {
   admin,
   dietitian,
   user,
+  healthData,
+  serviceRequest,
+  evaluation,
   ingredient,
   dietPlan,
   nutrition

@@ -84,6 +84,7 @@ func autoMigrate() error {
 	// 自动迁移
 	return DB.AutoMigrate(
 		&models.User{},
+		&models.HealthData{},
 	)
 }
 

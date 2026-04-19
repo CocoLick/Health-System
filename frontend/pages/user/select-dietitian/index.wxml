@@ -1,0 +1,45 @@
+<view class="container">
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input class="search-input" type="text" placeholder="搜索规划师姓名" bindinput="onSearch" value="{{searchKeyword}}" />
+    </view>
+  </view>
+
+  <view class="filter-tabs">
+    <view class="filter-tab {{filterType === 'all' ? 'active' : ''}}" bindtap="switchFilter" data-filter="all">全部</view>
+    <view class="filter-tab {{filterType === 'weight_loss' ? 'active' : ''}}" bindtap="switchFilter" data-filter="weight_loss">减脂</view>
+    <view class="filter-tab {{filterType === 'diabetes' ? 'active' : ''}}" bindtap="switchFilter" data-filter="diabetes">控糖</view>
+    <view class="filter-tab {{filterType === 'nutrition' ? 'active' : ''}}" bindtap="switchFilter" data-filter="nutrition">营养</view>
+  </view>
+
+  <view class="dietitian-list">
+    <view class="dietitian-card" wx:for="{{dietitians}}" wx:key="id" bindtap="viewDetail" data-id="{{item.id}}">
+      <view class="card-left">
+        <view class="avatar">
+          <text class="avatar-text">{{item.nameInitial}}</text>
+        </view>
+        <view class="info">
+          <view class="name">{{item.name}}</view>
+          <view class="title">{{item.title}}</view>
+          <view class="specialty">
+            <text class="specialty-tag" wx:for="{{item.specialtyArr}}" wx:for-item="tag" wx:key="tag">{{tag}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="card-right">
+        <view class="rating">
+          <text class="rating-star">⭐</text>
+          <text class="rating-value">{{item.rating}}</text>
+        </view>
+        <view class="service-count">{{item.serviceCount}}人服务</view>
+        <view class="select-btn">选择</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:if="{{dietitians.length === 0}}">
+    <text class="empty-icon">👨‍⚕️</text>
+    <text class="empty-text">暂无符合条件的规划师</text>
+  </view>
+</view>

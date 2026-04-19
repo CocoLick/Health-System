@@ -1,8 +1,20 @@
 Page({
   data: {
     isLoggedIn: false,
-    userRole: '',
-    userInfo: {}
+    userRole: 'user',
+    userInfo: {},
+    menuItems: [
+      { icon: '🥬', text: '食材管理', path: '/pages/ingredients/index' },
+      { icon: '💬', text: '意见反馈', action: 'showFeedback' },
+      { icon: '📋', text: '健康记录', action: 'viewHealthHistory' },
+      { icon: '⚙️', text: '设置', action: 'showSettings' }
+    ],
+    feedbackTypes: [
+      { id: 'diet_plan', name: '膳食计划' },
+      { id: 'system', name: '系统功能' },
+      { id: 'service', name: '规划服务' },
+      { id: 'other', name: '其他' }
+    ]
   },
 
   onLoad() {
@@ -13,168 +25,85 @@ Page({
     this.checkLoginStatus();
   },
 
-  // 检查登录状态
   checkLoginStatus() {
     const userInfo = wx.getStorageSync('userInfo');
     const token = wx.getStorageSync('token');
-    
+
     if (userInfo && token) {
       this.setData({
         isLoggedIn: true,
         userRole: userInfo.role || 'user',
         userInfo: userInfo
       });
-      this.updateTabBar();
     } else {
       this.setData({
         isLoggedIn: false,
-        userRole: '',
-        userInfo: {}
+        userRole: 'user',
+        userInfo: { username: '用户' }
       });
-      this.restoreDefaultTabBar();
     }
   },
 
-  // 处理登录
   handleLogin() {
     wx.navigateTo({
       url: '/pages/auth/login/login'
     });
   },
 
-  // 处理退出登录
   handleLogout() {
     wx.showModal({
       title: '退出登录',
       content: '确定要退出登录吗？',
       success: (res) => {
         if (res.confirm) {
-          // 清除本地存储
           wx.removeStorageSync('userInfo');
           wx.removeStorageSync('token');
-          
-          // 更新状态
-          this.setData({
-            isLoggedIn: false,
-            userRole: '',
-            userInfo: {}
-          });
-          
-          // 恢复默认Tab栏
-          this.restoreDefaultTabBar();
-          
           wx.showToast({
             title: '已退出登录',
             icon: 'success'
+          });
+          this.checkLoginStatus();
+          // 跳转到登录页面
+          wx.navigateTo({
+            url: '/pages/auth/login/login'
           });
         }
       }
     });
   },
 
-  // 根据角色更新Tab栏
-  updateTabBar() {
-    const userInfo = wx.getStorageSync('userInfo');
-    if (userInfo && userInfo.role === 'admin') {
-      // 管理员Tab栏配置
-      const adminTabBar = {
-        color: '#6c757d',
-        selectedColor: '#ff9800',
-        backgroundColor: '#ffffff',
-        borderStyle: 'black',
-        list: [
-          {
-            pagePath: 'pages/home/index',
-            text: '首页',
-            iconPath: '',
-            selectedIconPath: ''
-          },
-          {
-            pagePath: 'pages/diet-plan/index',
-            text: '膳食计划',
-            iconPath: '',
-            selectedIconPath: ''
-          },
-          {
-            pagePath: 'pages/nutrition/index',
-            text: '营养分析',
-            iconPath: '',
-            selectedIconPath: ''
-          },
-          {
-            pagePath: 'pages/ingredients/index',
-            text: '食材管理',
-            iconPath: '',
-            selectedIconPath: ''
-          },
-          {
-            pagePath: 'pages/profile/index',
-            text: '管理中心',
-            iconPath: '',
-            selectedIconPath: ''
-          }
-        ]
-      };
-      
-      // 这里需要使用wx.setTabBarItem或自定义组件来动态更新Tab栏
-      // 由于微信小程序限制，直接修改app.json是不行的
-      // 这里我们通过页面内的逻辑来处理显示内容
-      console.log('管理员Tab栏已更新');
+  navigateTo(e) {
+    const path = e.currentTarget.dataset.path;
+    if (path) {
+      wx.navigateTo({ url: path });
     }
   },
 
-  // 恢复默认Tab栏
-  restoreDefaultTabBar() {
-    console.log('已恢复默认Tab栏');
-  },
-
-  // 普通用户导航
-  navigateToSettings() {
-    wx.navigateTo({
-      url: '/pages/settings/index'
+  showFeedback() {
+    wx.showModal({
+      title: '意见反馈',
+      content: '功能开发中，敬请期待',
+      showCancel: false
     });
   },
 
-  navigateToFavorites() {
-    wx.navigateTo({
-      url: '/pages/favorites/index'
-    });
-  },
-
-  navigateToHistory() {
+  viewHealthHistory() {
     wx.navigateTo({
       url: '/pages/history/index'
     });
   },
 
-  navigateToHelp() {
+  showSettings() {
     wx.navigateTo({
-      url: '/pages/help/index'
+      url: '/pages/settings/index'
     });
   },
 
-  // 管理员导航
-  navigateToUserManagement() {
-    wx.navigateTo({
-      url: '/pages/admin/user-management/index'
-    });
-  },
-
-  navigateToSystemSettings() {
-    wx.navigateTo({
-      url: '/pages/admin/system-settings/index'
-    });
-  },
-
-  navigateToDataStatistics() {
-    wx.navigateTo({
-      url: '/pages/admin/data-statistics/index'
-    });
-  },
-
-  navigateToIngredientManagement() {
-    wx.navigateTo({
-      url: '/pages/admin/ingredient-management/index'
+  showAbout() {
+    wx.showModal({
+      title: '关于我们',
+      content: '个性化营养膳食智能规划系统 v1.0\n\n为您的健康饮食保驾护航',
+      showCancel: false
     });
   }
 });

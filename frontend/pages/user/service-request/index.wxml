@@ -1,0 +1,72 @@
+<view class="container">
+  <view class="dietitian-card">
+    <view class="avatar">
+      <text class="avatar-text">{{dietitianName.charAt(0)}}</text>
+    </view>
+    <view class="info">
+      <view class="name">{{dietitianName}}</view>
+      <view class="desc">将为您制定个性化膳食计划</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">选择服务类型</view>
+    <view class="service-types">
+      <view class="type-item {{serviceType === 'diet_plan' ? 'active' : ''}}" bindtap="selectServiceType" data-type="diet_plan">
+        <text class="type-icon">📋</text>
+        <text class="type-name">膳食计划定制</text>
+      </view>
+      <view class="type-item {{serviceType === 'nutrition_consult' ? 'active' : ''}}" bindtap="selectServiceType" data-type="nutrition_consult">
+        <text class="type-icon">💬</text>
+        <text class="type-name">营养咨询服务</text>
+      </view>
+      <view class="type-item {{serviceType === 'health_management' ? 'active' : ''}}" bindtap="selectServiceType" data-type="health_management">
+        <text class="type-icon">🏥</text>
+        <text class="type-name">健康管理服务</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">饮食目标</view>
+    <view class="goal-options">
+      <view class="goal-item {{dietGoal === 'weight_loss' ? 'active' : ''}}" bindtap="selectGoal" data-goal="weight_loss">减脂</view>
+      <view class="goal-item {{dietGoal === 'weight_gain' ? 'active' : ''}}" bindtap="selectGoal" data-goal="weight_gain">增重</view>
+      <view class="goal-item {{dietGoal === 'diabetes_control' ? 'active' : ''}}" bindtap="selectGoal" data-goal="diabetes_control">控糖</view>
+      <view class="goal-item {{dietGoal === 'health_maintain' ? 'active' : ''}}" bindtap="selectGoal" data-goal="health_maintain">养生</view>
+      <view class="goal-item {{dietGoal === 'sports_nutrition' ? 'active' : ''}}" bindtap="selectGoal" data-goal="sports_nutrition">运动营养</view>
+      <view class="goal-item {{dietGoal === 'pregnancy' ? 'active' : ''}}" bindtap="selectGoal" data-goal="pregnancy">孕期营养</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">健康状况</view>
+    <view class="health-status">
+      <view class="form-item">
+        <view class="form-label">当前体重 (kg)</view>
+        <input class="form-input" type="digit" placeholder="请输入当前体重" bindinput="bindWeightInput" value="{{formData.weight}}" />
+      </view>
+      <view class="form-item">
+        <view class="form-label">目标体重 (kg)</view>
+        <input class="form-input" type="digit" placeholder="请输入目标体重" bindinput="bindTargetWeightInput" value="{{formData.targetWeight}}" />
+      </view>
+      <view class="form-item">
+        <view class="form-label">是否有疾病 (如糖尿病、高血压等)</view>
+        <input class="form-input" type="text" placeholder="有则填写，无则填无" bindinput="bindDiseaseInput" value="{{formData.disease}}" />
+      </view>
+      <view class="form-item">
+        <view class="form-label">过敏食物</view>
+        <input class="form-input" type="text" placeholder="有则填写，无则填无" bindinput="bindAllergyInput" value="{{formData.allergy}}" />
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">其他需求</view>
+    <textarea class="demand-input" placeholder="请描述您的其他需求或期望，如饮食偏好、作息时间、运动习惯等..." bindinput="bindDemandInput" value="{{formData.demand}}"></textarea>
+  </view>
+
+  <view class="submit-section">
+    <button class="btn-submit" bindtap="submitRequest">提交服务请求</button>
+  </view>
+</view>

@@ -5,6 +5,13 @@ import (
 	"github.com/yourusername/nutrition-system/app/middleware"
 )
 
+// Response 通用响应结构
+type Response struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
 // RegisterRoutes 注册所有API路由
 func RegisterRoutes(router *gin.Engine) {
 	// 跨域中间件
@@ -24,15 +31,15 @@ func RegisterRoutes(router *gin.Engine) {
 	// API路由组
 	apiGroup := router.Group("/api")
 	{
-		// 注册认证路由
+		// 注册认证路由（公开）
 		RegisterAuthRoutes(apiGroup)
 
-		// 注册需要认证的路由
+		// 需要认证的路由
 		authGroup := apiGroup.Group("/")
 		authGroup.Use(middleware.AuthMiddleware())
 		{
-			// 这里将注册其他需要认证的路由
-			// 例如：健康数据、营养记录、膳食计划等
+			// 注册健康数据路由
+			RegisterHealthDataRoutes(authGroup)
 		}
 	}
 }

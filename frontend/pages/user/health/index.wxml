@@ -1,0 +1,171 @@
+<view class="container">
+  <view class="header">
+    <view class="header-title">健康数据</view>
+    <view class="header-subtitle">记录您的健康指标，追踪身体变化</view>
+  </view>
+
+  <view wx:if="{{!isLoggedIn}}">
+    <view class="login-tip">
+      <view class="login-icon">🔐</view>
+      <view class="login-text">请先登录</view>
+      <view class="login-subtext">登录后可记录和查看您的健康数据</view>
+      <button class="login-btn" bindtap="gotoLogin">去登录</button>
+    </view>
+  </view>
+
+  <view wx:else>
+    <view class="section">
+      <view class="section-title">基本信息</view>
+      <view class="info-grid">
+        <view class="info-item">
+          <view class="info-label">性别</view>
+          <view class="info-value">{{healthData.gender || '未设置'}}</view>
+        </view>
+        <view class="info-item">
+          <view class="info-label">年龄</view>
+          <view class="info-value">{{healthData.age || '未设置'}}岁</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <view class="section-title">健康指标</view>
+        <view class="section-action" bindtap="editHealthData">{{hasHealthData ? '编辑' : '录入'}}</view>
+      </view>
+      <view class="health-card">
+        <view class="health-item">
+          <view class="health-icon">📏</view>
+          <view class="health-info">
+            <view class="health-label">身高</view>
+            <view class="health-value">{{healthData.height || '--'}} <text class="unit">cm</text></view>
+          </view>
+        </view>
+        <view class="health-item">
+          <view class="health-icon">⚖️</view>
+          <view class="health-info">
+            <view class="health-label">体重</view>
+            <view class="health-value">{{healthData.weight || '--'}} <text class="unit">kg</text></view>
+          </view>
+        </view>
+        <view class="health-item">
+          <view class="health-icon">💓</view>
+          <view class="health-info">
+            <view class="health-label">心率</view>
+            <view class="health-value">{{healthData.heartRate || '--'}} <text class="unit">次/分</text></view>
+          </view>
+        </view>
+        <view class="health-item">
+          <view class="health-icon">🩸</view>
+          <view class="health-info">
+            <view class="health-label">血压</view>
+            <view class="health-value">{{healthData.bloodPressure || '--'}} <text class="unit">mmHg</text></view>
+          </view>
+        </view>
+        <view class="health-item">
+          <view class="health-icon">🩺</view>
+          <view class="health-info">
+            <view class="health-label">血糖</view>
+            <view class="health-value">{{healthData.bloodSugar || '--'}} <text class="unit">mmol/L</text></view>
+          </view>
+        </view>
+        <view class="health-item allergy-item">
+          <view class="health-icon">⚠️</view>
+          <view class="health-info">
+            <view class="health-label">过敏病史</view>
+            <view class="health-value allergy-value">{{healthData.allergyHistory || '无'}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <view class="section-title">健康评估</view>
+        <view class="section-action" bindtap="viewEvaluation">查看详情</view>
+      </view>
+      <view class="evaluation-card" wx:if="{{evaluation}}">
+        <view class="evaluation-header">
+          <view class="evaluation-status {{evaluation.status}}">{{evaluation.statusText}}</view>
+          <view class="evaluation-time">{{evaluation.evalTime}}</view>
+        </view>
+        <view class="evaluation-content">
+          <view class="evaluation-item">
+            <text class="evaluation-label">BMI指数：</text>
+            <text class="evaluation-value">{{evaluation.bmi}}</text>
+          </view>
+          <view class="evaluation-item">
+            <text class="evaluation-label">营养状态：</text>
+            <text class="evaluation-value">{{evaluation.nutritionStatus}}</text>
+          </view>
+          <view class="evaluation-item">
+            <text class="evaluation-label">健康建议：</text>
+            <text class="evaluation-value">{{evaluation.suggestion}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="evaluation-empty" wx:else>
+        <text>暂无评估记录</text>
+        <text class="evaluation-tip">完善健康数据后，将获得专业评估</text>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <view class="section-title">历史记录</view>
+      </view>
+      <view class="history-list" wx:if="{{historyList.length > 0}}">
+        <view class="history-item" wx:for="{{historyList}}" wx:key="id">
+          <view class="history-date">{{item.date}}</view>
+          <view class="history-data">
+            <text>身高{{item.height}}cm</text>
+            <text>体重{{item.weight}}kg</text>
+          </view>
+        </view>
+      </view>
+      <view class="history-empty" wx:else>
+        <text>暂无历史记录</text>
+      </view>
+    </view>
+
+    <view class="edit-modal" wx:if="{{showEditModal}}">
+      <view class="modal-mask" bindtap="hideEditModal"></view>
+      <view class="modal-content">
+        <view class="modal-header">
+          <view class="modal-title">{{isEditing ? '编辑' : '录入'}}健康数据</view>
+          <view class="modal-close" bindtap="hideEditModal">×</view>
+        </view>
+        <view class="modal-body">
+          <view class="form-item">
+            <view class="form-label">身高 (cm)</view>
+            <input class="form-input" type="digit" placeholder="请输入身高" value="{{formData.height}}" bindinput="bindHeightInput" />
+          </view>
+          <view class="form-item">
+            <view class="form-label">体重 (kg)</view>
+            <input class="form-input" type="digit" placeholder="请输入体重" value="{{formData.weight}}" bindinput="bindWeightInput" />
+          </view>
+          <view class="form-item">
+            <view class="form-label">心率 (次/分)</view>
+            <input class="form-input" type="number" placeholder="请输入心率" value="{{formData.heartRate}}" bindinput="bindHeartRateInput" />
+          </view>
+          <view class="form-item">
+            <view class="form-label">血压 (mmHg)</view>
+            <input class="form-input" type="text" placeholder="如：120/80" value="{{formData.bloodPressure}}" bindinput="bindBloodPressureInput" />
+          </view>
+          <view class="form-item">
+            <view class="form-label">血糖 (mmol/L)</view>
+            <input class="form-input" type="digit" placeholder="请输入血糖值" value="{{formData.bloodSugar}}" bindinput="bindBloodSugarInput" />
+          </view>
+          <view class="form-item">
+            <view class="form-label">过敏病史</view>
+            <input class="form-input" type="text" placeholder="请输入过敏史，无则填无" value="{{formData.allergyHistory}}" bindinput="bindAllergyInput" />
+          </view>
+        </view>
+        <view class="modal-footer">
+          <button class="btn-cancel" bindtap="hideEditModal">取消</button>
+          <button class="btn-confirm" bindtap="saveHealthData">保存</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

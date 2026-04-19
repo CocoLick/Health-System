@@ -1,0 +1,66 @@
+<view class="container">
+  <view class="header">
+    <view class="dietitian-info">
+      <view class="avatar">
+        <text class="avatar-text">{{dietitian.nameInitial}}</text>
+      </view>
+      <view class="basic-info">
+        <view class="name">{{dietitian.name}}</view>
+        <view class="title">{{dietitian.title}}</view>
+        <view class="experience">{{dietitian.experience}}从业经验</view>
+      </view>
+    </view>
+    <view class="stats">
+      <view class="stat-item">
+        <view class="stat-value">{{dietitian.rating}}</view>
+        <view class="stat-label">评分</view>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <view class="stat-value">{{dietitian.serviceCount}}</view>
+        <view class="stat-label">服务人数</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">专业领域</view>
+    <view class="specialty-tags">
+      <text class="tag" wx:for="{{dietitian.specialtyArr}}" wx:key="tag">{{item}}</text>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">个人简介</view>
+    <view class="introduction">{{dietitian.introduction}}</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">服务案例</view>
+    <view class="case-list">
+      <view class="case-item" wx:for="{{dietitian.cases}}" wx:key="title">
+        <view class="case-title">{{item.title}}</view>
+        <view class="case-desc">{{item.description}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">用户评价</view>
+    <view class="review-list">
+      <view class="review-item" wx:for="{{dietitian.reviews}}" wx:key="user">
+        <view class="review-header">
+          <view class="reviewer">{{item.user}}</view>
+          <view class="review-rating">
+            <text wx:for="{{item.rating}}" wx:for-item="star" wx:key="star">⭐</text>
+          </view>
+        </view>
+        <view class="review-content">{{item.content}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-action">
+    <button class="btn-request" bindtap="requestService">立即申请服务</button>
+  </view>
+</view>
