@@ -34,15 +34,18 @@ func RegisterRoutes(router *gin.Engine) {
 		// 注册认证路由（公开）
 		RegisterAuthRoutes(apiGroup)
 
+		// 注册公开的食材路由（不需要认证）
+		RegisterIngredientRoutes(apiGroup)
+
 		// 需要认证的路由
 		authGroup := apiGroup.Group("/")
 		authGroup.Use(middleware.AuthMiddleware())
 		{
 			// 注册健康数据路由
 			RegisterHealthDataRoutes(authGroup)
-			
-			// 注册食材管理路由
-			RegisterIngredientRoutes(authGroup)
+
+			// 注册营养记录路由
+			RegisterNutritionRecordRoutes(authGroup)
 		}
 	}
 }

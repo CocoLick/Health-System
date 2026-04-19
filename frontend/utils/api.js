@@ -281,9 +281,13 @@ const nutrition = {
   addRecord: function(data) {
     return post('/api/nutrition/record', data);
   },
-  // 获取饮食记录
+  // 获取饮食记录列表
   getRecords: function(params) {
-    return get('/api/nutrition/records', params);
+    return get('/api/nutrition/record', params);
+  },
+  // 获取今日饮食记录
+  getTodayRecords: function() {
+    return get('/api/nutrition/record/today');
   }
 };
 

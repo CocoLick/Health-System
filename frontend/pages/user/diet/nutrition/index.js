@@ -1,4 +1,6 @@
 // nutrition/index.js
+const api = require('../../../../utils/api');
+
 Page({
   data: {
     activeTab: 'record',
@@ -29,26 +31,73 @@ Page({
   },
 
   loadTodayData() {
-    const todayRecords = wx.getStorageSync('todayNutritionRecords') || [];
-    let totals = { calories: 0, protein: 0, carbohydrate: 0, fat: 0 };
+    // 从后端API获取今日营养数据
+    api.nutrition.getTodayRecords()
+      .then(res => {
+        if (res.code === 200 && res.data) {
+          const records = res.data || [];
+          let totals = { calories: 0, protein: 0, carbohydrate: 0, fat: 0 };
 
-    todayRecords.forEach(record => {
-      totals.calories += record.calories || 0;
-      totals.protein += record.protein || 0;
-      totals.carbohydrate += record.carbohydrate || 0;
-      totals.fat += record.fat || 0;
-    });
+          records.forEach(record => {
+            totals.calories += record.total_calories || 0;
+            totals.protein += record.total_protein || 0;
+            totals.carbohydrate += record.total_carbohydrate || 0;
+            totals.fat += record.total_fat || 0;
+          });
 
-    this.setData({
-      todayIntake: totals
-    });
+          this.setData({
+            todayIntake: totals
+          });
 
-    this.generateSuggestions(totals);
+          // 缓存到本地Storage
+          wx.setStorageSync('todayNutritionRecords', records);
+
+          this.generateSuggestions(totals);
+        } else {
+          this.setData({
+            todayIntake: { calories: 0, protein: 0, carbohydrate: 0, fat: 0 }
+          });
+        }
+      })
+      .catch(() => {
+        console.log('获取今日数据失败，尝试使用缓存');
+        // 网络错误时尝试读取缓存
+        const todayRecords = wx.getStorageSync('todayNutritionRecords') || [];
+        let totals = { calories: 0, protein: 0, carbohydrate: 0, fat: 0 };
+
+        todayRecords.forEach(record => {
+          totals.calories += record.calories || 0;
+          totals.protein += record.protein || 0;
+          totals.carbohydrate += record.carbohydrate || 0;
+          totals.fat += record.fat || 0;
+        });
+
+        this.setData({
+          todayIntake: totals
+        });
+
+        if (totals.calories > 0) {
+          this.generateSuggestions(totals);
+        }
+      });
   },
 
   loadRecords() {
-    const records = wx.getStorageSync('nutritionRecords') || [];
-    this.setData({ records: records.slice(0, 10) });
+    // 从后端API获取记录列表
+    api.nutrition.getRecords()
+      .then(res => {
+        if (res.code === 200 && res.data) {
+          const records = res.data.records || [];
+          this.setData({ records: records.slice(0, 10) });
+          // 缓存到本地
+          wx.setStorageSync('nutritionRecords', records);
+        }
+      })
+      .catch(() => {
+        // 网络错误时使用缓存
+        const records = wx.getStorageSync('nutritionRecords') || [];
+        this.setData({ records: records.slice(0, 10) });
+      });
   },
 
   generateSuggestions(intake) {
@@ -127,10 +176,25 @@ Page({
   viewRecordDetail(e) {
     const index = e.currentTarget.dataset.index;
     const record = this.data.records[index];
+    if (!record) return;
+
+    const mealTypeText = this.getMealTypeText(record.meal_type);
+    const foods = record.items ? record.items.map(f => f.food_name).join('、') : '';
+
     wx.showModal({
-      title: record.mealType + ' - ' + record.time,
-      content: `食物：${record.foods.map(f => f.name).join('、')}\n热量：${record.calories}kcal\n蛋白质：${record.protein}g\n碳水：${record.carbohydrate}g\n脂肪：${record.fat}g`,
+      title: mealTypeText + ' - ' + (record.created_at || ''),
+      content: `食物：${foods}\n热量：${record.total_calories || 0}kcal\n蛋白质：${record.total_protein || 0}g\n碳水：${record.total_carbohydrate || 0}g\n脂肪：${record.total_fat || 0}g`,
       showCancel: false
     });
+  },
+
+  getMealTypeText(type) {
+    const mealTypes = {
+      breakfast: '早餐',
+      lunch: '午餐',
+      dinner: '晚餐',
+      snack: '加餐'
+    };
+    return mealTypes[type] || '其他';
   }
 });
