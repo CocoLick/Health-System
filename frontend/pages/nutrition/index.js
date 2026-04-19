@@ -111,8 +111,16 @@ Page({
   },
 
   addRecord() {
+    console.log('addRecord函数被调用');
+    console.log('导航到:', '/pages/nutrition/add-record/index');
     wx.navigateTo({
-      url: '/pages/nutrition/add-record'
+      url: '/pages/nutrition/add-record/index',
+      success: function(res) {
+        console.log('导航成功:', res);
+      },
+      fail: function(err) {
+        console.log('导航失败:', err);
+      }
     });
   },
 

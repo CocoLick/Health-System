@@ -56,7 +56,7 @@
         </view>
       </view>
 
-      <view class="add-record-btn" bindtap="addRecord">
+      <view class="add-record-btn" catchtap="addRecord">
         <text class="add-icon">+</text>
         <text class="add-text">添加饮食记录</text>
       </view>

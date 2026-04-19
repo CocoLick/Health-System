@@ -92,14 +92,17 @@
     <view wx:if="{{activeTab === 'audit'}}" class="content-panel">
       <view class="audit-tabs">
         <view class="audit-tab {{auditSubTab === 'plans' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="plans">
+          <text class="tab-icon">📋</text>
           <text>膳食计划</text>
           <text class="badge" wx:if="{{pendingPlansCount > 0}}">{{pendingPlansCount}}</text>
         </view>
         <view class="audit-tab {{auditSubTab === 'articles' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="articles">
+          <text class="tab-icon">📄</text>
           <text>健康文章</text>
           <text class="badge" wx:if="{{pendingArticlesCount > 0}}">{{pendingArticlesCount}}</text>
         </view>
         <view class="audit-tab {{auditSubTab === 'history' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="history">
+          <text class="tab-icon">📊</text>
           <text>审核历史</text>
         </view>
       </view>
@@ -193,19 +196,39 @@
 
     <!-- 管理中心 -->
     <view wx:if="{{activeTab === 'manage'}}" class="content-panel">
-      <view class="manage-tabs">
-        <view class="manage-tab {{manageSubTab === 'users' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="users">
-          <text>用户管理</text>
+      <view class="manage-tabs-container">
+        <view class="manage-tabs" bindscroll="onTabsScroll">
+          <view class="manage-tab {{manageSubTab === 'users' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="users">
+            <text class="tab-icon">👥</text>
+            <text>用户管理</text>
+          </view>
+          <view class="manage-tab {{manageSubTab === 'dietitians' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="dietitians">
+            <text class="tab-icon">👨‍⚕️</text>
+            <text>规划师管理</text>
+          </view>
+          <view class="manage-tab {{manageSubTab === 'nutrition' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="nutrition">
+            <text class="tab-icon">🍎</text>
+            <text>营养库管理</text>
+          </view>
+          <view class="manage-tab {{manageSubTab === 'feedback' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="feedback">
+            <text class="tab-icon">💬</text>
+            <text>反馈管理</text>
+          </view>
+          <view class="manage-tab {{manageSubTab === 'settings' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="settings">
+            <text class="tab-icon">⚙️</text>
+            <text>设置</text>
+          </view>
         </view>
-        <view class="manage-tab {{manageSubTab === 'dietitians' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="dietitians">
-          <text>规划师管理</text>
+        <view class="scroll-indicator" wx:if="{{hasMoreTabs}}">
+          <text class="indicator-icon">→</text>
         </view>
-        <view class="manage-tab {{manageSubTab === 'feedback' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="feedback">
-          <text>反馈管理</text>
-        </view>
-        <view class="manage-tab {{manageSubTab === 'settings' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="settings">
-          <text>设置</text>
-        </view>
+      </view>
+      
+      <!-- 首次访问提示 -->
+      <view wx:if="{{showTabHint}}" class="tab-hint" bindtap="hideTabHint">
+        <text class="hint-icon">💡</text>
+        <text class="hint-text">向右滑动查看更多功能</text>
+        <text class="hint-close">×</text>
       </view>
 
       <view class="manage-list">
@@ -262,6 +285,83 @@
           <view wx:if="{{dietitians.length === 0}}" class="empty-state">
             <text class="empty-icon">👨‍⚕️</text>
             <text class="empty-text">暂无规划师</text>
+          </view>
+        </view>
+
+        <view wx:if="{{manageSubTab === 'nutrition'}}">
+          <view class="add-nutrition-btn" bindtap="showAddNutritionForm">
+            <text class="add-icon">+</text>
+            <text class="add-text">添加食物营养数据</text>
+          </view>
+          
+          <!-- 类别筛选 -->
+          <view class="category-filter">
+            <scroll-view scroll-x="true" class="category-scroll">
+              <view wx:for="{{categories}}" wx:key="index" 
+                class="category-item {{selectedCategory === item ? 'active' : ''}}" 
+                bindtap="selectCategory" data-category="{{item}}">
+                <text>{{item}}</text>
+              </view>
+            </scroll-view>
+          </view>
+          
+          <view wx:for="{{nutritionItems}}" wx:key="index" class="manage-item">
+            <view class="item-header">
+              <text class="item-title">{{item.name}}</text>
+              <text class="item-category">{{item.category || '其他'}}</text>
+            </view>
+            <view class="item-body">
+              <view class="nutrition-info">
+                <view class="nutrition-item">
+                  <text class="info-label">热量：</text>
+                  <text class="info-value">{{item.calories}} kcal/{{item.unit || 'g'}}</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="info-label">蛋白质：</text>
+                  <text class="info-value">{{item.protein}} g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="info-label">碳水：</text>
+                  <text class="info-value">{{item.carbohydrate}} g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="info-label">脂肪：</text>
+                  <text class="info-value">{{item.fat}} g</text>
+                </view>
+                <view class="nutrition-item">
+                  <text class="info-label">单位：</text>
+                  <text class="info-value">{{item.unit || 'g'}} ({{item.gramPerUnit || 100}}g)</text>
+                </view>
+              </view>
+            </view>
+            <view class="item-footer">
+              <view class="btn-text" bindtap="editNutritionItem" data-index="{{index}}">编辑</view>
+              <view class="btn-text btn-danger" bindtap="deleteNutritionItem" data-index="{{index}}">删除</view>
+            </view>
+          </view>
+          
+          <!-- 分页控件 -->
+          <view wx:if="{{nutritionItems.length > 0}}" class="pagination">
+            <view class="pagination-info">
+              <text>共 {{total}} 条数据</text>
+              <text>第 {{currentPage}} / {{totalPages}} 页</text>
+            </view>
+            <view class="pagination-controls">
+              <view class="btn-page {{currentPage === 1 ? 'disabled' : ''}}" bindtap="prevPage">上一页</view>
+              <view class="page-size-selector">
+                <picker bindchange="changePageSize" range="{{pageSizeOptions}}" value="{{pageSizeIndex}}">
+                  <view class="picker-view">
+                    每页 {{pageSize}} 条
+                  </view>
+                </picker>
+              </view>
+              <view class="btn-page {{currentPage >= totalPages ? 'disabled' : ''}}" bindtap="nextPage">下一页</view>
+            </view>
+          </view>
+          
+          <view wx:if="{{nutritionItems.length === 0}}" class="empty-state">
+            <text class="empty-icon">🍎</text>
+            <text class="empty-text">暂无营养数据</text>
           </view>
         </view>
 
@@ -416,6 +516,58 @@
       <view class="modal-footer">
         <view class="btn-cancel" bindtap="hideAddDietitianForm">取消</view>
         <view class="btn-confirm" bindtap="confirmAddDietitian">确认添加</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 营养库管理弹窗 -->
+  <view wx:if="{{showAddNutritionModal}}" class="modal-mask" bindtap="hideAddNutritionForm">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">{{editingNutritionIndex >= 0 ? '编辑食物营养数据' : '添加食物营养数据'}}</text>
+        <view class="modal-close" bindtap="hideAddNutritionForm">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <text class="form-label">食物名称</text>
+          <input class="form-input" placeholder="请输入食物名称" bindinput="bindNutritionName" value="{{newNutrition.name}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">食材类别</text>
+          <input class="form-input" placeholder="请输入食材类别（如：主食、蛋白质、水果、蔬菜等）" bindinput="bindNutritionCategory" value="{{newNutrition.category}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">蛋白质 (g/100g)</text>
+          <input class="form-input" type="number" placeholder="请输入蛋白质" bindinput="bindNutritionProtein" value="{{newNutrition.protein}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">碳水化合物 (g/100g)</text>
+          <input class="form-input" type="number" placeholder="请输入碳水化合物" bindinput="bindNutritionCarbohydrate" value="{{newNutrition.carbohydrate}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">脂肪 (g/100g)</text>
+          <input class="form-input" type="number" placeholder="请输入脂肪" bindinput="bindNutritionFat" value="{{newNutrition.fat}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">计量单位</text>
+          <input class="form-input" placeholder="请输入计量单位（如：g、ml、个、碗等）" bindinput="bindNutritionUnit" value="{{newNutrition.unit}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">1个/1碗等于多少克</text>
+          <input class="form-input" type="number" placeholder="选填，默认为100" bindinput="bindNutritionGramPerUnit" value="{{newNutrition.gramPerUnit}}"/>
+        </view>
+        <view class="form-item">
+          <text class="form-label">热量 (kcal/100g)</text>
+          <input class="form-input" type="number" placeholder="自动计算" value="{{newNutrition.calories}}" disabled/>
+          <text class="form-hint">热量根据蛋白质、碳水化合物和脂肪自动计算</text>
+        </view>
+        <view class="form-message">
+          <text wx:if="{{formError}}" class="error-text">{{formError}}</text>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <view class="btn-cancel" bindtap="hideAddNutritionForm">取消</view>
+        <view class="btn-confirm" bindtap="confirmAddNutrition">{{editingNutritionIndex >= 0 ? '确认修改' : '确认添加'}}</view>
       </view>
     </view>
   </view>

@@ -1,0 +1,337 @@
+.container {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 24rpx;
+  padding-bottom: 120rpx;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.header-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.header-subtitle {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.form-section {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+}
+
+.form-item {
+  margin-bottom: 32rpx;
+}
+
+.form-label {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.meal-type-selector {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.meal-type-item {
+  flex: 1;
+  min-width: 140rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx;
+  background: #f9f9f9;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.3s;
+}
+
+.meal-type-item.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-color: #667eea;
+}
+
+.meal-icon {
+  font-size: 40rpx;
+  margin-bottom: 8rpx;
+}
+
+.meal-text {
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.food-list {
+  margin-bottom: 32rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.food-count {
+  font-size: 22rpx;
+  color: #666;
+}
+
+.food-items {
+  margin-bottom: 20rpx;
+}
+
+.food-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx;
+  background: #f9f9f9;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+  border-left: 4rpx solid #667eea;
+}
+
+.food-info {
+  flex: 1;
+}
+
+.food-name {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4rpx;
+}
+
+.food-details {
+  display: flex;
+  gap: 20rpx;
+  font-size: 20rpx;
+  color: #666;
+}
+
+.food-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.edit-btn, .delete-btn {
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 20rpx;
+}
+
+.edit-btn {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.delete-btn {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.add-food-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 20rpx;
+  background: #f0f8ff;
+  border: 2rpx dashed #667eea;
+  border-radius: 12rpx;
+  color: #667eea;
+  font-size: 24rpx;
+  font-weight: 500;
+  margin-bottom: 32rpx;
+}
+
+.add-icon {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.add-food-form {
+  background: #f9f9f9;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  margin-bottom: 32rpx;
+  border: 2rpx solid #e0e0e0;
+}
+
+.form-input {
+  height: 80rpx;
+  padding: 0 20rpx;
+  background: #fff;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  color: #333;
+  border: 2rpx solid #e0e0e0;
+}
+
+.form-input:focus {
+  border-color: #667eea;
+}
+
+.nutrition-preview {
+  margin-top: 20rpx;
+  padding: 16rpx;
+  background: #e8f5e9;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #4caf50;
+}
+
+.total-nutrition {
+  margin-top: 32rpx;
+  padding: 20rpx;
+  background: #e3f2fd;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #1976d2;
+}
+
+.nutrition-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.nutrition-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nutrition-label {
+  font-size: 22rpx;
+  color: #666;
+}
+
+.nutrition-value {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.btn-cancel, .btn-confirm {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.btn-cancel {
+  background: #f5f5f5;
+  color: #666;
+  border: 2rpx solid #e0e0e0;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+}
+
+.camera-section {
+  margin-top: 40rpx;
+  text-align: center;
+}
+
+.camera-tip {
+  font-size: 22rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.camera-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 20rpx;
+  background: #f9f9f9;
+  border: 2rpx dashed #667eea;
+  border-radius: 12rpx;
+  color: #667eea;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.camera-icon {
+  font-size: 32rpx;
+}
+
+.submit-section {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20rpx 24rpx;
+  background: #fff;
+  box-shadow: 0 -2rpx 12rpx rgba(0,0,0,0.05);
+}
+
+.btn-submit {
+  height: 88rpx;
+  line-height: 88rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 44rpx;
+  border: none;
+}
+
+.btn-submit:disabled {
+  background: #ccc;
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .meal-type-item {
+    min-width: 120rpx;
+    padding: 16rpx;
+  }
+  
+  .meal-text {
+    font-size: 20rpx;
+  }
+  
+  .nutrition-grid {
+    grid-template-columns: 1fr;
+  }
+}

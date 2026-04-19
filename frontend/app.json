@@ -2,6 +2,7 @@
   "pages": [
     "pages/home/index",
     "pages/nutrition/index",
+    "pages/nutrition/add-record/index",
     "pages/diet-plan/index",
     "pages/user/health/index",
     "pages/profile/index",

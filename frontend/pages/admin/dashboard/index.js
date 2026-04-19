@@ -7,6 +7,7 @@ Page({
     auditSubTab: 'plans',
     manageSubTab: 'users',
     showAddDietitianModal: false,
+    showAddNutritionModal: false,
     showPersonalCenterModal: false,
     statusOptions: ['启用', '禁用'],
     statusIndex: 0,
@@ -19,7 +20,28 @@ Page({
       contact: '',
       password: ''
     },
+    newNutrition: {
+      name: '',
+      category: '其他',
+      protein: '',
+      carbohydrate: '',
+      fat: '',
+      unit: 'g',
+      gramPerUnit: '100',
+      calories: '0'
+    },
     dietitians: [],
+    nutritionItems: [],
+    categories: ['全部', '主食', '蛋白质', '水果', '蔬菜', '其他'],
+    selectedCategory: '全部',
+    currentPage: 1,
+    pageSize: 10,
+    pageSizeOptions: [10, 20, 50, 100],
+    pageSizeIndex: 0,
+    total: 0,
+    totalPages: 1,
+    showTabHint: false,
+    hasMoreTabs: true,
     stats: {
       userCount: 128,
       dietitianCount: 15,
@@ -148,6 +170,42 @@ Page({
   onLoad() {
     this.loadSystemStats();
     this.loadDietitians();
+    this.loadNutritionItems();
+
+    // 检查是否首次访问管理中心
+    this.checkFirstVisit();
+  },
+
+  checkFirstVisit() {
+    const hasVisitedManage = wx.getStorageSync('has_visited_manage');
+    if (!hasVisitedManage) {
+      // 首次访问，显示提示
+      this.setData({
+        showTabHint: true
+      });
+    }
+  },
+
+  hideTabHint() {
+    // 隐藏提示并标记已访问
+    this.setData({
+      showTabHint: false
+    });
+    wx.setStorageSync('has_visited_manage', true);
+  },
+
+  onTabsScroll(e) {
+    const { scrollLeft, scrollWidth, clientWidth } = e.detail;
+    // 当滚动到接近右侧时，隐藏滚动指示器
+    if (scrollWidth - scrollLeft - clientWidth < 50) {
+      this.setData({
+        hasMoreTabs: false
+      });
+    } else {
+      this.setData({
+        hasMoreTabs: true
+      });
+    }
   },
 
   loadSystemStats() {
@@ -185,6 +243,40 @@ Page({
             status: '启用'
           }]
         });
+      });
+  },
+
+  loadNutritionItems() {
+    console.log('加载食材数据');
+    const { selectedCategory, currentPage, pageSize } = this.data;
+    const category = selectedCategory === '全部' ? '' : selectedCategory;
+
+    api.ingredient.getList({ category, page: currentPage, page_size: pageSize })
+      .then(res => {
+        if (res.code === 200) {
+          const ingredients = res.data.ingredients || [];
+          const nutritionItems = ingredients.map(item => ({
+            id: item.ingredient_id,
+            name: item.name,
+            category: item.category,
+            protein: item.nutrition_100g.protein,
+            carbohydrate: item.nutrition_100g.carbohydrate,
+            fat: item.nutrition_100g.fat,
+            unit: item.unit,
+            gramPerUnit: item.gram_per_unit,
+            calories: item.calorie_100g
+          }));
+          const total = res.data.total || 0;
+          const totalPages = Math.ceil(total / pageSize);
+          this.setData({
+            nutritionItems: nutritionItems,
+            total: total,
+            totalPages: totalPages
+          });
+        }
+      })
+      .catch(() => {
+        console.log('加载食材数据失败，使用默认数据');
       });
   },
 
@@ -558,6 +650,49 @@ Page({
     });
   },
 
+  // 类别选择
+  selectCategory(e) {
+    const category = e.currentTarget.dataset.category;
+    this.setData({
+      selectedCategory: category,
+      currentPage: 1 // 切换类别时重置到第一页
+    });
+    this.loadNutritionItems();
+  },
+
+  // 上一页
+  prevPage() {
+    if (this.data.currentPage > 1) {
+      this.setData({
+        currentPage: this.data.currentPage - 1
+      });
+      this.loadNutritionItems();
+    }
+  },
+
+  // 下一页
+  nextPage() {
+    const { currentPage, totalPages } = this.data;
+    if (currentPage < totalPages) {
+      this.setData({
+        currentPage: currentPage + 1
+      });
+      this.loadNutritionItems();
+    }
+  },
+
+  // 页面大小改变
+  changePageSize(e) {
+    const pageSizeIndex = parseInt(e.detail.value);
+    const pageSize = this.data.pageSizeOptions[pageSizeIndex];
+    this.setData({
+      pageSize: pageSize,
+      pageSizeIndex: pageSizeIndex,
+      currentPage: 1 // 改变页面大小时重置到第一页
+    });
+    this.loadNutritionItems();
+  },
+
   chooseAvatar() {
     wx.chooseImage({
       count: 1,
@@ -578,6 +713,270 @@ Page({
       title: '修改密码',
       content: '修改密码功能开发中',
       showCancel: false
+    });
+  },
+
+  // 营养库管理相关函数
+  showAddNutritionForm() {
+    this.setData({
+      showAddNutritionModal: true,
+      formError: '',
+      newNutrition: {
+        name: '',
+        calories: '',
+        protein: '',
+        carbohydrate: '',
+        fat: ''
+      }
+    });
+  },
+
+  hideAddNutritionForm() {
+    this.setData({
+      showAddNutritionModal: false,
+      formError: '',
+      editingNutritionIndex: -1
+    });
+  },
+
+  bindNutritionName(e) {
+    this.setData({
+      'newNutrition.name': e.detail.value
+    });
+  },
+
+  bindNutritionCalories(e) {
+    this.setData({
+      'newNutrition.calories': e.detail.value
+    });
+  },
+
+  bindNutritionProtein(e) {
+    this.setData({
+      'newNutrition.protein': e.detail.value
+    });
+    this.calculateCalories();
+  },
+
+  bindNutritionCarbohydrate(e) {
+    this.setData({
+      'newNutrition.carbohydrate': e.detail.value
+    });
+    this.calculateCalories();
+  },
+
+  bindNutritionFat(e) {
+    this.setData({
+      'newNutrition.fat': e.detail.value
+    });
+    this.calculateCalories();
+  },
+
+  bindNutritionCategory(e) {
+    this.setData({
+      'newNutrition.category': e.detail.value
+    });
+  },
+
+  bindNutritionUnit(e) {
+    this.setData({
+      'newNutrition.unit': e.detail.value
+    });
+  },
+
+  bindNutritionGramPerUnit(e) {
+    this.setData({
+      'newNutrition.gramPerUnit': e.detail.value
+    });
+  },
+
+  calculateCalories() {
+    const { protein, carbohydrate, fat } = this.data.newNutrition;
+    if (protein && carbohydrate && fat && !isNaN(protein) && !isNaN(carbohydrate) && !isNaN(fat)) {
+      const calories = parseFloat(protein) * 4 + parseFloat(carbohydrate) * 4 + parseFloat(fat) * 9;
+      this.setData({
+        'newNutrition.calories': calories.toFixed(1)
+      });
+    }
+  },
+
+  confirmAddNutrition() {
+    const { name, category, protein, carbohydrate, fat, unit, gramPerUnit } = this.data.newNutrition;
+    const editingIndex = this.data.editingNutritionIndex;
+
+    if (!name) {
+      this.setData({ formError: '请输入食物名称' });
+      return;
+    }
+    if (!category) {
+      this.setData({ formError: '请输入食材类别' });
+      return;
+    }
+    if (!protein || isNaN(protein)) {
+      this.setData({ formError: '请输入有效蛋白质' });
+      return;
+    }
+    if (!carbohydrate || isNaN(carbohydrate)) {
+      this.setData({ formError: '请输入有效碳水化合物' });
+      return;
+    }
+    if (!fat || isNaN(fat)) {
+      this.setData({ formError: '请输入有效脂肪' });
+      return;
+    }
+    if (!unit) {
+      this.setData({ formError: '请输入计量单位' });
+      return;
+    }
+
+    const ingredientData = {
+      name: name,
+      category: category,
+      nutrition_100g: {
+        protein: parseFloat(protein),
+        carbohydrate: parseFloat(carbohydrate),
+        fat: parseFloat(fat)
+      },
+      unit: unit,
+      gram_per_unit: parseFloat(gramPerUnit) || 100
+    };
+
+    if (editingIndex !== undefined && editingIndex >= 0) {
+      // 编辑模式：更新现有食材
+      const item = this.data.nutritionItems[editingIndex];
+
+      wx.request({
+        url: `http://localhost:8000/api/ingredients/${item.id}`,
+        method: 'PUT',
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + wx.getStorageSync('token')
+        },
+        data: ingredientData,
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            wx.showToast({
+              title: '更新成功',
+              icon: 'success'
+            });
+            this.hideAddNutritionForm();
+            this.loadNutritionItems();
+          } else {
+            wx.showToast({
+              title: '更新失败: ' + (res.data.message || '未知错误'),
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('更新食材失败:', err);
+          wx.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        }
+      });
+    } else {
+      // 添加模式：创建新食材
+      wx.request({
+        url: 'http://localhost:8000/api/ingredients',
+        method: 'POST',
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + wx.getStorageSync('token')
+        },
+        data: ingredientData,
+        success: (res) => {
+          if (res.statusCode === 200 && res.data.code === 200) {
+            wx.showToast({
+              title: '添加成功',
+              icon: 'success'
+            });
+            this.hideAddNutritionForm();
+            this.loadNutritionItems();
+          } else {
+            wx.showToast({
+              title: '添加失败: ' + (res.data.message || '未知错误'),
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('添加食材失败:', err);
+          wx.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          });
+        }
+      });
+    }
+  },
+
+  editNutritionItem(e) {
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.nutritionItems[index];
+
+    this.setData({
+      showAddNutritionModal: true,
+      formError: '',
+      newNutrition: {
+        name: item.name,
+        category: item.category || '其他',
+        protein: item.protein.toString(),
+        carbohydrate: item.carbohydrate.toString(),
+        fat: item.fat.toString(),
+        unit: item.unit || 'g',
+        gramPerUnit: (item.gramPerUnit || 100).toString(),
+        calories: item.calories.toString()
+      },
+      editingNutritionIndex: index
+    });
+  },
+
+  deleteNutritionItem(e) {
+    const index = e.currentTarget.dataset.index;
+    const nutritionItems = [...this.data.nutritionItems];
+    const item = nutritionItems[index];
+
+    wx.showModal({
+      title: '确认删除',
+      content: '确定要删除该食物营养数据吗？',
+      success: (res) => {
+        if (res.confirm) {
+          // 调用API删除食材
+          wx.request({
+            url: `http://localhost:8000/api/ingredients/${item.id}`,
+            method: 'DELETE',
+            header: {
+              'Authorization': 'Bearer ' + wx.getStorageSync('token')
+            },
+            success: (res) => {
+              if (res.statusCode === 200 && res.data.code === 200) {
+                nutritionItems.splice(index, 1);
+                this.setData({
+                  nutritionItems: nutritionItems
+                });
+                wx.showToast({
+                  title: '已删除',
+                  icon: 'success'
+                });
+              } else {
+                wx.showToast({
+                  title: '删除失败: ' + (res.data.message || '未知错误'),
+                  icon: 'none'
+                });
+              }
+            },
+            fail: (err) => {
+              console.error('删除食材失败:', err);
+              wx.showToast({
+                title: '网络错误，请稍后重试',
+                icon: 'none'
+              });
+            }
+          });
+        }
+      }
     });
   }
 })

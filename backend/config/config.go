@@ -85,6 +85,7 @@ func autoMigrate() error {
 	return DB.AutoMigrate(
 		&models.User{},
 		&models.HealthData{},
+		&models.Ingredient{},
 	)
 }
 
@@ -152,6 +153,100 @@ func initTestData() error {
 	}
 	if err := DB.Create(&dietitianUser).Error; err != nil {
 		return err
+	}
+
+	// 插入测试食材数据
+	ingredients := []models.Ingredient{
+		{
+			IngredientID:  "IG20260419001",
+			Name:          "米饭",
+			Category:      "主食",
+			Nutrition100g: `{"protein": 2.6, "carbohydrate": 25.6, "fat": 0.3}`,
+			Calorie100g:   116,
+			Unit:          "g",
+			GramPerUnit:   100,
+			Status:        "enabled",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		},
+		{
+			IngredientID:  "IG20260419002",
+			Name:          "面条",
+			Category:      "主食",
+			Nutrition100g: `{"protein": 3.4, "carbohydrate": 28.9, "fat": 0.7}`,
+			Calorie100g:   138,
+			Unit:          "g",
+			GramPerUnit:   100,
+			Status:        "enabled",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		},
+		{
+			IngredientID:  "IG20260419003",
+			Name:          "鸡蛋",
+			Category:      "蛋白质",
+			Nutrition100g: `{"protein": 13.0, "carbohydrate": 1.1, "fat": 11.0}`,
+			Calorie100g:   155,
+			Unit:          "个",
+			GramPerUnit:   50,
+			Status:        "enabled",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		},
+		{
+			IngredientID:  "IG20260419004",
+			Name:          "牛奶",
+			Category:      "蛋白质",
+			Nutrition100g: `{"protein": 3.4, "carbohydrate": 5.0, "fat": 1.0}`,
+			Calorie100g:   42,
+			Unit:          "ml",
+			GramPerUnit:   100,
+			Status:        "enabled",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		},
+		{
+			IngredientID:  "IG20260419005",
+			Name:          "鸡胸肉",
+			Category:      "蛋白质",
+			Nutrition100g: `{"protein": 31.0, "carbohydrate": 0, "fat": 3.6}`,
+			Calorie100g:   165,
+			Unit:          "g",
+			GramPerUnit:   100,
+			Status:        "enabled",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		},
+		{
+			IngredientID:  "IG20260419006",
+			Name:          "苹果",
+			Category:      "水果",
+			Nutrition100g: `{"protein": 0.3, "carbohydrate": 13.8, "fat": 0.2}`,
+			Calorie100g:   52,
+			Unit:          "个",
+			GramPerUnit:   150,
+			Status:        "enabled",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		},
+		{
+			IngredientID:  "IG20260419007",
+			Name:          "西兰花",
+			Category:      "蔬菜",
+			Nutrition100g: `{"protein": 2.8, "carbohydrate": 7.0, "fat": 0.4}`,
+			Calorie100g:   34,
+			Unit:          "g",
+			GramPerUnit:   100,
+			Status:        "enabled",
+			CreatedAt:     time.Now(),
+			UpdatedAt:     time.Now(),
+		},
+	}
+
+	for _, ingredient := range ingredients {
+		if err := DB.Create(&ingredient).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil

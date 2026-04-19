@@ -1,0 +1,140 @@
+<view class="container">
+  <view class="header">
+    <view class="header-title">添加饮食记录</view>
+    <view class="header-subtitle">记录您的饮食，追踪营养摄入</view>
+  </view>
+
+  <view class="form-section">
+    <view class="form-item">
+      <view class="form-label">餐次</view>
+      <view class="meal-type-selector">
+        <view class="meal-type-item {{mealType === 'breakfast' ? 'active' : ''}}" bindtap="selectMealType" data-type="breakfast">
+          <text class="meal-icon">🍳</text>
+          <text class="meal-text">早餐</text>
+        </view>
+        <view class="meal-type-item {{mealType === 'lunch' ? 'active' : ''}}" bindtap="selectMealType" data-type="lunch">
+          <text class="meal-icon">🍱</text>
+          <text class="meal-text">午餐</text>
+        </view>
+        <view class="meal-type-item {{mealType === 'dinner' ? 'active' : ''}}" bindtap="selectMealType" data-type="dinner">
+          <text class="meal-icon">🍽️</text>
+          <text class="meal-text">晚餐</text>
+        </view>
+        <view class="meal-type-item {{mealType === 'snack' ? 'active' : ''}}" bindtap="selectMealType" data-type="snack">
+          <text class="meal-icon">🍪</text>
+          <text class="meal-text">加餐</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 食物列表 -->
+    <view class="food-list">
+      <view class="section-header">
+        <text class="section-title">食物清单</text>
+        <text class="food-count">{{foods.length}} 种食物</text>
+      </view>
+      
+      <view class="food-items">
+        <view wx:for="{{foods}}" wx:key="index" class="food-item">
+          <view class="food-info">
+            <view class="food-name">{{item.name}}</view>
+            <view class="food-details">
+              <text class="food-amount">{{item.amount}}g</text>
+              <text class="food-calories">{{item.nutrition.calories}}kcal</text>
+            </view>
+          </view>
+          <view class="food-actions">
+            <view class="edit-btn" bindtap="editFood" data-index="{{index}}">
+              <text>编辑</text>
+            </view>
+            <view class="delete-btn" bindtap="deleteFood" data-index="{{index}}">
+              <text>删除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <view class="add-food-btn" bindtap="addFood">
+        <text class="add-icon">+</text>
+        <text class="add-text">添加食物</text>
+      </view>
+    </view>
+
+    <!-- 添加食物表单 -->
+    <view class="add-food-form" wx:if="{{showAddForm}}">
+      <view class="form-item">
+        <view class="form-label">食物名称</view>
+        <input class="form-input" placeholder="请输入食物名称" value="{{newFood.name}}" bindinput="bindFoodNameInput" />
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">分量 (g)</view>
+        <input class="form-input" type="number" placeholder="请输入分量" value="{{newFood.amount}}" bindinput="bindAmountInput" />
+      </view>
+
+      <view class="nutrition-preview" wx:if="{{newFood.nutrition.calories > 0}}">
+        <view class="nutrition-title">营养成分预览</view>
+        <view class="nutrition-grid">
+          <view class="nutrition-item">
+            <view class="nutrition-label">热量</view>
+            <view class="nutrition-value">{{newFood.nutrition.calories}} kcal</view>
+          </view>
+          <view class="nutrition-item">
+            <view class="nutrition-label">蛋白质</view>
+            <view class="nutrition-value">{{newFood.nutrition.protein}} g</view>
+          </view>
+          <view class="nutrition-item">
+            <view class="nutrition-label">碳水</view>
+            <view class="nutrition-value">{{newFood.nutrition.carbohydrate}} g</view>
+          </view>
+          <view class="nutrition-item">
+            <view class="nutrition-label">脂肪</view>
+            <view class="nutrition-value">{{newFood.nutrition.fat}} g</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="cancelAddFood">取消</button>
+        <button class="btn-confirm" bindtap="confirmAddFood">确定</button>
+      </view>
+    </view>
+
+    <!-- 总营养预览 -->
+    <view class="total-nutrition" wx:if="{{foods.length > 0}}">
+      <view class="nutrition-title">总营养成分</view>
+      <view class="nutrition-grid">
+        <view class="nutrition-item">
+          <view class="nutrition-label">热量</view>
+          <view class="nutrition-value">{{totalNutrition.calories}} kcal</view>
+        </view>
+        <view class="nutrition-item">
+          <view class="nutrition-label">蛋白质</view>
+          <view class="nutrition-value">{{totalNutrition.protein}} g</view>
+        </view>
+        <view class="nutrition-item">
+          <view class="nutrition-label">碳水</view>
+          <view class="nutrition-value">{{totalNutrition.carbohydrate}} g</view>
+        </view>
+        <view class="nutrition-item">
+          <view class="nutrition-label">脂肪</view>
+          <view class="nutrition-value">{{totalNutrition.fat}} g</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="camera-section">
+      <view class="camera-tip">或使用拍照识别功能</view>
+      <button class="camera-btn" bindtap="takePhoto">
+        <text class="camera-icon">📷</text>
+        <text>拍照识别</text>
+      </button>
+    </view>
+  </view>
+
+  <view class="submit-section">
+    <button class="btn-submit" bindtap="submitRecord" disabled="{{foods.length === 0}}">
+      保存记录 ({{foods.length}} 种食物)
+    </button>
+  </view>
+</view>

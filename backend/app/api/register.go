@@ -40,6 +40,9 @@ func RegisterRoutes(router *gin.Engine) {
 		{
 			// 注册健康数据路由
 			RegisterHealthDataRoutes(authGroup)
+			
+			// 注册食材管理路由
+			RegisterIngredientRoutes(authGroup)
 		}
 	}
 }
