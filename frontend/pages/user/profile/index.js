@@ -89,13 +89,13 @@ Page({
 
   viewHealthHistory() {
     wx.navigateTo({
-      url: '/pages/history/index'
+      url: '/pages/user/history/index'
     });
   },
 
   showSettings() {
     wx.navigateTo({
-      url: '/pages/settings/index'
+      url: '/pages/user/settings/index'
     });
   },
 

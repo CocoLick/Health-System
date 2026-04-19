@@ -36,7 +36,7 @@ Page({
   requestService() {
     const dietitian = this.data.dietitian;
     wx.navigateTo({
-      url: '/pages/user/service-request/index?dietitianId=' + dietitian.id + '&dietitianName=' + dietitian.name
+      url: '/pages/user/dietitian/request/index?dietitianId=' + dietitian.id + '&dietitianName=' + dietitian.name
     });
   }
 });

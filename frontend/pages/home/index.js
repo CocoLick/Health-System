@@ -40,11 +40,11 @@ Page({
   },
 
   goToNutrition() {
-    wx.switchTab({ url: '/pages/nutrition/index' });
+    wx.switchTab({ url: '/pages/user/diet/nutrition/index' });
   },
 
   goToDietPlan() {
-    wx.switchTab({ url: '/pages/diet-plan/index' });
+    wx.switchTab({ url: '/pages/user/diet/diet-plan/index' });
   },
 
   goToHealth() {
@@ -52,18 +52,18 @@ Page({
   },
 
   goToProfile() {
-    wx.switchTab({ url: '/pages/profile/index' });
+    wx.switchTab({ url: '/pages/user/profile/index' });
   },
 
   viewPlanDetail() {
-    wx.switchTab({ url: '/pages/diet-plan/index' });
+    wx.switchTab({ url: '/pages/user/diet/diet-plan/index' });
   },
 
   requestAiPlan() {
-    wx.switchTab({ url: '/pages/diet-plan/index' });
+    wx.switchTab({ url: '/pages/user/diet/diet-plan/index' });
   },
 
   goToSelectDietitian() {
-    wx.navigateTo({ url: '/pages/user/select-dietitian/index' });
+    wx.navigateTo({ url: '/pages/user/dietitian/select/index' });
   }
 });

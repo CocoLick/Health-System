@@ -1,4 +1,4 @@
-// pages/user/profile-edit/index.js
+// pages/user/profile/edit/index.js
 Page({
 
   /**

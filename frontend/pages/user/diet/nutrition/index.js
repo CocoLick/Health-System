@@ -112,9 +112,9 @@ Page({
 
   addRecord() {
     console.log('addRecord函数被调用');
-    console.log('导航到:', '/pages/nutrition/add-record/index');
+    console.log('导航到:', '/pages/user/diet/add-record/index');
     wx.navigateTo({
-      url: '/pages/nutrition/add-record/index',
+      url: '/pages/user/diet/add-record/index',
       success: function(res) {
         console.log('导航成功:', res);
       },

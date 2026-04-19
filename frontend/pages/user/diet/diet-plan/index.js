@@ -53,7 +53,7 @@ Page({
 
   goToSelectDietitian() {
     wx.navigateTo({
-      url: '/pages/user/select-dietitian/index'
+      url: '/pages/user/dietitian/select/index'
     });
   },
 
@@ -61,7 +61,7 @@ Page({
     const dietitian = this.data.selectedDietitian;
     if (dietitian) {
       wx.navigateTo({
-        url: '/pages/user/service-request/index?dietitianId=' + dietitian.id + '&dietitianName=' + dietitian.name
+        url: '/pages/user/dietitian/request/index?dietitianId=' + dietitian.id + '&dietitianName=' + dietitian.name
       });
     }
   },

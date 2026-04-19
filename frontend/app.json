@@ -1,17 +1,17 @@
 {
   "pages": [
     "pages/home/index",
-    "pages/nutrition/index",
-    "pages/nutrition/add-record/index",
-    "pages/diet-plan/index",
+    "pages/user/diet/nutrition/index",
+    "pages/user/diet/add-record/index",
+    "pages/user/diet/diet-plan/index",
     "pages/user/health/index",
-    "pages/profile/index",
+    "pages/user/profile/index",
     "pages/auth/login/login",
     "pages/auth/register/register",
-    "pages/settings/index",
-    "pages/favorites/index",
-    "pages/history/index",
-    "pages/help/index",
+    "pages/user/settings/index",
+    "pages/user/favorites/index",
+    "pages/user/history/index",
+    "pages/common/help/index",
     "pages/admin/dashboard/index",
     "pages/admin/audit/index",
     "pages/admin/user-management/index",
@@ -20,10 +20,10 @@
     "pages/admin/ingredient-management/index",
     "pages/dietitian/dashboard/index",
     "pages/dietitian/service/user-panel",
-    "pages/user/select-dietitian/index",
-    "pages/user/dietitian-detail/index",
-    "pages/user/service-request/index",
-    "pages/user/profile-edit/index"
+    "pages/user/dietitian/select/index",
+    "pages/user/dietitian/detail/index",
+    "pages/user/dietitian/request/index",
+    "pages/user/profile/edit/index"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -44,13 +44,13 @@
         "selectedIconPath": "images/home-selected.png"
       },
       {
-        "pagePath": "pages/nutrition/index",
+        "pagePath": "pages/user/diet/nutrition/index",
         "text": "营养",
         "iconPath": "images/nutrition.png",
         "selectedIconPath": "images/nutrition-selected.png"
       },
       {
-        "pagePath": "pages/diet-plan/index",
+        "pagePath": "pages/user/diet/diet-plan/index",
         "text": "膳食",
         "iconPath": "images/diet-plan.png",
         "selectedIconPath": "images/diet-plan-selected.png"
@@ -62,7 +62,7 @@
         "selectedIconPath": "images/ingredients-selected.png"
       },
       {
-        "pagePath": "pages/profile/index",
+        "pagePath": "pages/user/profile/index",
         "text": "我的",
         "iconPath": "images/profile.png",
         "selectedIconPath": "images/profile-selected.png"

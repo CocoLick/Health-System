@@ -1,4 +1,4 @@
-const api = require('../../../utils/api');
+const api = require('../../../../utils/api');
 
 Page({
   data: {
@@ -145,7 +145,7 @@ Page({
     const dietitian = this.mockDietitians.find(item => item.id === id);
     if (dietitian) {
       wx.navigateTo({
-        url: '/pages/user/dietitian-detail/index?id=' + id + '&data=' + encodeURIComponent(JSON.stringify(dietitian))
+        url: '/pages/user/dietitian/detail/index?id=' + id + '&data=' + encodeURIComponent(JSON.stringify(dietitian))
       });
     }
   }
