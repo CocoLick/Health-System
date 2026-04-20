@@ -7,7 +7,7 @@ import (
 // HealthData 健康数据模型
 type HealthData struct {
 	DataID         string    `gorm:"primaryKey;column:data_id" json:"data_id"`
-	UserID         uint      `gorm:"column:user_id" json:"user_id"`
+	UserID         string    `gorm:"column:user_id;size:50;index" json:"user_id"`
 	Gender         string    `gorm:"column:gender" json:"gender"`
 	Age            int       `gorm:"column:age" json:"age"`
 	Height         float64   `gorm:"column:height" json:"height"`

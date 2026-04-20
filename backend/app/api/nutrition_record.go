@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/nutrition-system/app/schemas"
@@ -209,6 +210,92 @@ func (h *NutritionRecordHandler) DeleteNutritionRecord(c *gin.Context) {
 	})
 }
 
+// GetNutritionRecordsByDate 获取指定日期的营养记录
+// @Summary 获取指定日期的营养记录
+// @Description 获取用户指定日期的营养记录
+// @Tags 营养记录
+// @Produce json
+// @Param date query string true "日期，格式：YYYY-MM-DD"
+// @Success 200 {object} schemas.Response
+// @Failure 400 {object} schemas.Response
+// @Router /api/nutrition/record/date [get]
+func (h *NutritionRecordHandler) GetNutritionRecordsByDate(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "用户未登录",
+		})
+		return
+	}
+
+	date := c.Query("date")
+	if date == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "日期参数不能为空",
+		})
+		return
+	}
+
+	records, err := h.nutritionRecordService.GetNutritionRecordsByDate(userID, date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "获取成功",
+		Data:    records,
+	})
+}
+
+// GetNutritionTrendData 获取营养摄入趋势数据
+// @Summary 获取营养摄入趋势数据
+// @Description 获取用户营养摄入趋势数据
+// @Tags 营养记录
+// @Produce json
+// @Param days query int false "天数，默认7天"
+// @Success 200 {object} schemas.Response
+// @Failure 400 {object} schemas.Response
+// @Router /api/nutrition/record/trend [get]
+func (h *NutritionRecordHandler) GetNutritionTrendData(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "用户未登录",
+		})
+		return
+	}
+
+	days := 7
+	daysStr := c.Query("days")
+	if daysStr != "" {
+		if parsedDays, err := strconv.Atoi(daysStr); err == nil && (parsedDays == 7 || parsedDays == 30) {
+			days = parsedDays
+		}
+	}
+	trendData, err := h.nutritionRecordService.GetNutritionTrendData(userID, days)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "获取成功",
+		Data:    trendData,
+	})
+}
+
 // RegisterNutritionRecordRoutes 注册营养记录路由
 func RegisterNutritionRecordRoutes(router *gin.RouterGroup) {
 	handler := NewNutritionRecordHandler()
@@ -218,6 +305,8 @@ func RegisterNutritionRecordRoutes(router *gin.RouterGroup) {
 		nutritionRecordGroup.POST("", handler.CreateNutritionRecord)
 		nutritionRecordGroup.GET("", handler.GetNutritionRecords)
 		nutritionRecordGroup.GET("/today", handler.GetTodayNutritionRecords)
+		nutritionRecordGroup.GET("/date", handler.GetNutritionRecordsByDate)
+		nutritionRecordGroup.GET("/trend", handler.GetNutritionTrendData)
 		nutritionRecordGroup.GET("/:record_id", handler.GetNutritionRecordByID)
 		nutritionRecordGroup.DELETE("/:record_id", handler.DeleteNutritionRecord)
 	}

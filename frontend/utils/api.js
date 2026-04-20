@@ -292,6 +292,14 @@ const nutrition = {
   // 获取营养推荐标准
   getRecommendation: function(params) {
     return get('/api/nutrition/recommendation', params);
+  },
+  // 获取指定日期的饮食记录
+  getRecordsByDate: function(date) {
+    return get('/api/nutrition/record/date', { date });
+  },
+  // 获取营养摄入趋势数据
+  getTrendData: function(days) {
+    return get('/api/nutrition/record/trend', { days });
   }
 };
 

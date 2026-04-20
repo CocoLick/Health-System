@@ -20,7 +20,25 @@ Page({
     records: [],
     suggestions: [],
     bmr: 0,
-    isLoading: false
+    isLoading: false,
+    // 历史记录相关变量
+    historyData: [],
+    selectedDate: '',
+    selectedDateText: '',
+    trendTimeRange: '7',
+    // 当日记录
+    selectedDateRecords: [],
+    selectedDateTotal: { calories: 0, protein: 0, carbohydrate: 0, fat: 0 },
+    // 趋势数据
+    trendData: [],
+    trendAvgCalories: 0,
+    trendMaxCalories: 0,
+    // 食物详情弹窗
+    showFoodDetailsModal: false,
+    selectedMealName: '',
+    selectedMealCalories: 0,
+    selectedMealNutrition: { protein: 0, carbohydrate: 0, fat: 0 },
+    selectedMealFoods: []
   },
 
   onLoad() {
@@ -32,6 +50,18 @@ Page({
       weekday: 'long'
     });
     this.setData({ today });
+    
+    // 初始化历史记录相关日期
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const selectedDate = `${year}-${month}-${day}`;
+    const selectedDateText = `${year}年${month}月${day}日`;
+    this.setData({
+      selectedDate,
+      selectedDateText
+    });
     
     this.loadTodayData();
     this.loadRecords();
@@ -70,8 +100,16 @@ Page({
             totals.fat += record.total_fat || 0;
           });
 
+          // 处理小数，保留1位小数
+          const formattedTotals = {
+            calories: parseFloat(this.formatNumber(totals.calories)),
+            protein: parseFloat(this.formatNumber(totals.protein)),
+            carbohydrate: parseFloat(this.formatNumber(totals.carbohydrate)),
+            fat: parseFloat(this.formatNumber(totals.fat))
+          };
+
           this.setData({
-            todayIntake: totals
+            todayIntake: formattedTotals
           });
 
           // 缓存到本地Storage
@@ -97,11 +135,19 @@ Page({
           totals.fat += record.fat || 0;
         });
 
+        // 处理小数，保留1位小数
+        const formattedTotals = {
+          calories: parseFloat(this.formatNumber(totals.calories)),
+          protein: parseFloat(this.formatNumber(totals.protein)),
+          carbohydrate: parseFloat(this.formatNumber(totals.carbohydrate)),
+          fat: parseFloat(this.formatNumber(totals.fat))
+        };
+
         this.setData({
-          todayIntake: totals
+          todayIntake: formattedTotals
         });
 
-        this.generateSuggestions(totals);
+        this.generateSuggestions(formattedTotals);
       });
   },
 
@@ -113,13 +159,26 @@ Page({
       .then(res => {
         if (res.code === 200 && res.data) {
           const recommendation = res.data;
+          
+          // 处理小数，保留1位小数
+          const formattedNutrients = {
+            calories: parseFloat(this.formatNumber(recommendation.nutrients.calories)),
+            protein: parseFloat(this.formatNumber(recommendation.nutrients.protein)),
+            carbohydrate: parseFloat(this.formatNumber(recommendation.nutrients.carbohydrate)),
+            fat: parseFloat(this.formatNumber(recommendation.nutrients.fat))
+          };
+          
           this.setData({
-            targetIntake: recommendation.nutrients,
-            bmr: recommendation.bmr
+            targetIntake: formattedNutrients,
+            bmr: parseFloat(this.formatNumber(recommendation.bmr))
           });
           
           // 缓存推荐标准
-          wx.setStorageSync('nutritionRecommendation', recommendation);
+          wx.setStorageSync('nutritionRecommendation', {
+            ...recommendation,
+            nutrients: formattedNutrients,
+            bmr: parseFloat(this.formatNumber(recommendation.bmr))
+          });
         }
       })
       .catch(() => {
@@ -127,9 +186,17 @@ Page({
         // 尝试使用缓存
         const cached = wx.getStorageSync('nutritionRecommendation');
         if (cached) {
+          // 处理小数，保留1位小数
+          const formattedNutrients = {
+            calories: parseFloat(this.formatNumber(cached.nutrients.calories)),
+            protein: parseFloat(this.formatNumber(cached.nutrients.protein)),
+            carbohydrate: parseFloat(this.formatNumber(cached.nutrients.carbohydrate)),
+            fat: parseFloat(this.formatNumber(cached.nutrients.fat))
+          };
+          
           this.setData({
-            targetIntake: cached.nutrients,
-            bmr: cached.bmr
+            targetIntake: formattedNutrients,
+            bmr: parseFloat(this.formatNumber(cached.bmr))
           });
         }
       })
@@ -139,17 +206,21 @@ Page({
   },
 
   loadRecords() {
-    // 从后端API获取记录列表
-    api.nutrition.getRecords()
+    // 从后端API获取今日记录
+    api.nutrition.getTodayRecords()
       .then(res => {
-        if (res.code === 200 && res.data) {
-          const records = res.data.records || [];
-          // 处理时间格式
+        if (res.code === 200) {
+          const records = res.data || [];
+          // 处理时间格式和小数
           const processedRecords = records.map(record => ({
             ...record,
+            total_calories: parseFloat(this.formatNumber(record.total_calories)),
+            total_protein: parseFloat(this.formatNumber(record.total_protein)),
+            total_carbohydrate: parseFloat(this.formatNumber(record.total_carbohydrate)),
+            total_fat: parseFloat(this.formatNumber(record.total_fat)),
             formattedTime: this.formatTime(record.created_at)
           }));
-          this.setData({ records: processedRecords.slice(0, 10) });
+          this.setData({ records: processedRecords });
           // 缓存到本地
           wx.setStorageSync('nutritionRecords', processedRecords);
         }
@@ -157,12 +228,16 @@ Page({
       .catch(() => {
         // 网络错误时使用缓存
         const records = wx.getStorageSync('nutritionRecords') || [];
-        // 处理时间格式
+        // 处理时间格式和小数
         const processedRecords = records.map(record => ({
           ...record,
+          total_calories: parseFloat(this.formatNumber(record.total_calories)),
+          total_protein: parseFloat(this.formatNumber(record.total_protein)),
+          total_carbohydrate: parseFloat(this.formatNumber(record.total_carbohydrate)),
+          total_fat: parseFloat(this.formatNumber(record.total_fat)),
           formattedTime: this.formatTime(record.created_at)
         }));
-        this.setData({ records: processedRecords.slice(0, 10) });
+        this.setData({ records: processedRecords });
       });
   },
 
@@ -275,5 +350,208 @@ Page({
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
+  },
+
+  // 处理小数，保留指定位数
+  formatNumber(num, decimalPlaces = 1) {
+    return parseFloat(num).toFixed(decimalPlaces);
+  },
+
+  // 切换到历史记录标签时加载数据
+  switchTab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    this.setData({ activeTab: tab });
+    
+    // 如果切换到历史记录标签，加载当日记录和趋势数据
+    if (tab === 'history') {
+      this.loadSelectedDateRecords();
+      this.loadTrendData();
+    }
+  },
+
+  // 处理日期选择
+  changeDate(e) {
+    const date = e.detail.value;
+    const dateObj = new Date(date);
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const selectedDateText = `${year}年${month}月${day}日`;
+    
+    this.setData({
+      selectedDate: date,
+      selectedDateText
+    });
+    
+    this.loadSelectedDateRecords();
+  },
+
+  // 设置趋势时间范围
+  setTrendTimeRange(e) {
+    const range = e.currentTarget.dataset.range;
+    this.setData({ trendTimeRange: range });
+    this.loadTrendData();
+  },
+
+  // 显示食物详情
+  showFoodDetails(e) {
+    const index = e.currentTarget.dataset.index;
+    const record = this.data.selectedDateRecords[index];
+    if (!record) return;
+
+    // 计算该餐的营养素
+    const protein = record.protein || 0;
+    const carbohydrate = record.carbohydrate || 0;
+    const fat = record.fat || 0;
+
+    // 转换餐别名称
+    let mealName = '';
+    switch (record.meal_type) {
+      case 'breakfast':
+        mealName = '早餐';
+        break;
+      case 'lunch':
+        mealName = '午餐';
+        break;
+      case 'dinner':
+        mealName = '晚餐';
+        break;
+      case 'snack':
+        mealName = '加餐';
+        break;
+      default:
+        mealName = '其他';
+    }
+
+    this.setData({
+      showFoodDetailsModal: true,
+      selectedMealName: mealName,
+      selectedMealCalories: record.calories,
+      selectedMealNutrition: {
+        protein: parseFloat(this.formatNumber(protein)),
+        carbohydrate: parseFloat(this.formatNumber(carbohydrate)),
+        fat: parseFloat(this.formatNumber(fat))
+      },
+      selectedMealFoods: record.foods
+    });
+  },
+
+  // 关闭食物详情
+  closeFoodDetails() {
+    this.setData({ showFoodDetailsModal: false });
+  },
+
+  // 加载选中日期的记录
+  loadSelectedDateRecords() {
+    const selectedDate = this.data.selectedDate;
+    if (!selectedDate) return;
+    
+    wx.showLoading({ title: '加载中...' });
+    
+    api.nutrition.getRecordsByDate(selectedDate)
+      .then(res => {
+        wx.hideLoading();
+        if (res.code === 200) {
+          const records = res.data || [];
+          // 转换数据格式
+          const formattedRecords = records.map(record => ({
+            meal_type: record.meal_type,
+            calories: record.total_calories || 0,
+            protein: record.total_protein || 0,
+            carbohydrate: record.total_carbohydrate || 0,
+            fat: record.total_fat || 0,
+            foods: (record.items || []).map(item => ({
+              food_name: item.food_name,
+              amount: item.amount,
+              unit: item.unit,
+              calories: item.calories,
+              protein: item.protein || 0,
+              carbohydrate: item.carbohydrate || 0,
+              fat: item.fat || 0
+            }))
+          }));
+          
+          const totalCalories = formattedRecords.reduce((sum, record) => sum + record.calories, 0);
+          const totalProtein = formattedRecords.reduce((sum, record) => sum + (record.protein || 0), 0);
+          const totalCarbohydrate = formattedRecords.reduce((sum, record) => sum + (record.carbohydrate || 0), 0);
+          const totalFat = formattedRecords.reduce((sum, record) => sum + (record.fat || 0), 0);
+          
+          this.setData({
+            selectedDateRecords: formattedRecords,
+            selectedDateTotal: {
+              calories: parseFloat(this.formatNumber(totalCalories)),
+              protein: parseFloat(this.formatNumber(totalProtein)),
+              carbohydrate: parseFloat(this.formatNumber(totalCarbohydrate)),
+              fat: parseFloat(this.formatNumber(totalFat))
+            }
+          });
+        } else {
+          wx.showToast({ title: '加载失败', icon: 'none' });
+        }
+      })
+      .catch(err => {
+        wx.hideLoading();
+        console.error('加载记录失败:', err);
+        wx.showToast({ title: '加载失败', icon: 'none' });
+      });
+  },
+
+  // 加载趋势数据
+  loadTrendData() {
+    const trendTimeRange = this.data.trendTimeRange;
+    const days = trendTimeRange === '7' ? 7 : 30;
+    
+    wx.showLoading({ title: '加载中...' });
+    
+    api.nutrition.getTrendData(days)
+      .then(res => {
+        wx.hideLoading();
+        if (res.code === 200) {
+          const trendData = res.data.trendData || [];
+          const avgCalories = res.data.avgCalories || 0;
+          const maxCalories = res.data.maxCalories || 0;
+          
+          // 计算图表高度百分比
+          const maxHeight = maxCalories || 1;
+          const processedTrendData = trendData.map(item => ({
+            ...item,
+            height: (item.calories / maxHeight * 100).toFixed(1)
+          }));
+          
+          this.setData({
+            trendData: processedTrendData,
+            trendAvgCalories: parseFloat(this.formatNumber(avgCalories)),
+            trendMaxCalories: parseFloat(this.formatNumber(maxCalories))
+          });
+        } else {
+          wx.showToast({ title: '加载失败', icon: 'none' });
+        }
+      })
+      .catch(err => {
+        wx.hideLoading();
+        console.error('加载趋势数据失败:', err);
+        wx.showToast({ title: '加载失败', icon: 'none' });
+      });
+  },
+
+
+
+  // 导出数据
+  exportData() {
+    wx.showModal({
+      title: '导出数据',
+      content: '确定要导出历史饮食记录吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '导出中...' });
+          
+          // 模拟导出过程
+          setTimeout(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '导出成功', icon: 'success' });
+          }, 1000);
+        }
+      }
+    });
   }
 });

@@ -373,3 +373,414 @@
   color: #666;
   line-height: 1.5;
 }
+
+/* 历史记录标签页样式 */
+.history-header {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+}
+
+.date-selector-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-label {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 12rpx;
+}
+
+.date-picker {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 20rpx 24rpx;
+  border-radius: 12rpx;
+}
+
+.date-icon {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.date-value {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.picker-arrow {
+  font-size: 20rpx;
+  color: #999;
+}
+
+.selected-date-records {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+}
+
+.records-for-date {
+  margin-top: 16rpx;
+}
+
+.date-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24rpx;
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.summary-label {
+  font-size: 26rpx;
+  color: rgba(255,255,255,0.9);
+}
+
+.summary-value {
+  font-size: 32rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
+.meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.meal-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+}
+
+.meal-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+}
+
+.meal-info {
+  flex: 1;
+}
+
+.meal-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4rpx;
+}
+
+.meal-foods {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.meal-calories {
+  font-size: 26rpx;
+  color: #4caf50;
+  font-weight: 500;
+  margin-right: 16rpx;
+}
+
+.meal-arrow {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.meal-item {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.meal-item:active {
+  background: #f0f0f0;
+}
+
+.nutrition-summary {
+  display: flex;
+  justify-content: space-around;
+  padding: 16rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  margin: 16rpx 0;
+}
+
+.nutrition-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nutrition-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 4rpx;
+}
+
+.nutrition-value {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 食物详情弹窗样式 */
+.food-details-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16rpx;
+  width: 80%;
+  max-width: 500rpx;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4rpx 20rpx rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 40rpx;
+  color: #999;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 24rpx;
+}
+
+.modal-nutrition {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 24rpx;
+  padding: 16rpx;
+  background: #f8f8f8;
+  border-radius: 12rpx;
+}
+
+.modal-nutrition-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-nutrition-label {
+  font-size: 20rpx;
+  color: #666;
+  margin-bottom: 4rpx;
+}
+
+.modal-nutrition-value {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.food-list {
+  margin-top: 16rpx;
+}
+
+.food-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.food-item:last-child {
+  border-bottom: none;
+}
+
+.food-name {
+  font-size: 28rpx;
+  color: #333;
+  flex: 1;
+}
+
+.food-info {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.food-amount {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.food-calories {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #ff6b6b;
+}
+
+.nutrition-trend {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+}
+
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.trend-time-selector {
+  display: flex;
+  gap: 12rpx;
+}
+
+.filter-item {
+  padding: 10rpx 20rpx;
+  background: #f5f5f5;
+  border: 2rpx solid #ddd;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.filter-item.active {
+  background: #4caf50;
+  color: #fff;
+  border-color: #4caf50;
+}
+
+.trend-chart {
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  min-height: 200rpx;
+}
+
+.chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+}
+
+.chart-icon {
+  font-size: 60rpx;
+  margin-bottom: 16rpx;
+}
+
+.chart-text {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.chart-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.chart-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 160rpx;
+  padding: 0 10rpx;
+}
+
+.chart-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.bar {
+  width: 32rpx;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4rpx 4rpx 0 0;
+  transition: height 0.3s ease;
+  min-height: 4rpx;
+}
+
+.bar-label {
+  font-size: 20rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
+.chart-summary {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #eee;
+}
+
+.summary-item {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  color: #4caf50;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #4caf50;
+  transition: all 0.3s ease;
+  margin-bottom: 24rpx;
+}
+
+.export-btn:active {
+  background: #4caf50;
+  color: #fff;
+}
+
+.export-icon {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.export-text {
+  font-size: 28rpx;
+  font-weight: 500;
+}

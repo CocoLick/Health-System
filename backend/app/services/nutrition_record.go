@@ -128,3 +128,87 @@ func (s *NutritionRecordService) DeleteNutritionRecord(recordID string, userID s
 	// 删除主记录
 	return config.DB.Where("record_id = ? AND user_id = ?", recordID, userID).Delete(&models.NutritionRecord{}).Error
 }
+
+// GetNutritionRecordsByDate 获取用户指定日期的营养记录
+func (s *NutritionRecordService) GetNutritionRecordsByDate(userID string, date string) ([]models.NutritionRecord, error) {
+	var records []models.NutritionRecord
+	if err := config.DB.Preload("Items").Where("user_id = ? AND meal_date = ?", userID, date).Order("created_at DESC").Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+// GetNutritionTrendData 获取用户营养摄入趋势数据
+func (s *NutritionRecordService) GetNutritionTrendData(userID string, days int) (map[string]interface{}, error) {
+	// 计算开始日期
+	endDate := time.Now()
+	startDate := endDate.AddDate(0, 0, -days+1)
+
+	// 按日期分组查询
+	type DailyTotal struct {
+		Date     string
+		Calories float64
+	}
+
+	var dailyTotals []DailyTotal
+
+	// 构建日期范围查询
+	query := `
+		SELECT meal_date as date, SUM(total_calories) as calories
+		FROM nutrition_record
+		WHERE user_id = ? AND meal_date BETWEEN ? AND ?
+		GROUP BY meal_date
+		ORDER BY meal_date
+	`
+
+	if err := config.DB.Raw(query, userID, startDate.Format("2006-01-02"), endDate.Format("2006-01-02")).Scan(&dailyTotals).Error; err != nil {
+		return nil, err
+	}
+
+	// 填充缺失的日期
+	result := make([]map[string]interface{}, 0)
+	dateMap := make(map[string]float64)
+
+	// 先将查询结果存入map
+	for _, dt := range dailyTotals {
+		dateMap[dt.Date] = dt.Calories
+	}
+
+	// 填充所有日期
+	for d := startDate; !d.After(endDate); d = d.AddDate(0, 0, 1) {
+		dateStr := d.Format("2006-01-02")
+		day := d.Format("02")
+		calories, ok := dateMap[dateStr]
+		if !ok {
+			calories = 0
+		}
+
+		result = append(result, map[string]interface{}{
+			"date":     dateStr,
+			"day":      day,
+			"calories": calories,
+		})
+	}
+
+	// 计算平均值和最大值
+	var totalCalories float64
+	var maxCalories float64
+
+	for _, dt := range dailyTotals {
+		totalCalories += dt.Calories
+		if dt.Calories > maxCalories {
+			maxCalories = dt.Calories
+		}
+	}
+
+	avgCalories := 0.0
+	if len(dailyTotals) > 0 {
+		avgCalories = totalCalories / float64(len(dailyTotals))
+	}
+
+	return map[string]interface{}{
+		"trendData":    result,
+		"avgCalories":  avgCalories,
+		"maxCalories":  maxCalories,
+	}, nil
+}

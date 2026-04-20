@@ -7,6 +7,7 @@
   <view class="tabs">
     <view class="tab-item {{activeTab === 'record' ? 'active' : ''}}" bindtap="switchTab" data-tab="record">饮食记录</view>
     <view class="tab-item {{activeTab === 'analysis' ? 'active' : ''}}" bindtap="switchTab" data-tab="analysis">营养分析</view>
+    <view class="tab-item {{activeTab === 'history' ? 'active' : ''}}" bindtap="switchTab" data-tab="history">历史记录</view>
   </view>
 
   <view class="content">
@@ -128,6 +129,132 @@
             </view>
           </view>
         </view>
+      </view>
+    </view>
+
+    <view class="tab-content" wx:if="{{activeTab === 'history'}}">
+      <view class="history-header">
+        <view class="date-selector-section">
+          <view class="section-label">选择日期查看记录</view>
+          <picker mode="date" value="{{selectedDate}}" bindchange="changeDate">
+            <view class="date-picker">
+              <text class="date-icon">📅</text>
+              <text class="date-value">{{selectedDateText}}</text>
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="selected-date-records">
+        <view class="section-title">当日饮食记录</view>
+        <view class="records-for-date" wx:if="{{selectedDateRecords.length > 0}}">
+          <view class="date-summary">
+            <text class="summary-label">当日总摄入</text>
+            <text class="summary-value">{{selectedDateTotal.calories}}kcal</text>
+          </view>
+          <view class="nutrition-summary">
+            <view class="nutrition-item">
+              <text class="nutrition-label">蛋白质</text>
+              <text class="nutrition-value">{{selectedDateTotal.protein || 0}}g</text>
+            </view>
+            <view class="nutrition-item">
+              <text class="nutrition-label">碳水</text>
+              <text class="nutrition-value">{{selectedDateTotal.carbohydrate || 0}}g</text>
+            </view>
+            <view class="nutrition-item">
+              <text class="nutrition-label">脂肪</text>
+              <text class="nutrition-value">{{selectedDateTotal.fat || 0}}g</text>
+            </view>
+          </view>
+          <view class="meal-list">
+            <view class="meal-item" wx:for="{{selectedDateRecords}}" wx:key="meal_type" bindtap="showFoodDetails" data-index="{{index}}">
+              <view class="meal-icon">{{item.meal_type === 'breakfast' ? '🌅' : item.meal_type === 'lunch' ? '☀️' : item.meal_type === 'dinner' ? '🌙' : '🍎'}}</view>
+              <view class="meal-info">
+                <view class="meal-name">{{item.meal_type === 'breakfast' ? '早餐' : item.meal_type === 'lunch' ? '午餐' : item.meal_type === 'dinner' ? '晚餐' : '加餐'}}</view>
+                <view class="meal-foods">{{item.foods.length}}种食物</view>
+              </view>
+              <view class="meal-calories">{{item.calories}}kcal</view>
+              <view class="meal-arrow">▶</view>
+            </view>
+          </view>
+        </view>
+        <view class="empty-state" wx:else>
+          <text class="empty-icon">🍽️</text>
+          <text class="empty-text">当日暂无饮食记录</text>
+        </view>
+      </view>
+
+      <!-- 食物详情弹窗 -->
+      <view class="food-details-modal" wx:if="{{showFoodDetailsModal}}">
+        <view class="modal-content">
+          <view class="modal-header">
+            <text class="modal-title">{{selectedMealName}}</text>
+            <text class="modal-close" bindtap="closeFoodDetails">×</text>
+          </view>
+          <view class="modal-body">
+            <view class="modal-nutrition">
+              <view class="modal-nutrition-item">
+                <text class="modal-nutrition-label">热量</text>
+                <text class="modal-nutrition-value">{{selectedMealCalories}}kcal</text>
+              </view>
+              <view class="modal-nutrition-item">
+                <text class="modal-nutrition-label">蛋白质</text>
+                <text class="modal-nutrition-value">{{selectedMealNutrition.protein || 0}}g</text>
+              </view>
+              <view class="modal-nutrition-item">
+                <text class="modal-nutrition-label">碳水</text>
+                <text class="modal-nutrition-value">{{selectedMealNutrition.carbohydrate || 0}}g</text>
+              </view>
+              <view class="modal-nutrition-item">
+                <text class="modal-nutrition-label">脂肪</text>
+                <text class="modal-nutrition-value">{{selectedMealNutrition.fat || 0}}g</text>
+              </view>
+            </view>
+            <view class="food-list">
+              <view class="food-item" wx:for="{{selectedMealFoods}}" wx:key="index">
+                <view class="food-name">{{item.food_name}}</view>
+                <view class="food-info">
+                  <text class="food-amount">{{item.amount}}{{item.unit}}</text>
+                  <text class="food-calories">{{item.calories}}kcal</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="nutrition-trend">
+        <view class="trend-header">
+          <view class="section-title">营养摄入趋势</view>
+          <view class="trend-time-selector">
+            <view class="filter-item {{trendTimeRange === '7' ? 'active' : ''}}" bindtap="setTrendTimeRange" data-range="7">近7天</view>
+            <view class="filter-item {{trendTimeRange === '30' ? 'active' : ''}}" bindtap="setTrendTimeRange" data-range="30">近30天</view>
+          </view>
+        </view>
+        <view class="trend-chart">
+          <view class="chart-placeholder" wx:if="{{trendData.length === 0}}">
+            <text class="chart-icon">📊</text>
+            <text class="chart-text">暂无趋势数据</text>
+          </view>
+          <view class="chart-content" wx:else>
+            <view class="chart-bars">
+              <view class="chart-bar-item" wx:for="{{trendData}}" wx:key="date">
+                <view class="bar" style="height: {{item.height}}%"></view>
+                <view class="bar-label">{{item.day}}</view>
+              </view>
+            </view>
+            <view class="chart-summary">
+              <text class="summary-item">平均摄入：{{trendAvgCalories}}kcal</text>
+              <text class="summary-item">最高摄入：{{trendMaxCalories}}kcal</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="export-btn" bindtap="exportData">
+        <text class="export-icon">📤</text>
+        <text class="export-text">导出数据</text>
       </view>
     </view>
   </view>

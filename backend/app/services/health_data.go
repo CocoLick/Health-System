@@ -25,8 +25,8 @@ func generateDataID() string {
 
 // SubmitHealthData 提交健康数据
 func (s *HealthDataService) SubmitHealthData(userID string, req schemas.HealthDataRequest) (*models.HealthData, error) {
-	healthData := models.HealthData{
-		DataID:         dataID,
+	healthData := &models.HealthData{
+		DataID:         generateDataID(),
 		UserID:         userID,
 		Gender:         req.Gender,
 		Age:            req.Age,
