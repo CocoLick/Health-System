@@ -57,30 +57,6 @@
       </view>
     </view>
 
-    <view class="status-1" wx:if="{{planStatus === 1}}">
-      <view class="dietitian-card">
-        <view class="card-header">
-          <view class="header-label">已选择规划师</view>
-          <view class="change-btn" bindtap="changeDietitian">更换</view>
-        </view>
-        <view class="dietitian-info">
-          <view class="avatar">
-            <text class="avatar-text">{{selectedDietitian.nameInitial}}</text>
-          </view>
-          <view class="info">
-            <view class="name">{{selectedDietitian.name}}</view>
-            <view class="title">{{selectedDietitian.title}}</view>
-            <view class="specialty">{{selectedDietitian.specialty}}</view>
-          </view>
-        </view>
-        <view class="request-btn" bindtap="goToServiceRequest">发送服务请求</view>
-      </view>
-      <view class="tips">
-        <text class="tip-item">请填写您的饮食目标和健康状况</text>
-        <text class="tip-item">规划师将根据您的信息制定计划</text>
-      </view>
-    </view>
-
     <view class="status-2" wx:if="{{planStatus === 2}}">
       <view class="request-card">
         <view class="request-status">

@@ -75,7 +75,7 @@ Page({
   },
 
   determineStatus() {
-    const { selectedDietitian, pendingRequest, currentPlan } = this.data;
+    const { pendingRequest, currentPlan } = this.data;
     let status = 0;
 
     if (currentPlan && currentPlan.status === 'published') {
@@ -84,8 +84,6 @@ Page({
       status = 3;
     } else if (pendingRequest) {
       status = 2;
-    } else if (selectedDietitian) {
-      status = 1;
     } else {
       status = 0;
     }
@@ -367,7 +365,8 @@ Page({
       'pending': '待处理',
       'approved': '已通过',
       'rejected': '已拒绝',
-      'cancelled': '已取消'
+      'cancelled': '已取消',
+      'completed': '已完成'
     };
     return statusMap[status] || status;
   },

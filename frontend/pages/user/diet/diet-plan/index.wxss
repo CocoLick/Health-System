@@ -490,23 +490,28 @@
 }
 
 .application-status.pending {
-  background: #f0f0f0;
-  color: #666;
+  background: #fff3cd;
+  color: #856404;
 }
 
 .application-status.approved {
-  background: #e6f7ee;
-  color: #389e7a;
+  background: #d4edda;
+  color: #155724;
 }
 
 .application-status.rejected {
-  background: #f7e6e6;
-  color: #9e3838;
+  background: #f8d7da;
+  color: #721c24;
 }
 
 .application-status.cancelled {
-  background: #f0f0f0;
+  background: #e0e0e0;
   color: #666;
+}
+
+.application-status.completed {
+  background: #cce5ff;
+  color: #004085;
 }
 
 .application-info {

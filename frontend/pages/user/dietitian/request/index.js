@@ -1,3 +1,5 @@
+const api = require('../../../../utils/api');
+
 Page({
   data: {
     dietitianId: '',
@@ -54,6 +56,75 @@ Page({
       return;
     }
 
+    // 显示加载动画
+    wx.showLoading({ title: '检查中...' });
+
+    // 先检查用户是否已有待处理或已通过的服务申请
+    api.serviceRequest.getList()
+      .then(res => {
+        wx.hideLoading();
+        if (res.code === 200) {
+          const requests = res.data || [];
+          if (requests.length > 0) {
+            // 按创建时间排序，获取最新的请求
+            requests.sort((a, b) => {
+              const dateA = a.create_time ? new Date(a.create_time) : new Date(0);
+              const dateB = b.create_time ? new Date(b.create_time) : new Date(0);
+              return dateB - dateA;
+            });
+            const latestRequest = requests[0];
+            // 检查最新申请的状态
+            if (latestRequest.status === 'pending') {
+              wx.showModal({
+                title: '无法提交申请',
+                content: '您有一条正在处理的服务申请（状态：待处理），暂无法发起新申请。如需申请新的规划师服务，请先取消当前申请。',
+                showCancel: true,
+                confirmText: '查看申请',
+                cancelText: '好的',
+                success: (modalRes) => {
+                  if (modalRes.confirm) {
+                    wx.redirectTo({
+                      url: '/pages/user/dietitian/request-detail/index?id=' + latestRequest.request_id
+                    });
+                  }
+                }
+              });
+              return;
+            }
+            if (latestRequest.status === 'approved') {
+              wx.showModal({
+                title: '无法提交申请',
+                content: '您有一条已通过的服务申请（状态：已通过），该服务可能正在进行中。如需申请新的规划师服务，请等待当前服务完成或联系当前规划师。',
+                showCancel: true,
+                confirmText: '查看申请',
+                cancelText: '好的',
+                success: (modalRes) => {
+                  if (modalRes.confirm) {
+                    wx.redirectTo({
+                      url: '/pages/user/dietitian/request-detail/index?id=' + latestRequest.request_id
+                    });
+                  }
+                }
+              });
+              return;
+            }
+          }
+          // 没有待处理或已通过的申请，继续提交
+          this.doSubmit();
+        } else {
+          // API调用失败，但仍然允许提交
+          this.doSubmit();
+        }
+      })
+      .catch(err => {
+        wx.hideLoading();
+        console.error('检查服务请求失败:', err);
+        // 网络错误时仍然允许提交
+        this.doSubmit();
+      });
+  },
+
+  doSubmit() {
     const requestData = {
       dietitian_id: this.data.dietitianId,
       service_type: this.data.serviceType,
