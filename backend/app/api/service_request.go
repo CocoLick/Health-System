@@ -86,12 +86,19 @@ func (h *ServiceRequestHandler) GetUserServiceRequests(c *gin.Context) {
 	// 构建响应
 	response := make([]schemas.ServiceRequestListResponse, 0, len(requests))
 	for _, req := range requests {
+		// 解析HealthData JSON字符串
+		var healthData map[string]interface{}
+		if req.HealthData != "" {
+			json.Unmarshal([]byte(req.HealthData), &healthData)
+		}
 		response = append(response, schemas.ServiceRequestListResponse{
 			RequestID:    req.RequestID,
+			UserID:       req.UserID,
 			DietitianID:  req.DietitianID,
 			ServiceType:  req.ServiceType,
 			DietGoal:     req.DietGoal,
 			OtherGoal:    req.OtherGoal,
+			HealthData:   healthData,
 			Status:       req.Status,
 			CreateTime:   req.CreateTime,
 			UpdateTime:   req.UpdateTime,
@@ -176,4 +183,97 @@ func (h *ServiceRequestHandler) CancelServiceRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "服务请求已取消"})
+}
+
+// GetDietitianServiceRequests 获取规划师的服务请求列表
+func (h *ServiceRequestHandler) GetDietitianServiceRequests(c *gin.Context) {
+	// 从上下文获取规划师ID
+	dietitianID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未授权"})
+		return
+	}
+
+	// 获取服务请求列表
+	requests, err := h.serviceRequestService.GetDietitianServiceRequests(dietitianID.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取服务请求列表失败"})
+		return
+	}
+
+	// 构建响应
+	response := make([]schemas.ServiceRequestListResponse, 0, len(requests))
+	for _, req := range requests {
+		// 解析HealthData JSON字符串
+		var healthData map[string]interface{}
+		if req.HealthData != "" {
+			json.Unmarshal([]byte(req.HealthData), &healthData)
+		}
+		response = append(response, schemas.ServiceRequestListResponse{
+			RequestID:    req.RequestID,
+			UserID:       req.UserID,
+			DietitianID:  req.DietitianID,
+			ServiceType:  req.ServiceType,
+			DietGoal:     req.DietGoal,
+			OtherGoal:    req.OtherGoal,
+			HealthData:   healthData,
+			Status:       req.Status,
+			CreateTime:   req.CreateTime,
+			UpdateTime:   req.UpdateTime,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": response, "message": "获取服务请求列表成功"})
+}
+
+// ApproveServiceRequest 批准服务请求
+func (h *ServiceRequestHandler) ApproveServiceRequest(c *gin.Context) {
+	// 从上下文获取规划师ID
+	dietitianID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未授权"})
+		return
+	}
+
+	// 获取请求ID
+	requestID := c.Param("id")
+	if requestID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请求参数错误"})
+		return
+	}
+
+	// 批准服务请求
+	err := h.serviceRequestService.ApproveServiceRequest(requestID, dietitianID.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "批准服务请求失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "服务请求已批准"})
+}
+
+// RejectServiceRequest 拒绝服务请求
+func (h *ServiceRequestHandler) RejectServiceRequest(c *gin.Context) {
+	// 从上下文获取规划师ID
+	dietitianID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未授权"})
+		return
+	}
+
+	// 获取请求ID
+	requestID := c.Param("id")
+	if requestID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请求参数错误"})
+		return
+	}
+
+	// 拒绝服务请求
+	err := h.serviceRequestService.RejectServiceRequest(requestID, dietitianID.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "拒绝服务请求失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "服务请求已拒绝"})
 }

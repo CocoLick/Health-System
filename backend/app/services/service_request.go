@@ -106,3 +106,74 @@ func (s *ServiceRequestService) CancelServiceRequest(requestID string, userID st
 
 	return nil
 }
+
+// GetDietitianServiceRequests 获取规划师的服务请求列表
+func (s *ServiceRequestService) GetDietitianServiceRequests(dietitianID string) ([]models.ServiceRequest, error) {
+	var requests []models.ServiceRequest
+
+	if err := s.db.Where("dietitian_id = ?", dietitianID).Order("create_time DESC").Find(&requests).Error; err != nil {
+		return nil, fmt.Errorf("failed to get dietitian service requests: %w", err)
+	}
+
+	return requests, nil
+}
+
+// ApproveServiceRequest 批准服务请求
+func (s *ServiceRequestService) ApproveServiceRequest(requestID string, dietitianID string) error {
+	// 获取服务请求
+	request, err := s.GetServiceRequestByID(requestID)
+	if err != nil {
+		return err
+	}
+
+	// 验证权限
+	if request.DietitianID != dietitianID {
+		return fmt.Errorf("unauthorized: dietitian %s cannot approve request %s", dietitianID, requestID)
+	}
+
+	// 验证状态
+	if request.Status != "pending" {
+		return fmt.Errorf("cannot approve request with status %s", request.Status)
+	}
+
+	// 更新状态
+	request.Status = "approved"
+	request.UpdateTime = time.Now()
+
+	// 保存到数据库
+	if err := s.db.Save(request).Error; err != nil {
+		return fmt.Errorf("failed to approve service request: %w", err)
+	}
+
+	return nil
+}
+
+// RejectServiceRequest 拒绝服务请求
+func (s *ServiceRequestService) RejectServiceRequest(requestID string, dietitianID string) error {
+	// 获取服务请求
+	request, err := s.GetServiceRequestByID(requestID)
+	if err != nil {
+		return err
+	}
+
+	// 验证权限
+	if request.DietitianID != dietitianID {
+		return fmt.Errorf("unauthorized: dietitian %s cannot reject request %s", dietitianID, requestID)
+	}
+
+	// 验证状态
+	if request.Status != "pending" {
+		return fmt.Errorf("cannot reject request with status %s", request.Status)
+	}
+
+	// 更新状态
+	request.Status = "rejected"
+	request.UpdateTime = time.Now()
+
+	// 保存到数据库
+	if err := s.db.Save(request).Error; err != nil {
+		return fmt.Errorf("failed to reject service request: %w", err)
+	}
+
+	return nil
+}

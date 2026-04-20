@@ -200,6 +200,18 @@ const serviceRequest = {
   // 取消服务请求
   cancel: function(id) {
     return put(`/api/service-request/${id}/cancel`);
+  },
+  // 获取规划师的服务请求列表
+  getDietitianList: function() {
+    return get('/api/service-request/dietitian/list');
+  },
+  // 批准服务请求
+  approve: function(id) {
+    return put(`/api/service-request/${id}/approve`);
+  },
+  // 拒绝服务请求
+  reject: function(id) {
+    return put(`/api/service-request/${id}/reject`);
   }
 };
 

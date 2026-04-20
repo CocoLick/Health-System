@@ -106,42 +106,148 @@
 
     <!-- 服务中心 -->
     <view wx:if="{{activeTab === 'service'}}" class="content-panel">
-      <view class="service-header">
-        <text class="section-title">服务用户</text>
-        <view class="search-box">
-          <input class="search-input" placeholder="搜索用户..." bindinput="onSearchUser" value="{{searchKeyword}}"/>
+      <!-- 子标签页 -->
+      <view class="sub-tabs">
+        <view class="sub-tab-item {{serviceSubTab === 'requests' ? 'active' : ''}}" bindtap="switchServiceSubTab" data-subtab="requests">
+          <text class="sub-tab-text">服务申请</text>
+          <view class="sub-tab-badge" wx:if="{{stats.pendingRequests > 0}}">{{stats.pendingRequests}}</view>
+        </view>
+        <view class="sub-tab-item {{serviceSubTab === 'users' ? 'active' : ''}}" bindtap="switchServiceSubTab" data-subtab="users">
+          <text class="sub-tab-text">用户列表</text>
         </view>
       </view>
 
-      <view class="filter-tabs">
-        <view class="filter-tab {{filterType === 'all' ? 'active' : ''}}" bindtap="switchFilter" data-filter="all">
-          <text>全部</text>
-        </view>
-        <view class="filter-tab {{filterType === 'pending' ? 'active' : ''}}" bindtap="switchFilter" data-filter="pending">
-          <text>待服务</text>
-        </view>
-        <view class="filter-tab {{filterType === 'expired' ? 'active' : ''}}" bindtap="switchFilter" data-filter="expired">
-          <text>评估过期</text>
-        </view>
-      </view>
-
-      <view class="user-list">
-        <view wx:for="{{users}}" wx:key="index" class="user-item" bindtap="enterUserPanel" data-userid="{{item.userId}}">
-          <view class="user-avatar-small">{{item.usernameInitial}}</view>
-          <view class="user-info-small">
-            <text class="user-name">{{item.username}}</text>
-            <view class="user-status">
-              <text class="status-tag {{item.hasProfile ? 'status-ok' : 'status-warning'}}">{{item.hasProfile ? '档案✅' : '档案❌'}}</text>
-              <text class="status-tag {{item.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{item.hasEvaluation ? '评估✅' : '评估❌'}}</text>
-              <text class="status-tag {{item.hasPlan ? 'status-ok' : 'status-warning'}}">{{item.hasPlan ? '计划✅' : '计划❌'}}</text>
+      <!-- 服务申请列表 -->
+      <view wx:if="{{serviceSubTab === 'requests'}}" class="sub-tab-content">
+        <!-- 申请管理模块 -->
+        <view class="request-management">
+          <view class="filter-tabs">
+            <view class="filter-tab {{filterType === 'pending' ? 'active' : ''}}" bindtap="switchFilter" data-filter="pending">
+              <text>待处理</text>
             </view>
-            <text class="user-last-service">最后服务：{{item.lastServiceTime}}</text>
+            <view class="filter-tab {{filterType === 'approved' ? 'active' : ''}}" bindtap="switchFilter" data-filter="approved">
+              <text>已通过</text>
+            </view>
+            <view class="filter-tab {{filterType === 'all' ? 'active' : ''}}" bindtap="switchFilter" data-filter="all">
+              <text>全部</text>
+            </view>
           </view>
-          <text class="arrow">></text>
+
+          <view class="request-list">
+            <view wx:for="{{filteredRequests}}" wx:key="index" class="request-item" bindtap="viewRequestDetail" data-index="{{index}}">
+              <view class="request-header">
+                <view class="request-user">
+                  <view class="request-avatar">{{item.user_id ? item.user_id.substring(0, 1) : '?'}}</view>
+                  <text class="request-user-id">{{item.user_id}}</text>
+                </view>
+                <view class="request-status {{item.status}}">{{item.statusText}}</view>
+              </view>
+              <view class="request-body">
+                <view class="request-row">
+                  <text class="request-label">服务类型：</text>
+                  <text class="request-value">{{item.serviceTypeText}}</text>
+                </view>
+                <view class="request-row">
+                  <text class="request-label">饮食目标：</text>
+                  <text class="request-value">{{item.dietGoalText}}</text>
+                </view>
+                <view class="request-row">
+                  <text class="request-label">申请时间：</text>
+                  <text class="request-value">{{item.createTimeText}}</text>
+                </view>
+              </view>
+              <view class="request-actions" catchtap="stopPropagation" wx:if="{{item.status === 'pending'}}">
+                <view class="action-btn approve" bindtap="approveRequest" data-requestid="{{item.request_id}}">通过</view>
+                <view class="action-btn reject" bindtap="rejectRequest" data-requestid="{{item.request_id}}">拒绝</view>
+              </view>
+            </view>
+            <view wx:if="{{filteredRequests.length === 0}}" class="empty-state">
+              <text class="empty-icon">📋</text>
+              <text class="empty-text">暂无服务申请</text>
+            </view>
+          </view>
         </view>
-        <view wx:if="{{users.length === 0}}" class="empty-state">
-          <text class="empty-icon">👥</text>
-          <text class="empty-text">暂无用户数据</text>
+      </view>
+
+      <!-- 用户列表 -->
+      <view wx:if="{{serviceSubTab === 'users'}}" class="sub-tab-content">
+        <view class="service-users">
+          <view class="search-box">
+            <input class="search-input" placeholder="搜索用户..." bindinput="onSearchUser" value="{{searchKeyword}}"/>
+          </view>
+
+          <view class="user-list">
+            <view wx:for="{{users}}" wx:key="index" class="user-item" bindtap="enterUserPanel" data-userid="{{item.userId}}">
+              <view class="user-avatar-small">{{item.usernameInitial}}</view>
+              <view class="user-info-small">
+                <text class="user-name">{{item.username}}</text>
+                <view class="user-status">
+                  <text class="status-tag {{item.hasProfile ? 'status-ok' : 'status-warning'}}">{{item.hasProfile ? '档案✅' : '档案❌'}}</text>
+                  <text class="status-tag {{item.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{item.hasEvaluation ? '评估✅' : '评估❌'}}</text>
+                  <text class="status-tag {{item.hasPlan ? 'status-ok' : 'status-warning'}}">{{item.hasPlan ? '计划✅' : '计划❌'}}</text>
+                </view>
+                <text class="user-last-service">最后服务：{{item.lastServiceTime}}</text>
+              </view>
+              <text class="arrow">></text>
+            </view>
+            <view wx:if="{{users.length === 0}}" class="empty-state">
+              <text class="empty-icon">👥</text>
+              <text class="empty-text">暂无用户数据</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 服务请求详情弹窗 -->
+    <view wx:if="{{showRequestDetail}}" class="modal-mask" bindtap="closeRequestDetail">
+      <view class="request-detail-modal" catchtap="stopPropagation">
+        <view class="modal-header">
+          <text class="modal-title">申请详情</text>
+          <view class="modal-close" bindtap="closeRequestDetail">×</view>
+        </view>
+        <view class="modal-body" wx:if="{{selectedRequest}}">
+          <view class="detail-section">
+            <view class="detail-row">
+              <text class="detail-label">申请人ID：</text>
+              <text class="detail-value">{{selectedRequest.user_id}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">服务类型：</text>
+              <text class="detail-value">{{selectedRequest.serviceTypeText}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">饮食目标：</text>
+              <text class="detail-value">{{selectedRequest.dietGoalText}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">申请时间：</text>
+              <text class="detail-value">{{selectedRequest.createTimeText}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">当前状态：</text>
+              <text class="detail-value status-{{selectedRequest.status}}">{{selectedRequest.statusText}}</text>
+            </view>
+          </view>
+          <view class="detail-section" wx:if="{{selectedRequest.health_data}}">
+            <text class="detail-section-title">健康信息</text>
+            <view class="detail-row" wx:if="{{selectedRequest.health_data.disease}}">
+              <text class="detail-label">疾病史：</text>
+              <text class="detail-value">{{selectedRequest.health_data.disease || '无'}}</text>
+            </view>
+            <view class="detail-row" wx:if="{{selectedRequest.health_data.allergy}}">
+              <text class="detail-label">过敏食物：</text>
+              <text class="detail-value">{{selectedRequest.health_data.allergy || '无'}}</text>
+            </view>
+            <view class="detail-row" wx:if="{{selectedRequest.health_data.demand}}">
+              <text class="detail-label">特殊需求：</text>
+              <text class="detail-value">{{selectedRequest.health_data.demand || '无'}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="modal-footer" wx:if="{{selectedRequest && selectedRequest.status === 'pending'}}">
+          <view class="modal-btn approve" bindtap="approveRequest" data-requestid="{{selectedRequest.request_id}}">批准申请</view>
+          <view class="modal-btn reject" bindtap="rejectRequest" data-requestid="{{selectedRequest.request_id}}">拒绝申请</view>
         </view>
       </view>
     </view>

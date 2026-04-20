@@ -1,8 +1,11 @@
 // dietitian/dashboard/index.js
+const api = require('../../../utils/api');
+
 Page({
   data: {
     activeTab: 'home',
-    filterType: 'all',
+    serviceSubTab: 'requests',
+    filterType: 'pending',
     feedbackSubTab: 'pending',
     searchKeyword: '',
     showPersonalCenterModal: false,
@@ -15,7 +18,8 @@ Page({
       totalPlans: 18,
       totalArticles: 5,
       totalReplies: 42,
-      avgRating: 4.8
+      avgRating: 4.8,
+      pendingRequests: 0
     },
     recentActivities: [
       {
@@ -116,15 +120,211 @@ Page({
         time: '2026-04-16 09:00',
         type: '效果反馈'
       }
-    ]
+    ],
+    // 服务请求相关数据
+    serviceRequests: [],
+    filteredRequests: [],
+    selectedRequest: null,
+    showRequestDetail: false
   },
 
   onLoad() {
     this.loadData();
+    this.loadServiceRequests();
+  },
+
+  onShow() {
+    this.loadServiceRequests();
   },
 
   loadData() {
     console.log('加载营养师工作台数据');
+  },
+
+  // 加载服务请求列表
+  loadServiceRequests() {
+    console.log('加载服务请求列表');
+    api.serviceRequest.getDietitianList()
+      .then(res => {
+        console.log('服务请求列表API响应:', res);
+        console.log('响应数据:', JSON.stringify(res.data, null, 2));
+        if (res.code === 200) {
+          const requests = res.data || [];
+          console.log('请求列表长度:', requests.length);
+          // 预处理所有请求，添加中文翻译字段
+          const processedRequests = requests.map(req => ({
+            ...req,
+            statusText: this.getStatusText(req.status),
+            serviceTypeText: this.getServiceTypeText(req.service_type),
+            dietGoalText: this.getDietGoalText(req.diet_goal, req.other_goal),
+            createTimeText: this.formatDate(req.create_time)
+          }));
+          console.log('处理后数据:', JSON.stringify(processedRequests, null, 2));
+          // 按状态分组
+          const pendingRequests = processedRequests.filter(r => r.status === 'pending');
+          this.setData({
+            serviceRequests: processedRequests,
+            filteredRequests: processedRequests,
+            'stats.pendingRequests': pendingRequests.length
+          });
+          this.filterRequests();
+        }
+      })
+      .catch(err => {
+        console.error('加载服务请求失败:', err);
+      });
+  },
+
+  // 筛选服务请求
+  filterRequests() {
+    const { serviceRequests, filterType, searchKeyword } = this.data;
+    let filtered = serviceRequests;
+
+    // 按状态筛选
+    if (filterType === 'pending') {
+      filtered = filtered.filter(r => r.status === 'pending');
+    } else if (filterType === 'approved') {
+      filtered = filtered.filter(r => r.status === 'approved');
+    }
+    // 'all' 包含所有状态的申请（pending, approved, rejected, cancelled, completed）
+
+    // 按关键词搜索
+    if (searchKeyword) {
+      filtered = filtered.filter(r =>
+        r.user_id && r.user_id.includes(searchKeyword)
+      );
+    }
+
+    this.setData({ filteredRequests: filtered });
+  },
+
+  // 查看服务请求详情
+  viewRequestDetail(e) {
+    const index = e.currentTarget.dataset.index;
+    const request = this.data.filteredRequests[index];
+    this.setData({
+      selectedRequest: request,
+      showRequestDetail: true
+    });
+  },
+
+  // 关闭服务请求详情
+  closeRequestDetail() {
+    this.setData({
+      selectedRequest: null,
+      showRequestDetail: false
+    });
+  },
+
+  // 批准服务请求
+  approveRequest(e) {
+    const requestId = e.currentTarget.dataset.requestid;
+    wx.showModal({
+      title: '批准申请',
+      content: '确定要批准此服务申请吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '处理中...' });
+          api.serviceRequest.approve(requestId)
+            .then(res => {
+              wx.hideLoading();
+              if (res.code === 200) {
+                wx.showToast({ title: '已批准申请', icon: 'success' });
+                this.closeRequestDetail();
+                this.loadServiceRequests();
+              } else {
+                wx.showToast({ title: '操作失败', icon: 'none' });
+              }
+            })
+            .catch(err => {
+              wx.hideLoading();
+              console.error('批准申请失败:', err);
+              wx.showToast({ title: '网络错误', icon: 'none' });
+            });
+        }
+      }
+    });
+  },
+
+  // 拒绝服务请求
+  rejectRequest(e) {
+    const requestId = e.currentTarget.dataset.requestid;
+    wx.showModal({
+      title: '拒绝申请',
+      content: '确定要拒绝此服务申请吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '处理中...' });
+          api.serviceRequest.reject(requestId)
+            .then(res => {
+              wx.hideLoading();
+              if (res.code === 200) {
+                wx.showToast({ title: '已拒绝申请', icon: 'success' });
+                this.closeRequestDetail();
+                this.loadServiceRequests();
+              } else {
+                wx.showToast({ title: '操作失败', icon: 'none' });
+              }
+            })
+            .catch(err => {
+              wx.hideLoading();
+              console.error('拒绝申请失败:', err);
+              wx.showToast({ title: '网络错误', icon: 'none' });
+            });
+        }
+      }
+    });
+  },
+
+  // 获取状态文本
+  getStatusText(status) {
+    const statusMap = {
+      'pending': '待处理',
+      'approved': '已通过',
+      'rejected': '已拒绝',
+      'cancelled': '已取消',
+      'completed': '已完成'
+    };
+    return statusMap[status] || status;
+  },
+
+  // 获取服务类型文本
+  getServiceTypeText(type) {
+    const typeMap = {
+      'diet_plan': '膳食计划定制',
+      'nutrition_consult': '营养咨询服务',
+      'health_management': '健康管理服务'
+    };
+    return typeMap[type] || type;
+  },
+
+  // 获取饮食目标文本
+  getDietGoalText(goal, otherGoal) {
+    if (goal === 'other' && otherGoal) {
+      return otherGoal;
+    }
+    const goalMap = {
+      'weight_loss': '减脂',
+      'weight_gain': '增重',
+      'diabetes_control': '控糖',
+      'health_maintain': '养生',
+      'sports_nutrition': '运动营养',
+      'pregnancy': '孕期营养'
+    };
+    return goalMap[goal] || goal;
+  },
+
+  // 格式化日期
+  formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   },
 
   switchTab(e) {
@@ -134,12 +334,19 @@ Page({
     });
   },
 
+  switchServiceSubTab(e) {
+    const subtab = e.currentTarget.dataset.subtab;
+    this.setData({
+      serviceSubTab: subtab
+    });
+  },
+
   switchFilter(e) {
     const filter = e.currentTarget.dataset.filter;
     this.setData({
       filterType: filter
     });
-    this.filterUsers();
+    this.filterRequests();
   },
 
   switchFeedbackSubTab(e) {
@@ -154,7 +361,7 @@ Page({
     this.setData({
       searchKeyword: e.detail.value
     });
-    this.filterUsers();
+    this.filterRequests();
   },
 
   filterUsers() {

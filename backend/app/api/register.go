@@ -15,13 +15,16 @@ type Response struct {
 // RegisterServiceRequestRoutes 注册服务请求路由
 func RegisterServiceRequestRoutes(router *gin.RouterGroup) {
 	handler := NewServiceRequestHandler()
-	
+
 	serviceRequestGroup := router.Group("/service-request")
 	{
-		serviceRequestGroup.POST("/", handler.CreateServiceRequest)         // 创建服务请求
-		serviceRequestGroup.GET("/", handler.GetUserServiceRequests)       // 获取用户的服务请求列表
-		serviceRequestGroup.GET("/:id", handler.GetServiceRequestByID)     // 根据ID获取服务请求
-		serviceRequestGroup.PUT("/:id/cancel", handler.CancelServiceRequest) // 取消服务请求
+		serviceRequestGroup.POST("/", handler.CreateServiceRequest)                   // 创建服务请求
+		serviceRequestGroup.GET("/", handler.GetUserServiceRequests)                // 获取用户的服务请求列表
+		serviceRequestGroup.GET("/dietitian/list", handler.GetDietitianServiceRequests) // 获取规划师的服务请求列表
+		serviceRequestGroup.PUT("/:id/cancel", handler.CancelServiceRequest)         // 取消服务请求
+		serviceRequestGroup.PUT("/:id/approve", handler.ApproveServiceRequest)    // 批准服务请求
+		serviceRequestGroup.PUT("/:id/reject", handler.RejectServiceRequest)       // 拒绝服务请求
+		serviceRequestGroup.GET("/:id", handler.GetServiceRequestByID)             // 根据ID获取服务请求
 	}
 }
 

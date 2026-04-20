@@ -29,12 +29,14 @@ type ServiceRequestResponse struct {
 
 // ServiceRequestListResponse 服务请求列表的响应结构
 type ServiceRequestListResponse struct {
-	RequestID    string    `json:"request_id"`
-	DietitianID  string    `json:"dietitian_id"`
-	ServiceType  string    `json:"service_type"`
-	DietGoal     string    `json:"diet_goal"`
-	OtherGoal    string    `json:"other_goal"`
-	Status       string    `json:"status"`
-	CreateTime   time.Time `json:"create_time"`
-	UpdateTime   time.Time `json:"update_time"`
+	RequestID    string                 `json:"request_id"`
+	UserID       string                 `json:"user_id"`
+	DietitianID  string                 `json:"dietitian_id"`
+	ServiceType  string                 `json:"service_type"`
+	DietGoal     string                 `json:"diet_goal"`
+	OtherGoal    string                 `json:"other_goal"`
+	HealthData   map[string]interface{} `json:"health_data"`
+	Status       string                 `json:"status"`
+	CreateTime   time.Time              `json:"create_time"`
+	UpdateTime   time.Time              `json:"update_time"`
 }
