@@ -25,17 +25,21 @@ func generateDataID() string {
 
 // SubmitHealthData 提交健康数据
 func (s *HealthDataService) SubmitHealthData(userID string, req schemas.HealthDataRequest) (*models.HealthData, error) {
-	healthData := &models.HealthData{
-		DataID:        generateDataID(),
-		UserID:        userID,
-		Height:        req.Height,
-		Weight:        req.Weight,
-		BloodPressure: req.BloodPressure,
-		BloodSugar:    req.BloodSugar,
-		HeartRate:     req.HeartRate,
+	healthData := models.HealthData{
+		DataID:         dataID,
+		UserID:         userID,
+		Gender:         req.Gender,
+		Age:            req.Age,
+		Height:         req.Height,
+		Weight:         req.Weight,
+		HeartRate:      req.HeartRate,
+		BloodPressure:  req.BloodPressure,
+		BloodSugar:     req.BloodSugar,
 		AllergyHistory: req.AllergyHistory,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ActivityLevel:  req.ActivityLevel,
+		NutritionGoal:  req.NutritionGoal,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	if err := config.DB.Create(healthData).Error; err != nil {
@@ -71,6 +75,12 @@ func (s *HealthDataService) UpdateHealthData(dataID string, req schemas.UpdateHe
 		"updated_at": time.Now(),
 	}
 
+	if req.Gender != "" {
+		updates["gender"] = req.Gender
+	}
+	if req.Age > 0 {
+		updates["age"] = req.Age
+	}
 	if req.Height > 0 {
 		updates["height"] = req.Height
 	}
@@ -88,6 +98,12 @@ func (s *HealthDataService) UpdateHealthData(dataID string, req schemas.UpdateHe
 	}
 	if req.AllergyHistory != "" {
 		updates["allergy_history"] = req.AllergyHistory
+	}
+	if req.ActivityLevel != "" {
+		updates["activity_level"] = req.ActivityLevel
+	}
+	if req.NutritionGoal != "" {
+		updates["nutrition_goal"] = req.NutritionGoal
 	}
 
 	return config.DB.Model(&models.HealthData{}).Where("data_id = ?", dataID).Updates(updates).Error

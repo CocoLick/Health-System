@@ -84,6 +84,30 @@
   color: #999;
 }
 
+/* 活动水平选择器 */
+.activity-level-selector {
+  display: flex;
+  align-items: center;
+  margin: 20rpx 0;
+  padding: 0 20rpx;
+}
+
+.activity-label {
+  font-size: 32rpx;
+  color: #666;
+  margin-right: 20rpx;
+}
+
+.picker-view {
+  padding: 10rpx 20rpx;
+  background-color: #f5f5f5;
+  border-radius: 8rpx;
+  font-size: 32rpx;
+  color: #333;
+  min-width: 120rpx;
+  text-align: center;
+}
+
 .nutrition-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

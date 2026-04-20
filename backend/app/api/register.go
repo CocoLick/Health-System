@@ -46,6 +46,9 @@ func RegisterRoutes(router *gin.Engine) {
 
 			// 注册营养记录路由
 			RegisterNutritionRecordRoutes(authGroup)
+
+			// 注册营养推荐路由
+			RegisterNutritionRecommendationRoutes(authGroup)
 		}
 	}
 }

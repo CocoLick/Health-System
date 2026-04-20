@@ -13,10 +13,10 @@
     <view class="tab-content" wx:if="{{activeTab === 'record'}}">
       <view class="today-summary">
         <view class="summary-header">
-          <text class="summary-title">今日营养摄入</text>
-          <text class="summary-date">{{today}}</text>
-        </view>
-        <view class="nutrition-grid">
+        <text class="summary-title">今日营养摄入</text>
+        <text class="summary-date">{{today}}</text>
+      </view>
+      <view class="nutrition-grid">
           <view class="nutr-card">
             <view class="nutr-value" style="color: #ff9800;">{{todayIntake.calories}}</view>
             <view class="nutr-label">千卡</view>
@@ -64,14 +64,14 @@
       <view class="records-section">
         <view class="section-title">今日饮食</view>
         <view class="record-list" wx:if="{{records.length > 0}}">
-          <view class="record-item" wx:for="{{records}}" wx:key="id" bindtap="viewRecordDetail" data-index="{{index}}">
-            <view class="record-icon">{{item.mealType === '早餐' ? '🌅' : item.mealType === '午餐' ? '☀️' : item.mealType === '晚餐' ? '🌙' : '🍎'}}</view>
+          <view class="record-item" wx:for="{{records}}" wx:key="record_id" bindtap="viewRecordDetail" data-index="{{index}}">
+            <view class="record-icon">{{item.meal_type === 'breakfast' ? '🌅' : item.meal_type === 'lunch' ? '☀️' : item.meal_type === 'dinner' ? '🌙' : '🍎'}}</view>
             <view class="record-info">
-              <view class="record-type">{{item.mealType}}</view>
-              <view class="record-time">{{item.time}}</view>
+              <view class="record-type">{{item.meal_type === 'breakfast' ? '早餐' : item.meal_type === 'lunch' ? '午餐' : item.meal_type === 'dinner' ? '晚餐' : '加餐'}}</view>
+              <view class="record-time">{{item.formattedTime}}</view>
             </view>
-            <view class="record-foods">{{item.foods.length}}种食物</view>
-            <view class="record-calories">{{item.calories}}kcal</view>
+            <view class="record-foods">{{item.items.length}}种食物</view>
+            <view class="record-calories">{{item.total_calories}}kcal</view>
           </view>
         </view>
         <view class="empty-state" wx:else>

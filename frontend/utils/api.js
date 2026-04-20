@@ -288,6 +288,10 @@ const nutrition = {
   // 获取今日饮食记录
   getTodayRecords: function() {
     return get('/api/nutrition/record/today');
+  },
+  // 获取营养推荐标准
+  getRecommendation: function(params) {
+    return get('/api/nutrition/recommendation', params);
   }
 };
 

@@ -15,15 +15,30 @@
 
   <view wx:else>
     <view class="section">
-      <view class="section-title">基本信息</view>
+      <view class="section-header">
+        <view class="section-title">基本信息</view>
+        <view class="section-action" bindtap="editBasicInfo">编辑</view>
+      </view>
       <view class="info-grid">
-        <view class="info-item">
-          <view class="info-label">性别</view>
-          <view class="info-value">{{healthData.gender || '未设置'}}</view>
+        <view class="info-row">
+          <view class="info-item">
+            <view class="info-label">性别</view>
+            <view class="info-value">{{healthData.gender || '未设置'}}</view>
+          </view>
+          <view class="info-item">
+            <view class="info-label">年龄</view>
+            <view class="info-value">{{healthData.age || '未设置'}}岁</view>
+          </view>
         </view>
-        <view class="info-item">
-          <view class="info-label">年龄</view>
-          <view class="info-value">{{healthData.age || '未设置'}}岁</view>
+        <view class="info-row">
+          <view class="info-item">
+            <view class="info-label">活动水平</view>
+            <view class="info-value">{{healthData.activityLevel === 'sedentary' ? '久坐' : healthData.activityLevel === 'lightly_active' ? '轻度' : healthData.activityLevel === 'moderately_active' ? '中度' : '高强度'}}</view>
+          </view>
+          <view class="info-item">
+          <view class="info-label">营养目标</view>
+          <view class="info-value">{{healthData.nutritionGoal === 'lose_weight' ? '减重' : healthData.nutritionGoal === 'maintain' ? '维持' : '健康增重'}}</view>
+        </view>
         </view>
       </view>
     </view>
@@ -31,7 +46,7 @@
     <view class="section">
       <view class="section-header">
         <view class="section-title">健康指标</view>
-        <view class="section-action" bindtap="editHealthData">{{hasHealthData ? '编辑' : '录入'}}</view>
+        <view class="section-action" bindtap="editHealthMetrics">编辑</view>
       </view>
       <view class="health-card">
         <view class="health-item">
@@ -128,12 +143,62 @@
       </view>
     </view>
 
-    <view class="edit-modal" wx:if="{{showEditModal}}">
-      <view class="modal-mask" bindtap="hideEditModal"></view>
+    <!-- 基本信息编辑模态框 -->
+    <view class="edit-modal" wx:if="{{showBasicInfoModal}}">
+      <view class="modal-mask" bindtap="hideBasicInfoModal"></view>
       <view class="modal-content">
         <view class="modal-header">
-          <view class="modal-title">{{isEditing ? '编辑' : '录入'}}健康数据</view>
-          <view class="modal-close" bindtap="hideEditModal">×</view>
+          <view class="modal-title">{{isEditing ? '编辑' : '录入'}}基本信息</view>
+          <view class="modal-close" bindtap="hideBasicInfoModal">×</view>
+        </view>
+        <view class="modal-body">
+          <view class="form-item">
+            <view class="form-label">性别</view>
+            <view class="switch-container">
+              <text class="gender-label {{formData.gender === '男' ? 'active' : ''}}">男</text>
+              <view class="switch-selector" bindtap="toggleGender">
+                <view class="switch-track">
+                  <view class="switch-thumb {{formData.gender === '女' ? 'right' : ''}}"></view>
+                </view>
+              </view>
+              <text class="gender-label {{formData.gender === '女' ? 'active' : ''}}">女</text>
+            </view>
+          </view>
+          <view class="form-item">
+            <view class="form-label">年龄</view>
+            <input class="form-input" type="number" placeholder="请输入年龄" value="{{formData.age}}" bindinput="bindAgeInput" />
+          </view>
+          <view class="form-item">
+            <view class="form-label">活动水平</view>
+            <picker bindchange="changeActivityLevel" value="{{activityLevelIndex}}" range="{{activityLevelRange}}">
+              <view class="picker-view">
+                {{formData.activityLevel === 'sedentary' ? '久坐' : formData.activityLevel === 'lightly_active' ? '轻度' : formData.activityLevel === 'moderately_active' ? '中度' : '高强度'}}
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <view class="form-label">营养目标</view>
+            <picker bindchange="changeNutritionGoal" value="{{nutritionGoalIndex}}" range="{{nutritionGoalRange}}">
+              <view class="picker-view">
+                {{formData.nutritionGoal === 'lose_weight' ? '减重' : formData.nutritionGoal === 'maintain' ? '维持' : '健康增重'}}
+              </view>
+            </picker>
+          </view>
+        </view>
+        <view class="modal-footer">
+          <button class="btn-cancel" bindtap="hideBasicInfoModal">取消</button>
+          <button class="btn-confirm" bindtap="saveBasicInfo">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 健康指标编辑模态框 -->
+    <view class="edit-modal" wx:if="{{showHealthMetricsModal}}">
+      <view class="modal-mask" bindtap="hideHealthMetricsModal"></view>
+      <view class="modal-content">
+        <view class="modal-header">
+          <view class="modal-title">{{isEditing ? '编辑' : '录入'}}健康指标</view>
+          <view class="modal-close" bindtap="hideHealthMetricsModal">×</view>
         </view>
         <view class="modal-body">
           <view class="form-item">
@@ -162,8 +227,8 @@
           </view>
         </view>
         <view class="modal-footer">
-          <button class="btn-cancel" bindtap="hideEditModal">取消</button>
-          <button class="btn-confirm" bindtap="saveHealthData">保存</button>
+          <button class="btn-cancel" bindtap="hideHealthMetricsModal">取消</button>
+          <button class="btn-confirm" bindtap="saveHealthMetrics">保存</button>
         </view>
       </view>
     </view>

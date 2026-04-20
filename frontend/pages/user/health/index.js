@@ -4,7 +4,8 @@ Page({
   data: {
     hasHealthData: false,
     isLoggedIn: false,
-    showEditModal: false,
+    showBasicInfoModal: false,
+    showHealthMetricsModal: false,
     isEditing: false,
     healthData: {
       gender: '男',
@@ -14,16 +15,26 @@ Page({
       heartRate: '',
       bloodPressure: '',
       bloodSugar: '',
-      allergyHistory: ''
+      allergyHistory: '',
+      activityLevel: 'moderately_active',
+      nutritionGoal: 'maintain'
     },
     formData: {
+      gender: '男',
+      age: 30,
       height: '',
       weight: '',
       heartRate: '',
       bloodPressure: '',
       bloodSugar: '',
-      allergyHistory: ''
+      allergyHistory: '',
+      activityLevel: 'moderately_active',
+      nutritionGoal: 'maintain'
     },
+    activityLevelRange: ['久坐', '轻度', '中度', '高强度'],
+    nutritionGoalRange: ['减重', '维持', '健康增重'],
+    activityLevelIndex: 2, // 0: sedentary, 1: lightly_active, 2: moderately_active, 3: very_active
+    nutritionGoalIndex: 1, // 0: lose_weight, 1: maintain, 2: healthy_gain
     evaluation: null,
     historyList: []
   },
@@ -80,16 +91,56 @@ Page({
       wx.hideLoading();
       if (res.code === 200 && res.data) {
         const data = res.data;
+        const activityLevel = data.activity_level || 'moderately_active';
+        const nutritionGoal = data.nutrition_goal || 'maintain';
+        
+        // 设置活动水平索引
+        let activityLevelIndex = 2; // 默认中度
+        switch(activityLevel) {
+          case 'sedentary':
+            activityLevelIndex = 0;
+            break;
+          case 'lightly_active':
+            activityLevelIndex = 1;
+            break;
+          case 'moderately_active':
+            activityLevelIndex = 2;
+            break;
+          case 'very_active':
+            activityLevelIndex = 3;
+            break;
+        }
+        
+        // 设置营养目标索引
+        let nutritionGoalIndex = 1; // 默认维持
+        switch(nutritionGoal) {
+          case 'lose_weight':
+            nutritionGoalIndex = 0;
+            break;
+          case 'maintain':
+            nutritionGoalIndex = 1;
+            break;
+          case 'healthy_gain':
+            nutritionGoalIndex = 2;
+            break;
+        }
+        
         this.setData({
           healthData: {
-            ...this.data.healthData,
+            data_id: data.data_id || '',
+            gender: data.gender === 'male' ? '男' : '女',
+            age: data.age || 30,
             height: data.height || '',
             weight: data.weight || '',
             heartRate: data.heart_rate || '',
             bloodPressure: data.blood_pressure || '',
             bloodSugar: data.blood_sugar || '',
-            allergyHistory: data.allergy_history || ''
+            allergyHistory: data.allergy_history || '',
+            activityLevel: activityLevel,
+            nutritionGoal: nutritionGoal
           },
+          activityLevelIndex: activityLevelIndex,
+          nutritionGoalIndex: nutritionGoalIndex,
           hasHealthData: true
         });
         wx.setStorageSync('cachedHealthData', this.data.healthData);
@@ -175,16 +226,28 @@ Page({
     }
   },
 
-  editHealthData() {
+  editBasicInfo() {
     this.setData({
-      showEditModal: true,
+      showBasicInfoModal: true,
       isEditing: this.data.hasHealthData,
       formData: { ...this.data.healthData }
     });
   },
 
-  hideEditModal() {
-    this.setData({ showEditModal: false });
+  hideBasicInfoModal() {
+    this.setData({ showBasicInfoModal: false });
+  },
+
+  editHealthMetrics() {
+    this.setData({
+      showHealthMetricsModal: true,
+      isEditing: this.data.hasHealthData,
+      formData: { ...this.data.healthData }
+    });
+  },
+
+  hideHealthMetricsModal() {
+    this.setData({ showHealthMetricsModal: false });
   },
 
   bindHeightInput(e) {
@@ -211,26 +274,62 @@ Page({
     this.setData({ 'formData.allergyHistory': e.detail.value });
   },
 
-  saveHealthData() {
-    const { height, weight, heartRate, bloodPressure, bloodSugar, allergyHistory } = this.data.formData;
+  bindGenderChange(e) {
+    this.setData({ 'formData.gender': e.detail.value });
+  },
 
-    if (!height) {
-      wx.showToast({ title: '请输入身高', icon: 'none' });
+  bindAgeInput(e) {
+    this.setData({ 'formData.age': e.detail.value });
+  },
+
+  toggleGender() {
+    const newGender = this.data.formData.gender === '男' ? '女' : '男';
+    this.setData({ 'formData.gender': newGender });
+  },
+
+  changeActivityLevel(e) {
+    const index = e.detail.value;
+    const activityLevels = ['sedentary', 'lightly_active', 'moderately_active', 'very_active'];
+    const activityLevel = activityLevels[index];
+    this.setData({ 
+      activityLevelIndex: index,
+      'formData.activityLevel': activityLevel 
+    });
+  },
+
+  changeNutritionGoal(e) {
+    const index = e.detail.value;
+    const nutritionGoals = ['lose_weight', 'maintain', 'healthy_gain'];
+    const nutritionGoal = nutritionGoals[index];
+    this.setData({ 
+      nutritionGoalIndex: index,
+      'formData.nutritionGoal': nutritionGoal 
+    });
+  },
+
+  saveBasicInfo() {
+    const { gender, age, activityLevel, nutritionGoal } = this.data.formData;
+
+    if (!gender) {
+      wx.showToast({ title: '请选择性别', icon: 'none' });
       return;
     }
-    if (!weight) {
-      wx.showToast({ title: '请输入体重', icon: 'none' });
+    if (!age) {
+      wx.showToast({ title: '请输入年龄', icon: 'none' });
       return;
     }
 
+    // 构建完整的请求数据，包含所有字段
     const requestData = {
-      height: parseFloat(height),
-      weight: parseFloat(weight),
-      heart_rate: parseInt(heartRate) || 0,
-      blood_pressure: bloodPressure || '',
-      blood_sugar: parseFloat(bloodSugar) || 0,
-      allergy_history: allergyHistory || ''
+      ...this.data.healthData,
+      gender: gender === '男' ? 'male' : 'female',
+      age: parseInt(age),
+      activity_level: activityLevel,
+      nutrition_goal: nutritionGoal
     };
+
+    // 移除不需要的字段
+    delete requestData.data_id;
 
     wx.showLoading({ title: '保存中...' });
 
@@ -238,7 +337,7 @@ Page({
       api.healthData.update(this.data.healthData.data_id || '', requestData).then(res => {
         wx.hideLoading();
         if (res.code === 200) {
-          this.handleSaveSuccess();
+          this.handleBasicInfoSaveSuccess();
         } else {
           wx.showToast({ title: res.message || '更新失败', icon: 'none' });
         }
@@ -251,7 +350,7 @@ Page({
       api.healthData.submit(requestData).then(res => {
         wx.hideLoading();
         if (res.code === 200) {
-          this.handleSaveSuccess();
+          this.handleBasicInfoSaveSuccess();
         } else {
           wx.showToast({ title: res.message || '保存失败', icon: 'none' });
         }
@@ -263,7 +362,85 @@ Page({
     }
   },
 
-  handleSaveSuccess() {
+  saveHealthMetrics() {
+    const { height, weight, heartRate, bloodPressure, bloodSugar, allergyHistory } = this.data.formData;
+
+    if (!height) {
+      wx.showToast({ title: '请输入身高', icon: 'none' });
+      return;
+    }
+    if (!weight) {
+      wx.showToast({ title: '请输入体重', icon: 'none' });
+      return;
+    }
+
+    // 构建完整的请求数据，包含所有字段
+    const requestData = {
+      ...this.data.healthData,
+      height: parseFloat(height),
+      weight: parseFloat(weight),
+      heart_rate: parseInt(heartRate) || 0,
+      blood_pressure: bloodPressure || '',
+      blood_sugar: parseFloat(bloodSugar) || 0,
+      allergy_history: allergyHistory || ''
+    };
+
+    // 移除不需要的字段
+    delete requestData.data_id;
+
+    wx.showLoading({ title: '保存中...' });
+
+    if (this.data.isEditing) {
+      api.healthData.update(this.data.healthData.data_id || '', requestData).then(res => {
+        wx.hideLoading();
+        if (res.code === 200) {
+          this.handleHealthMetricsSaveSuccess();
+        } else {
+          wx.showToast({ title: res.message || '更新失败', icon: 'none' });
+        }
+      }).catch(err => {
+        wx.hideLoading();
+        console.log('更新失败', err);
+        wx.showToast({ title: '更新失败', icon: 'none' });
+      });
+    } else {
+      api.healthData.submit(requestData).then(res => {
+        wx.hideLoading();
+        if (res.code === 200) {
+          this.handleHealthMetricsSaveSuccess();
+        } else {
+          wx.showToast({ title: res.message || '保存失败', icon: 'none' });
+        }
+      }).catch(err => {
+        wx.hideLoading();
+        console.log('保存失败', err);
+        wx.showToast({ title: '保存失败', icon: 'none' });
+      });
+    }
+  },
+
+  handleBasicInfoSaveSuccess() {
+    const healthData = {
+      ...this.data.healthData,
+      ...this.data.formData
+    };
+
+    wx.setStorageSync('cachedHealthData', healthData);
+
+    this.setData({
+      healthData,
+      hasHealthData: true,
+      showBasicInfoModal: false
+    });
+
+    wx.showToast({ title: '保存成功', icon: 'success' });
+
+    setTimeout(() => {
+      this.loadHealthData();
+    }, 1000);
+  },
+
+  handleHealthMetricsSaveSuccess() {
     const healthData = {
       ...this.data.healthData,
       ...this.data.formData
@@ -283,10 +460,14 @@ Page({
     this.setData({
       healthData,
       hasHealthData: true,
-      showEditModal: false
+      showHealthMetricsModal: false
     });
 
     wx.showToast({ title: '保存成功', icon: 'success' });
+
+    setTimeout(() => {
+      this.loadHealthData();
+    }, 1000);
   },
 
   viewEvaluation() {

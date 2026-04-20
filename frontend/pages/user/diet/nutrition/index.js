@@ -4,6 +4,7 @@ const api = require('../../../../utils/api');
 Page({
   data: {
     activeTab: 'record',
+    today: '',
     todayIntake: {
       calories: 0,
       protein: 0,
@@ -17,15 +18,39 @@ Page({
       fat: 65
     },
     records: [],
-    suggestions: []
+    suggestions: [],
+    bmr: 0,
+    isLoading: false
   },
 
   onLoad() {
+    // 设置今日日期
+    const today = new Date().toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+    this.setData({ today });
+    
     this.loadTodayData();
     this.loadRecords();
   },
 
   onShow() {
+    // 每次显示页面时更新日期
+    const today = new Date().toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+    this.setData({ today });
+    
+    // 清除缓存，确保每次都从后端获取最新数据
+    wx.removeStorageSync('todayNutritionRecords');
+    
+    this.loadRecommendation();
     this.loadTodayData();
     this.loadRecords();
   },
@@ -76,9 +101,40 @@ Page({
           todayIntake: totals
         });
 
-        if (totals.calories > 0) {
-          this.generateSuggestions(totals);
+        this.generateSuggestions(totals);
+      });
+  },
+
+  // 加载营养推荐标准
+  loadRecommendation() {
+    this.setData({ isLoading: true });
+    
+    api.nutrition.getRecommendation()
+      .then(res => {
+        if (res.code === 200 && res.data) {
+          const recommendation = res.data;
+          this.setData({
+            targetIntake: recommendation.nutrients,
+            bmr: recommendation.bmr
+          });
+          
+          // 缓存推荐标准
+          wx.setStorageSync('nutritionRecommendation', recommendation);
         }
+      })
+      .catch(() => {
+        console.log('获取推荐标准失败，使用默认值');
+        // 尝试使用缓存
+        const cached = wx.getStorageSync('nutritionRecommendation');
+        if (cached) {
+          this.setData({
+            targetIntake: cached.nutrients,
+            bmr: cached.bmr
+          });
+        }
+      })
+      .finally(() => {
+        this.setData({ isLoading: false });
       });
   },
 
@@ -88,15 +144,25 @@ Page({
       .then(res => {
         if (res.code === 200 && res.data) {
           const records = res.data.records || [];
-          this.setData({ records: records.slice(0, 10) });
+          // 处理时间格式
+          const processedRecords = records.map(record => ({
+            ...record,
+            formattedTime: this.formatTime(record.created_at)
+          }));
+          this.setData({ records: processedRecords.slice(0, 10) });
           // 缓存到本地
-          wx.setStorageSync('nutritionRecords', records);
+          wx.setStorageSync('nutritionRecords', processedRecords);
         }
       })
       .catch(() => {
         // 网络错误时使用缓存
         const records = wx.getStorageSync('nutritionRecords') || [];
-        this.setData({ records: records.slice(0, 10) });
+        // 处理时间格式
+        const processedRecords = records.map(record => ({
+          ...record,
+          formattedTime: this.formatTime(record.created_at)
+        }));
+        this.setData({ records: processedRecords.slice(0, 10) });
       });
   },
 
@@ -154,6 +220,8 @@ Page({
     this.setData({ suggestions });
   },
 
+
+
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab;
     this.setData({ activeTab: tab });
@@ -196,5 +264,16 @@ Page({
       snack: '加餐'
     };
     return mealTypes[type] || '其他';
+  },
+
+  formatTime(datetime) {
+    if (!datetime) return '';
+    // 解析日期时间
+    const date = new Date(datetime);
+    if (isNaN(date.getTime())) return datetime;
+    // 格式化为 HH:MM
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
   }
 });
