@@ -119,6 +119,11 @@
   border-color: #4caf50;
 }
 
+.other-goal-input {
+  margin-top: 40rpx;
+  margin-bottom: 10rpx;
+}
+
 .health-status {
   display: flex;
   flex-direction: column;

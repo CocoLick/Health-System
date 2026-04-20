@@ -1,3 +1,5 @@
+const api = require('../../../../utils/api');
+
 // diet-plan/index.js
 Page({
   data: {
@@ -5,20 +7,60 @@ Page({
     selectedDietitian: null,
     pendingRequest: null,
     currentPlan: null,
-    historyPlans: []
+    historyPlans: [],
+    latestRequest: null
   },
 
   onLoad() {
-    this.loadData();
+    console.log('页面加载');
+    this.checkPendingRequest();
+    this.loadLatestRequest();
   },
 
   onShow() {
-    this.loadData();
+    console.log('页面显示');
+    this.checkPendingRequest();
+    this.loadLatestRequest();
+  },
+
+  checkPendingRequest() {
+    // 检查是否有未处理的服务请求
+    console.log('检查未处理的服务请求');
+    api.serviceRequest.getList()
+      .then(res => {
+        console.log('服务请求列表API响应:', res);
+        if (res.code === 200) {
+          const requests = res.data || [];
+          console.log('服务请求列表:', requests);
+          // 只查找状态为pending的请求
+          const pendingRequest = requests.find(req => req.status === 'pending');
+          console.log('未处理的服务请求:', pendingRequest);
+          
+          // 不再自动跳转到服务请求详情页面，而是在初始页面显示申请信息
+          // 清除本地存储中的pendingServiceRequest
+          wx.removeStorageSync('pendingServiceRequest');
+          this.loadData();
+        } else {
+          // API调用失败，加载本地数据
+          console.log('服务请求列表API调用失败:', res);
+          this.loadData();
+        }
+      })
+      .catch(err => {
+        console.error('检查服务请求失败:', err);
+        // 网络错误，加载本地数据
+        this.loadData();
+      });
   },
 
   loadData() {
     const selectedDietitian = wx.getStorageSync('selectedDietitian');
-    const pendingRequest = wx.getStorageSync('pendingServiceRequest');
+    let pendingRequest = wx.getStorageSync('pendingServiceRequest');
+    // 只保留状态为pending的请求
+    if (pendingRequest && pendingRequest.status !== 'pending') {
+      pendingRequest = null;
+      wx.removeStorageSync('pendingServiceRequest');
+    }
     const currentPlan = wx.getStorageSync('currentDietPlan');
     const historyPlans = wx.getStorageSync('dietPlanHistory') || [];
 
@@ -212,7 +254,7 @@ Page({
     }, 1500);
   },
 
-  viewRequestDetail() {
+  viewPendingRequestDetail() {
     const request = this.data.pendingRequest;
     if (!request) return;
 
@@ -240,5 +282,124 @@ Page({
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab;
     this.setData({ activeTab: tab });
+  },
+
+  // 加载最新服务请求
+  loadLatestRequest() {
+    console.log('开始加载最新服务请求');
+    api.serviceRequest.getList()
+      .then(res => {
+        console.log('服务请求列表API响应:', res);
+        if (res.code === 200) {
+          const requests = res.data || [];
+          console.log('服务请求列表:', requests);
+          console.log('服务请求列表长度:', requests.length);
+          if (requests.length > 0) {
+            // 按创建时间排序，获取最新的请求
+            requests.sort((a, b) => {
+              const dateA = a.create_time ? new Date(a.create_time) : new Date(0);
+              const dateB = b.create_time ? new Date(b.create_time) : new Date(0);
+              return dateB - dateA;
+            });
+            const latestRequest = requests[0];
+            console.log('最新服务请求:', latestRequest);
+            
+            // 转换字段为中文
+            latestRequest.statusText = this.getStatusText(latestRequest.status);
+            latestRequest.serviceTypeText = this.getServiceTypeName(latestRequest.service_type);
+            latestRequest.dietGoalText = this.getDietGoalText(latestRequest.diet_goal, latestRequest.other_goal);
+            latestRequest.createTimeText = this.formatDate(latestRequest.create_time);
+            
+            console.log('最新服务请求状态:', latestRequest.status);
+            console.log('最新服务请求服务类型:', latestRequest.service_type);
+            console.log('最新服务请求饮食目标:', latestRequest.diet_goal);
+            console.log('最新服务请求创建时间:', latestRequest.create_time);
+            this.setData({ latestRequest }, () => {
+              console.log('最新服务请求设置完成');
+              console.log('当前latestRequest:', this.data.latestRequest);
+            });
+          } else {
+            console.log('没有服务请求');
+            this.setData({ latestRequest: null }, () => {
+              console.log('设置latestRequest为null');
+            });
+          }
+        } else {
+          console.log('获取服务请求列表失败:', res);
+          this.setData({ latestRequest: null });
+        }
+      })
+      .catch(err => {
+        console.error('加载最新服务请求失败:', err);
+        this.setData({ latestRequest: null });
+      });
+  },
+
+  // 获取服务类型名称
+  getServiceTypeName(type) {
+    const typeMap = {
+      'diet_plan': '膳食计划定制',
+      'nutrition_consult': '营养咨询服务',
+      'health_management': '健康管理服务'
+    };
+    return typeMap[type] || type;
+  },
+
+  // 获取饮食目标文本
+  getDietGoalText(goal, otherGoal) {
+    if (goal === 'other' && otherGoal) {
+      return otherGoal;
+    }
+    const goalMap = {
+      'weight_loss': '减脂',
+      'weight_gain': '增重',
+      'diabetes_control': '控糖',
+      'health_maintain': '养生',
+      'sports_nutrition': '运动营养',
+      'pregnancy': '孕期营养'
+    };
+    return goalMap[goal] || goal;
+  },
+
+  // 获取状态文本
+  getStatusText(status) {
+    const statusMap = {
+      'pending': '待处理',
+      'approved': '已通过',
+      'rejected': '已拒绝',
+      'cancelled': '已取消'
+    };
+    return statusMap[status] || status;
+  },
+
+  // 格式化日期
+  formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  },
+
+  // 查看请求详情
+  viewRequestDetail() {
+    const request = this.data.latestRequest;
+    if (!request) return;
+    wx.redirectTo({
+      url: '/pages/user/dietitian/request-detail/index?id=' + request.request_id
+    });
+  },
+
+  // 重新申请
+  reapplyRequest() {
+    const request = this.data.latestRequest;
+    if (!request) return;
+    wx.navigateTo({
+      url: '/pages/user/dietitian/request/index?dietitianId=' + request.dietitian_id + '&dietitianName=' + request.dietitian_name
+    });
   }
 });

@@ -1,0 +1,57 @@
+<view class="container">
+  <view class="header">
+    <view class="back-btn" bindtap="goBack">
+      <text>←</text>
+    </view>
+    <view class="title">服务请求</view>
+  </view>
+
+  <view class="status-filter">
+    <view class="filter-item {{filter === 'all' ? 'active' : ''}}" bindtap="switchFilter" data-filter="all">
+      全部
+    </view>
+    <view class="filter-item {{filter === 'pending' ? 'active' : ''}}" bindtap="switchFilter" data-filter="pending">
+      待处理
+    </view>
+    <view class="filter-item {{filter === 'approved' ? 'active' : ''}}" bindtap="switchFilter" data-filter="approved">
+      已通过
+    </view>
+    <view class="filter-item {{filter === 'rejected' ? 'active' : ''}}" bindtap="switchFilter" data-filter="rejected">
+      已拒绝
+    </view>
+  </view>
+
+  <view class="request-list">
+    <view wx:for="{{requests}}" wx:key="{{item.request_id}}" class="request-item">
+      <view class="request-header">
+        <view class="request-type">{{getServiceTypeName(item.service_type)}}</view>
+        <view class="request-status {{item.status}}">
+          {{getStatusText(item.status)}}
+        </view>
+      </view>
+      <view class="request-content">
+        <view class="request-info">
+          <text class="label">饮食目标：</text>
+          <text class="value">{{getDietGoalText(item.diet_goal, item.other_goal)}}</text>
+        </view>
+        <view class="request-info">
+          <text class="label">提交时间：</text>
+          <text class="value">{{formatDate(item.create_time)}}</text>
+        </view>
+      </view>
+      <view class="request-actions">
+        <button class="action-btn" bindtap="viewRequestDetail" data-id="{{item.request_id}}">
+          查看详情
+        </button>
+      </view>
+    </view>
+
+    <view wx:if="{{requests.length === 0}}" class="empty-state">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无服务请求记录</text>
+      <button class="empty-btn" bindtap="goToSelectDietitian">
+        选择规划师
+      </button>
+    </view>
+  </view>
+</view>

@@ -289,6 +289,31 @@ func (h *AuthHandler) DeleteDietitian(c *gin.Context) {
 	})
 }
 
+// GetDietitians 获取规划师列表（普通用户）
+// @Summary 获取规划师列表
+// @Description 获取所有规划师的列表
+// @Tags 认证
+// @Produce json
+// @Success 200 {object} schemas.Response
+// @Failure 400 {object} schemas.Response
+// @Router /api/auth/dietitians [get]
+func (h *AuthHandler) GetDietitians(c *gin.Context) {
+	dietitians, err := h.authService.GetAllDietitians()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "获取成功",
+		Data:    dietitians,
+	})
+}
+
 // RegisterAuthRoutes 注册认证路由
 func RegisterAuthRoutes(router *gin.RouterGroup) {
 	handler := NewAuthHandler()
@@ -301,6 +326,7 @@ func RegisterAuthRoutes(router *gin.RouterGroup) {
 		authGroup.POST("/admin/login", handler.AdminLogin)
 		authGroup.POST("/admin/dietitian", handler.CreateDietitian)
 		authGroup.GET("/admin/dietitians", handler.GetAllDietitians)
+		authGroup.GET("/dietitians", handler.GetDietitians)
 		authGroup.PUT("/admin/dietitian/:user_id/status", handler.UpdateDietitianStatus)
 		authGroup.DELETE("/admin/dietitian/:user_id", handler.DeleteDietitian)
 	}

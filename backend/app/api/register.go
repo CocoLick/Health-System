@@ -12,6 +12,19 @@ type Response struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// RegisterServiceRequestRoutes 注册服务请求路由
+func RegisterServiceRequestRoutes(router *gin.RouterGroup) {
+	handler := NewServiceRequestHandler()
+	
+	serviceRequestGroup := router.Group("/service-request")
+	{
+		serviceRequestGroup.POST("/", handler.CreateServiceRequest)         // 创建服务请求
+		serviceRequestGroup.GET("/", handler.GetUserServiceRequests)       // 获取用户的服务请求列表
+		serviceRequestGroup.GET("/:id", handler.GetServiceRequestByID)     // 根据ID获取服务请求
+		serviceRequestGroup.PUT("/:id/cancel", handler.CancelServiceRequest) // 取消服务请求
+	}
+}
+
 // RegisterRoutes 注册所有API路由
 func RegisterRoutes(router *gin.Engine) {
 	// 跨域中间件
@@ -49,6 +62,9 @@ func RegisterRoutes(router *gin.Engine) {
 
 			// 注册营养推荐路由
 			RegisterNutritionRecommendationRoutes(authGroup)
+
+			// 注册服务请求路由
+			RegisterServiceRequestRoutes(authGroup)
 		}
 	}
 }

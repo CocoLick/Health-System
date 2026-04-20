@@ -23,6 +23,8 @@
     "pages/user/dietitian/select/index",
     "pages/user/dietitian/detail/index",
     "pages/user/dietitian/request/index",
+    "pages/user/dietitian/requests/index",
+    "pages/user/dietitian/request-detail/index",
     "pages/user/profile/edit/index"
   ],
   "window": {

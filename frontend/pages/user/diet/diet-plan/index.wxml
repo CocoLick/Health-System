@@ -4,6 +4,38 @@
     <view class="header-subtitle">规划您的健康饮食</view>
   </view>
 
+  <!-- 我的申请模块 -->
+  <view class="application-module" wx:if="{{latestRequest}}">
+    <view class="application-card">
+      <view class="application-header">
+        <view class="application-title">我的申请</view>
+        <view class="application-status {{latestRequest.status}}">{{latestRequest.statusText}}</view>
+      </view>
+      <view class="application-info">
+        <view class="info-row">
+          <text class="label">规划师：</text>
+          <text class="value">{{latestRequest.dietitian_id}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">服务类型：</text>
+          <text class="value">{{latestRequest.serviceTypeText}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">饮食目标：</text>
+          <text class="value">{{latestRequest.dietGoalText}}</text>
+        </view>
+        <view class="info-row">
+          <text class="label">提交时间：</text>
+          <text class="value">{{latestRequest.createTimeText}}</text>
+        </view>
+      </view>
+      <view class="application-actions">
+        <view class="action-btn" bindtap="viewRequestDetail">查看详情</view>
+        <view class="action-btn reapply" bindtap="reapplyRequest" wx:if="{{latestRequest.status === 'rejected' || latestRequest.status === 'cancelled'}}">重新申请</view>
+      </view>
+    </view>
+  </view>
+
   <view class="content">
     <view class="status-0" wx:if="{{planStatus === 0}}">
       <view class="entry-cards">
@@ -74,7 +106,7 @@
           </view>
         </view>
         <view class="request-actions">
-          <view class="action-btn" bindtap="viewRequestDetail">查看详情</view>
+          <view class="action-btn" bindtap="viewPendingRequestDetail">查看详情</view>
           <view class="action-btn cancel" bindtap="cancelRequest">取消请求</view>
         </view>
       </view>

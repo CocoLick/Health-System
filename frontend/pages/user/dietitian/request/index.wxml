@@ -36,20 +36,16 @@
       <view class="goal-item {{dietGoal === 'health_maintain' ? 'active' : ''}}" bindtap="selectGoal" data-goal="health_maintain">养生</view>
       <view class="goal-item {{dietGoal === 'sports_nutrition' ? 'active' : ''}}" bindtap="selectGoal" data-goal="sports_nutrition">运动营养</view>
       <view class="goal-item {{dietGoal === 'pregnancy' ? 'active' : ''}}" bindtap="selectGoal" data-goal="pregnancy">孕期营养</view>
+      <view class="goal-item {{dietGoal === 'other' ? 'active' : ''}}" bindtap="selectGoal" data-goal="other">其他</view>
+    </view>
+    <view class="other-goal-input" wx:if="{{dietGoal === 'other'}}">
+      <input class="form-input" type="text" placeholder="请输入您的饮食目标" bindinput="bindOtherGoalInput" value="{{formData.otherGoal}}" />
     </view>
   </view>
 
   <view class="section">
     <view class="section-title">健康状况</view>
     <view class="health-status">
-      <view class="form-item">
-        <view class="form-label">当前体重 (kg)</view>
-        <input class="form-input" type="digit" placeholder="请输入当前体重" bindinput="bindWeightInput" value="{{formData.weight}}" />
-      </view>
-      <view class="form-item">
-        <view class="form-label">目标体重 (kg)</view>
-        <input class="form-input" type="digit" placeholder="请输入目标体重" bindinput="bindTargetWeightInput" value="{{formData.targetWeight}}" />
-      </view>
       <view class="form-item">
         <view class="form-label">是否有疾病 (如糖尿病、高血压等)</view>
         <input class="form-input" type="text" placeholder="有则填写，无则填无" bindinput="bindDiseaseInput" value="{{formData.disease}}" />

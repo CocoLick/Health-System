@@ -1,0 +1,60 @@
+<view class="container">
+  <view class="header">
+    <view class="back-btn" bindtap="goBack">
+      <text>←</text>
+    </view>
+    <view class="title">服务请求详情</view>
+  </view>
+
+  <view class="request-detail">
+    <view class="detail-section">
+      <view class="section-title">服务信息</view>
+      <view class="detail-item">
+        <text class="label">服务类型：</text>
+        <text class="value">{{request.serviceTypeName}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="label">饮食目标：</text>
+        <text class="value">{{request.dietGoalText}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="label">状态：</text>
+        <text class="value status {{request.status}}">{{request.statusText}}</text>
+      </view>
+    </view>
+
+    <view class="detail-section">
+      <view class="section-title">健康状况</view>
+      <view class="detail-item">
+        <text class="label">疾病史：</text>
+        <text class="value">{{request.health_data && request.health_data.disease ? request.health_data.disease : '无'}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="label">过敏食物：</text>
+        <text class="value">{{request.health_data && request.health_data.allergy ? request.health_data.allergy : '无'}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="label">其他需求：</text>
+        <text class="value">{{request.health_data && request.health_data.demand ? request.health_data.demand : '无'}}</text>
+      </view>
+    </view>
+
+    <view class="detail-section">
+      <view class="section-title">申请信息</view>
+      <view class="detail-item">
+        <text class="label">申请时间：</text>
+        <text class="value">{{request.createTimeFormatted}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="label">更新时间：</text>
+        <text class="value">{{request.updateTimeFormatted}}</text>
+      </view>
+    </view>
+
+    <view class="action-buttons" wx:if="{{request.status === 'pending'}}">
+      <button class="cancel-btn" bindtap="cancelRequest">
+        取消申请
+      </button>
+    </view>
+  </view>
+</view>

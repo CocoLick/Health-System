@@ -454,3 +454,71 @@
   font-size: 24rpx;
   color: #999;
 }
+
+/* 我的申请模块样式 */
+.application-module {
+  padding: 24rpx;
+}
+
+.application-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.05);
+}
+
+.application-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.application-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.application-status {
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.application-status.pending {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.application-status.approved {
+  background: #e6f7ee;
+  color: #389e7a;
+}
+
+.application-status.rejected {
+  background: #f7e6e6;
+  color: #9e3838;
+}
+
+.application-status.cancelled {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.application-info {
+  margin-bottom: 20rpx;
+}
+
+.application-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.action-btn.reapply {
+  background: #e8f5e9;
+  color: #4caf50;
+}

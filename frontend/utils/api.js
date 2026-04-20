@@ -131,7 +131,7 @@ const dietitian = {
   },
   // 获取规划师列表（用户端）
   getList: function(params) {
-    return get('/api/dietitians', params);
+    return get('/api/auth/dietitians', params);
   },
   // 获取规划师详情
   getDetail: function(id) {
@@ -187,11 +187,11 @@ const healthData = {
 const serviceRequest = {
   // 提交服务请求
   submit: function(data) {
-    return post('/api/service-request', data);
+    return post('/api/service-request/', data);
   },
   // 获取用户的服务请求列表
-  getUserRequests: function() {
-    return get('/api/service-request/user');
+  getList: function() {
+    return get('/api/service-request/');
   },
   // 获取服务请求详情
   getDetail: function(id) {
