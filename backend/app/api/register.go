@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/nutrition-system/app/middleware"
+	"github.com/yourusername/nutrition-system/app/services"
 )
 
 // Response 通用响应结构
@@ -68,6 +69,11 @@ func RegisterRoutes(router *gin.Engine) {
 
 			// 注册服务请求路由
 			RegisterServiceRequestRoutes(authGroup)
+
+			// 注册膳食计划路由
+			dietPlanService := services.NewDietPlanService()
+			dietPlanHandler := NewDietPlanHandler(dietPlanService)
+			dietPlanHandler.RegisterRoutes(authGroup)
 		}
 	}
 }

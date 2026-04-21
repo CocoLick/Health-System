@@ -1,0 +1,154 @@
+package schemas
+
+import (
+	"time"
+)
+
+// DietPlanCreate 创建膳食计划请求
+type DietPlanCreate struct {
+	UserID          string        `json:"user_id"`
+	ServiceRequestID string        `json:"service_request_id"`
+	DietitianID     string        `json:"dietitian_id" binding:"required"`
+	PlanTitle       string        `json:"plan_title" binding:"required"`
+	Source          string        `json:"source" binding:"required"`
+	DietGoal        string        `json:"diet_goal" binding:"required"`
+	CycleDays       int           `json:"cycle_days" binding:"required"`
+	PlanDays        []PlanDayCreate `json:"plan_days" binding:"required"`
+}
+
+// PlanDayCreate 创建天计划请求
+type PlanDayCreate struct {
+	DayIndex     int           `json:"day_index" binding:"required"`
+	PlanDate     string        `json:"plan_date" binding:"required"`
+	Calories     int           `json:"calories" binding:"required"`
+	Protein      float64       `json:"protein" binding:"required"`
+	Carbohydrate float64       `json:"carbohydrate" binding:"required"`
+	Fat          float64       `json:"fat" binding:"required"`
+	Meals        []MealCreate  `json:"meals" binding:"required"`
+}
+
+// MealCreate 创建餐次请求
+type MealCreate struct {
+	Type     string       `json:"type" binding:"required"`
+	Time     string       `json:"time" binding:"required"`
+	Calories int          `json:"calories" binding:"required"`
+	Foods    []FoodCreate `json:"foods" binding:"required"`
+}
+
+// FoodCreate 创建食物请求
+type FoodCreate struct {
+	Name     string `json:"name" binding:"required"`
+	Amount   string `json:"amount" binding:"required"`
+	Calories int    `json:"calories" binding:"required"`
+}
+
+// DietPlanUpdate 更新膳食计划请求
+type DietPlanUpdate struct {
+	PlanTitle string        `json:"plan_title"`
+	DietGoal  string        `json:"diet_goal"`
+	PlanDays  []PlanDayUpdate `json:"plan_days"`
+}
+
+// PlanDayUpdate 更新天计划请求
+type PlanDayUpdate struct {
+	DayID        string        `json:"day_id" binding:"required"`
+	Calories     int           `json:"calories"`
+	Protein      float64       `json:"protein"`
+	Carbohydrate float64       `json:"carbohydrate"`
+	Fat          float64       `json:"fat"`
+	Meals        []MealUpdate  `json:"meals"`
+}
+
+// MealUpdate 更新餐次请求
+type MealUpdate struct {
+	MealID   string       `json:"meal_id" binding:"required"`
+	Type     string       `json:"type"`
+	Time     string       `json:"time"`
+	Calories int          `json:"calories"`
+	Foods    []FoodUpdate `json:"foods"`
+}
+
+// FoodUpdate 更新食物请求
+type FoodUpdate struct {
+	FoodID   string `json:"food_id" binding:"required"`
+	Name     string `json:"name"`
+	Amount   string `json:"amount"`
+	Calories int    `json:"calories"`
+}
+
+// DietPlan 膳食计划响应
+type DietPlan struct {
+	PlanID          string    `json:"id"`
+	UserID          string    `json:"user_id"`
+	ServiceRequestID string    `json:"service_request_id"`
+	DietitianID     string    `json:"dietitian_id"`
+	PlanTitle       string    `json:"title"`
+	Source          string    `json:"source"`
+	DietGoal        string    `json:"goal"`
+	CycleDays       int       `json:"cycle_days"`
+	AuditStatus     string    `json:"status"`
+	PublishedAt     time.Time `json:"create_time"`
+	UpdatedAt       time.Time `json:"update_time"`
+}
+
+// DietPlanDetail 膳食计划详情响应
+type DietPlanDetail struct {
+	PlanID          string    `json:"id"`
+	UserID          string    `json:"user_id"`
+	ServiceRequestID string    `json:"service_request_id"`
+	DietitianID     string    `json:"dietitian_id"`
+	PlanTitle       string    `json:"title"`
+	Source          string    `json:"source"`
+	DietGoal        string    `json:"goal"`
+	CycleDays       int       `json:"cycle_days"`
+	AuditStatus     string    `json:"status"`
+	PublishedAt     time.Time `json:"create_time"`
+	UpdatedAt       time.Time `json:"update_time"`
+	PlanDays        []PlanDayDetail `json:"plan_days"`
+}
+
+// PlanDayDetail 天计划详情响应
+type PlanDayDetail struct {
+	DayID        string       `json:"id"`
+	PlanID       string       `json:"plan_id"`
+	DayIndex     int          `json:"day_index"`
+	PlanDate     string       `json:"date"`
+	Calories     int          `json:"calories"`
+	Protein      float64      `json:"protein"`
+	Carbohydrate float64      `json:"carbohydrate"`
+	Fat          float64      `json:"fat"`
+	Meals        []MealDetail `json:"meals"`
+}
+
+// MealDetail 餐次详情响应
+type MealDetail struct {
+	MealID   string       `json:"id"`
+	DayID    string       `json:"day_id"`
+	Type     string       `json:"type"`
+	Time     string       `json:"time"`
+	Calories int          `json:"calories"`
+	Foods    []FoodDetail `json:"foods"`
+	Executed bool         `json:"executed"`
+}
+
+// FoodDetail 食物详情响应
+type FoodDetail struct {
+	FoodID   string `json:"id"`
+	MealID   string `json:"meal_id"`
+	Name     string `json:"name"`
+	Amount   string `json:"amount"`
+	Calories int    `json:"calories"`
+}
+
+// ExecutionStatusUpdate 执行状态更新请求
+type ExecutionStatusUpdate struct {
+	DayID     string `json:"day_id" binding:"required"`
+	MealID    string `json:"meal_id" binding:"required"`
+	Executed  bool   `json:"executed" binding:"required"`
+}
+
+// OptimizationRequest 优化请求
+type OptimizationRequest struct {
+	RequestTime string `json:"request_time" binding:"required"`
+	Reason      string `json:"reason"`
+}

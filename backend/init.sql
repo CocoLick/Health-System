@@ -53,15 +53,63 @@ CREATE TABLE IF NOT EXISTS `nutrition_record` (
 CREATE TABLE IF NOT EXISTS `diet_plan` (
     `plan_id` VARCHAR(20) PRIMARY KEY,
     `user_id` VARCHAR(20) NOT NULL,
+    `service_request_id` VARCHAR(20) NULL,
     `dietitian_id` VARCHAR(20) NOT NULL,
     `plan_title` VARCHAR(100) NOT NULL,
+    `source` VARCHAR(50) NOT NULL,
     `diet_goal` VARCHAR(50) NOT NULL,
-    `plan_content` TEXT NOT NULL,
+    `cycle_days` INT NOT NULL,
     `audit_status` VARCHAR(20) NOT NULL,
     `published_at` DATETIME NOT NULL,
     `updated_at` DATETIME NOT NULL,
     FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`),
     FOREIGN KEY (`dietitian_id`) REFERENCES `user`(`user_id`)
+);
+
+-- 创建天计划表
+CREATE TABLE IF NOT EXISTS `plan_days` (
+    `day_id` VARCHAR(20) PRIMARY KEY,
+    `plan_id` VARCHAR(20) NOT NULL,
+    `day_index` INT NOT NULL,
+    `plan_date` DATE NOT NULL,
+    `calories` INT NOT NULL,
+    `protein` DECIMAL(6,2) NOT NULL,
+    `carbohydrate` DECIMAL(6,2) NOT NULL,
+    `fat` DECIMAL(6,2) NOT NULL,
+    FOREIGN KEY (`plan_id`) REFERENCES `diet_plan`(`plan_id`)
+);
+
+-- 创建餐次表
+CREATE TABLE IF NOT EXISTS `meals` (
+    `meal_id` VARCHAR(20) PRIMARY KEY,
+    `day_id` VARCHAR(20) NOT NULL,
+    `type` VARCHAR(50) NOT NULL,
+    `time` VARCHAR(10) NOT NULL,
+    `calories` INT NOT NULL,
+    FOREIGN KEY (`day_id`) REFERENCES `plan_days`(`day_id`)
+);
+
+-- 创建食物表
+CREATE TABLE IF NOT EXISTS `foods` (
+    `food_id` VARCHAR(20) PRIMARY KEY,
+    `meal_id` VARCHAR(20) NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `amount` VARCHAR(100) NOT NULL,
+    `calories` INT NOT NULL,
+    FOREIGN KEY (`meal_id`) REFERENCES `meals`(`meal_id`)
+);
+
+-- 创建计划执行表
+CREATE TABLE IF NOT EXISTS `plan_execution` (
+    `execution_id` VARCHAR(20) PRIMARY KEY,
+    `day_id` VARCHAR(20) NOT NULL,
+    `meal_id` VARCHAR(20) NOT NULL,
+    `user_id` VARCHAR(20) NOT NULL,
+    `executed` BOOLEAN NOT NULL,
+    `execute_time` DATETIME NOT NULL,
+    FOREIGN KEY (`day_id`) REFERENCES `plan_days`(`day_id`),
+    FOREIGN KEY (`meal_id`) REFERENCES `meals`(`meal_id`),
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
 );
 
 -- 创建食材表

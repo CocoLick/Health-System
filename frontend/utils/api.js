@@ -26,7 +26,8 @@ function request(options) {
       data: options.data,
       header: headers,
       success: (res) => {
-        if (res.statusCode === 200) {
+        // 兼容 RESTful 常见返回码：201(created), 204(no content) 等
+        if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data);
         } else {
           reject(res);
@@ -247,38 +248,6 @@ const ingredient = {
   }
 };
 
-// 膳食计划相关API
-const dietPlan = {
-  // 创建膳食计划
-  create: function(data) {
-    return post('/api/diet-plans', data);
-  },
-  // 获取膳食计划详情
-  getDetail: function(id) {
-    return get(`/api/diet-plans/${id}`);
-  },
-  // 更新膳食计划
-  update: function(id, data) {
-    return put(`/api/diet-plans/${id}`, data);
-  },
-  // 删除膳食计划
-  remove: function(id) {
-    return del(`/api/diet-plans/${id}`);
-  },
-  // 获取用户的膳食计划
-  getUserPlans: function() {
-    return get('/api/diet-plans/user');
-  },
-  // 更新执行状态
-  updateExecuteStatus: function(id, data) {
-    return put(`/api/diet-plans/${id}/execute-status`, data);
-  },
-  // 申请优化
-  requestOptimization: function(id, data) {
-    return put(`/api/diet-plans/${id}/optimization`, data);
-  }
-};
-
 // 营养分析相关API
 const nutrition = {
   // 获取营养分析数据
@@ -312,6 +281,38 @@ const nutrition = {
   // 获取营养摄入趋势数据
   getTrendData: function(days) {
     return get('/api/nutrition/record/trend', { days });
+  }
+};
+
+// 膳食计划相关API
+const dietPlan = {
+  // 创建膳食计划
+  create: function(data) {
+    return post('/api/diet-plans', data);
+  },
+  // 获取膳食计划详情
+  getDetail: function(id) {
+    return get(`/api/diet-plans/${id}`);
+  },
+  // 更新膳食计划
+  update: function(id, data) {
+    return put(`/api/diet-plans/${id}`, data);
+  },
+  // 删除膳食计划
+  remove: function(id) {
+    return del(`/api/diet-plans/${id}`);
+  },
+  // 获取用户的膳食计划
+  getUserPlans: function() {
+    return get('/api/diet-plans/user');
+  },
+  // 更新执行状态
+  updateExecuteStatus: function(id, data) {
+    return put(`/api/diet-plans/${id}/execute-status`, data);
+  },
+  // 申请优化
+  requestOptimization: function(id, data) {
+    return put(`/api/diet-plans/${id}/optimization`, data);
   }
 };
 

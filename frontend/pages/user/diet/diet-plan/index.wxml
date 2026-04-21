@@ -1,151 +1,69 @@
 <view class="container">
-  <view class="header">
-    <view class="header-title">膳食管理</view>
-    <view class="header-subtitle">规划您的健康饮食</view>
-  </view>
-
-  <!-- 我的申请模块 -->
-  <view class="application-module" wx:if="{{latestRequest}}">
-    <view class="application-card">
-      <view class="application-header">
-        <view class="application-title">我的申请</view>
-        <view class="application-status {{latestRequest.status}}">{{latestRequest.statusText}}</view>
-      </view>
-      <view class="application-info">
-        <view class="info-row">
-          <text class="label">规划师：</text>
-          <text class="value">{{latestRequest.dietitian_id}}</text>
-        </view>
-        <view class="info-row">
-          <text class="label">服务类型：</text>
-          <text class="value">{{latestRequest.serviceTypeText}}</text>
-        </view>
-        <view class="info-row">
-          <text class="label">饮食目标：</text>
-          <text class="value">{{latestRequest.dietGoalText}}</text>
-        </view>
-        <view class="info-row">
-          <text class="label">提交时间：</text>
-          <text class="value">{{latestRequest.createTimeText}}</text>
-        </view>
-      </view>
-      <view class="application-actions">
-        <view class="action-btn" bindtap="viewRequestDetail">查看详情</view>
-        <view class="action-btn reapply" bindtap="reapplyRequest" wx:if="{{latestRequest.status === 'rejected' || latestRequest.status === 'cancelled'}}">重新申请</view>
-      </view>
+  <!-- 有膳食计划时，显示详情页面内容 -->
+  <view wx:if="{{planStatus === 4}}">
+    <view class="header">
+      <view class="header-left"></view>
+      <view class="header-title">膳食计划详情</view>
+      <view class="header-right"></view>
     </view>
-  </view>
 
-  <view class="content">
-    <view class="status-0" wx:if="{{planStatus === 0}}">
-      <view class="entry-cards">
-        <view class="entry-card ai-card" bindtap="requestAiRecommendation">
-          <view class="entry-icon">🤖</view>
-          <view class="entry-title">系统智能推荐</view>
-          <view class="entry-desc">根据您的健康数据，自动生成个性化膳食方案</view>
+    <view class="plan-overview">
+      <view class="plan-header">
+        <view class="plan-source">
+          <text wx:if="{{currentPlan.source === 'ai'}}">🤖</text>
+          <text wx:else>👨‍⚕️</text>
+          <text>{{currentPlan.source === 'ai' ? '系统智能推荐' : '规划师定制'}}</text>
         </view>
-        <view class="entry-card dietitian-card" bindtap="goToSelectDietitian">
-          <view class="entry-icon">👨‍⚕️</view>
-          <view class="entry-title">选择规划师</view>
-          <view class="entry-desc">专业营养师为您量身定制膳食计划</view>
+        <view class="plan-dietitian" wx:if="{{currentPlan.source !== 'ai'}}">
+          {{currentPlan.dietitianName}}
         </view>
       </view>
-      <view class="tips">
-        <text class="tip-title">温馨提示</text>
-        <text class="tip-item">• 系统智能推荐：根据您的健康数据自动生成</text>
-        <text class="tip-item">• 规划师定制：专业营养师根据您的情况制定</text>
+      <view class="plan-title">{{currentPlan.title}}</view>
+      <view class="plan-goal">饮食目标：{{currentPlan.goal}}</view>
+      <view class="plan-date">创建时间：{{currentPlan.createTime}}</view>
+      <view class="plan-period">计划周期：7天</view>
+      
+      <view class="date-selector">
+        <view class="selector-label">选择日期</view>
+        <picker mode="date" value="{{selectedDate}}" bindchange="changeDate">
+          <view class="picker-view">
+            <text class="date-icon">📅</text>
+            <text class="date-value">{{selectedDateText}}</text>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="nutrition-summary">
+        <view class="nutr-item">
+          <view class="nutr-value">{{currentPlan.calories}}</view>
+          <view class="nutr-label">千卡</view>
+        </view>
+        <view class="nutr-item">
+          <view class="nutr-value">{{currentPlan.protein}}g</view>
+          <view class="nutr-label">蛋白质</view>
+        </view>
+        <view class="nutr-item">
+          <view class="nutr-value">{{currentPlan.carbohydrate}}g</view>
+          <view class="nutr-label">碳水</view>
+        </view>
+        <view class="nutr-item">
+          <view class="nutr-value">{{currentPlan.fat}}g</view>
+          <view class="nutr-label">脂肪</view>
+        </view>
       </view>
     </view>
 
-    <view class="status-2" wx:if="{{planStatus === 2}}">
-      <view class="request-card">
-        <view class="request-status">
-          <text class="status-icon">⏳</text>
-          <text class="status-text">等待规划师响应</text>
-        </view>
-        <view class="request-info">
-          <view class="info-row">
-            <text class="label">规划师：</text>
-            <text class="value">{{pendingRequest.dietitian_id}}</text>
-          </view>
-          <view class="info-row">
-            <text class="label">服务类型：</text>
-            <text class="value">{{pendingRequest.service_type === 'diet_plan' ? '膳食计划定制' : '营养咨询服务'}}</text>
-          </view>
-          <view class="info-row">
-            <text class="label">饮食目标：</text>
-            <text class="value">{{pendingRequest.diet_goal}}</text>
-          </view>
-          <view class="info-row">
-            <text class="label">提交时间：</text>
-            <text class="value">{{pendingRequest.create_time}}</text>
-          </view>
-        </view>
-        <view class="request-actions">
-          <view class="action-btn" bindtap="viewPendingRequestDetail">查看详情</view>
-          <view class="action-btn cancel" bindtap="cancelRequest">取消请求</view>
-        </view>
-      </view>
-      <view class="tips">
-        <text class="tip-item">规划师一般在24小时内响应</text>
-        <text class="tip-item">您可以随时查看请求状态或取消</text>
-      </view>
-    </view>
-
-    <view class="status-3" wx:if="{{planStatus === 3}}">
-      <view class="plan-card pending">
-        <view class="plan-status">待审核</view>
-        <view class="plan-title">{{currentPlan.title}}</view>
-        <view class="plan-info">
-          <text>规划师：{{currentPlan.dietitianName}}</text>
-          <text>目标：{{currentPlan.goal}}</text>
-        </view>
-        <view class="plan-desc">您的膳食计划已提交，正在等待管理员审核</view>
-        <view class="action-btn" bindtap="viewPlanDetail">查看计划详情</view>
-      </view>
-    </view>
-
-    <view class="status-4" wx:if="{{planStatus === 4}}">
-      <view class="current-plan">
-        <view class="plan-header">
-          <view class="plan-source">
-            <text wx:if="{{currentPlan.source === 'ai'}}">🤖</text>
-            <text wx:else>👨‍⚕️</text>
-            <text>{{currentPlan.source === 'ai' ? '系统智能推荐' : '规划师定制'}}</text>
-          </view>
-          <view class="plan-dietitian" wx:if="{{currentPlan.source !== 'ai'}}">
-            {{currentPlan.dietitianName}}
-          </view>
-        </view>
-        <view class="plan-title">{{currentPlan.title}}</view>
-        <view class="plan-goal">饮食目标：{{currentPlan.goal}}</view>
-
-        <view class="nutrition-summary">
-          <view class="nutr-item">
-            <view class="nutr-value">{{currentPlan.calories}}</view>
-            <view class="nutr-label">千卡</view>
-          </view>
-          <view class="nutr-item">
-            <view class="nutr-value">{{currentPlan.protein}}g</view>
-            <view class="nutr-label">蛋白质</view>
-          </view>
-          <view class="nutr-item">
-            <view class="nutr-value">{{currentPlan.carbohydrate}}g</view>
-            <view class="nutr-label">碳水</view>
-          </view>
-          <view class="nutr-item">
-            <view class="nutr-value">{{currentPlan.fat}}g</view>
-            <view class="nutr-label">脂肪</view>
-          </view>
-        </view>
-
-        <view class="meals-list">
+    <view class="meals-section">
+      <view class="section-title">每日膳食安排</view>
+      <view class="meals-list">
+        <view wx:if="{{currentPlan.hasPlanForDate !== false && currentPlan.meals.length > 0}}">
           <view class="meal-item {{meal.executed ? 'executed' : ''}}" wx:for="{{currentPlan.meals}}" wx:key="type" bindtap="executeMeal" data-meal-index="{{index}}">
             <view class="meal-time">{{item.time}}</view>
             <view class="meal-info">
               <view class="meal-type">{{item.type}}</view>
               <view class="meal-foods">
-                <text wx:for="{{item.foods}}" wx:for-item="food" wx:key="name">{{food.name}}</text>
+                <text wx:for="{{item.foods}}" wx:for-item="food" wx:key="name">{{food.name}} {{food.amount}}；</text>
               </view>
             </view>
             <view class="meal-calories">{{item.calories}}kcal</view>
@@ -154,21 +72,165 @@
             </view>
           </view>
         </view>
-
-        <view class="plan-actions">
-          <view class="action-btn" bindtap="viewPlanDetail">查看完整计划</view>
-          <view class="action-btn optimize" bindtap="applyOptimization">申请优化</view>
+        <view wx:else class="no-plan">
+          <view class="no-plan-icon">📅</view>
+          <view class="no-plan-text">当日无饮食计划</view>
         </view>
       </view>
     </view>
+
+    <view class="nutrition-analysis">
+      <view class="section-title">营养分析</view>
+      <view class="analysis-card">
+        <view class="analysis-item">
+          <view class="analysis-label">热量分配</view>
+          <view class="analysis-chart">
+            <view class="chart-bar protein" style="height: {{proteinPercentage}}%"></view>
+            <view class="chart-bar carbohydrate" style="height: {{carbohydratePercentage}}%"></view>
+            <view class="chart-bar fat" style="height: {{fatPercentage}}%"></view>
+          </view>
+          <view class="chart-legend">
+            <view class="legend-item">
+              <view class="legend-color protein"></view>
+              <view class="legend-text">蛋白质</view>
+            </view>
+            <view class="legend-item">
+              <view class="legend-color carbohydrate"></view>
+              <view class="legend-text">碳水</view>
+            </view>
+            <view class="legend-item">
+              <view class="legend-color fat"></view>
+              <view class="legend-text">脂肪</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="plan-actions">
+      <view class="action-btn" bindtap="recordDiet">记录饮食</view>
+      <view class="action-btn optimize" bindtap="applyOptimization">申请优化</view>
+      <view class="action-btn compare" bindtap="viewDetailedComparison">查看对比</view>
+      <view class="action-btn abandon" bindtap="abandonPlan">放弃计划</view>
+    </view>
   </view>
 
-  <view class="history-section" wx:if="{{historyPlans.length > 0}}">
-    <view class="section-title">历史计划</view>
-    <view class="history-list">
-      <view class="history-item" wx:for="{{historyPlans}}" wx:key="id">
-        <view class="history-title">{{item.title}}</view>
-        <view class="history-date">{{item.dateRange}}</view>
+  <!-- 无膳食计划时，显示初始页面内容 -->
+  <view wx:else>
+    <view class="header">
+      <view class="header-title">膳食管理</view>
+      <view class="header-subtitle">规划您的健康饮食</view>
+    </view>
+
+    <!-- 我的申请模块 -->
+    <view class="application-module" wx:if="{{latestRequest}}">
+      <view class="application-card">
+        <view class="application-header">
+          <view class="application-title">我的申请</view>
+          <view class="application-status {{latestRequest.status}}">{{latestRequest.statusText}}</view>
+        </view>
+        <view class="application-info">
+          <view class="info-row">
+            <text class="label">规划师：</text>
+            <text class="value">{{latestRequest.dietitian_id}}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">服务类型：</text>
+            <text class="value">{{latestRequest.serviceTypeText}}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">饮食目标：</text>
+            <text class="value">{{latestRequest.dietGoalText}}</text>
+          </view>
+          <view class="info-row">
+            <text class="label">提交时间：</text>
+            <text class="value">{{latestRequest.createTimeText}}</text>
+          </view>
+        </view>
+        <view class="application-actions">
+          <view class="action-btn" bindtap="viewRequestDetail">查看详情</view>
+          <view class="action-btn reapply" bindtap="reapplyRequest" wx:if="{{latestRequest.status === 'rejected' || latestRequest.status === 'cancelled'}}">重新申请</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="content">
+      <view class="status-0" wx:if="{{planStatus === 0}}">
+        <view class="entry-cards">
+          <view class="entry-card ai-card" bindtap="requestAiRecommendation">
+            <view class="entry-icon">🤖</view>
+            <view class="entry-title">系统智能推荐</view>
+            <view class="entry-desc">根据您的健康数据，自动生成个性化膳食方案</view>
+          </view>
+          <view class="entry-card dietitian-card" bindtap="goToSelectDietitian">
+            <view class="entry-icon">👨‍⚕️</view>
+            <view class="entry-title">选择规划师</view>
+            <view class="entry-desc">专业营养师为您量身定制膳食计划</view>
+          </view>
+        </view>
+        <view class="tips">
+          <text class="tip-title">温馨提示</text>
+          <text class="tip-item">• 系统智能推荐：根据您的健康数据自动生成</text>
+          <text class="tip-item">• 规划师定制：专业营养师根据您的情况制定</text>
+        </view>
+      </view>
+
+      <view class="status-2" wx:if="{{planStatus === 2}}">
+        <view class="request-card">
+          <view class="request-status">
+            <text class="status-icon">⏳</text>
+            <text class="status-text">等待规划师响应</text>
+          </view>
+          <view class="request-info">
+            <view class="info-row">
+              <text class="label">规划师：</text>
+              <text class="value">{{pendingRequest.dietitian_id}}</text>
+            </view>
+            <view class="info-row">
+              <text class="label">服务类型：</text>
+              <text class="value">{{pendingRequest.service_type === 'diet_plan' ? '膳食计划定制' : '营养咨询服务'}}</text>
+            </view>
+            <view class="info-row">
+              <text class="label">饮食目标：</text>
+              <text class="value">{{pendingRequest.diet_goal}}</text>
+            </view>
+            <view class="info-row">
+              <text class="label">提交时间：</text>
+              <text class="value">{{pendingRequest.create_time}}</text>
+            </view>
+          </view>
+          <view class="request-actions">
+            <view class="action-btn" bindtap="viewPendingRequestDetail">查看详情</view>
+            <view class="action-btn cancel" bindtap="cancelRequest">取消请求</view>
+          </view>
+        </view>
+        <view class="tips">
+          <text class="tip-item">规划师一般在24小时内响应</text>
+          <text class="tip-item">您可以随时查看请求状态或取消</text>
+        </view>
+      </view>
+
+      <view class="status-3" wx:if="{{planStatus === 3}}">
+        <view class="plan-card pending">
+          <view class="plan-status">待审核</view>
+          <view class="plan-title">{{currentPlan.title}}</view>
+          <view class="plan-info">
+            <text>规划师：{{currentPlan.dietitianName}}</text>
+            <text>目标：{{currentPlan.goal}}</text>
+          </view>
+          <view class="plan-desc">您的膳食计划已提交，正在等待管理员审核</view>
+          <view class="action-btn" bindtap="viewPlanDetail">查看计划详情</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="history-section" wx:if="{{historyPlans.length > 0}}">
+      <view class="section-title">历史计划</view>
+      <view class="history-list">
+        <view class="history-item" wx:for="{{historyPlans}}" wx:key="id">
+          <view class="history-title">{{item.title}}</view>
+          <view class="history-date">{{item.dateRange}}</view>
+        </view>
       </view>
     </view>
   </view>

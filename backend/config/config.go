@@ -89,6 +89,11 @@ func autoMigrate() error {
 		&models.NutritionRecord{},
 		&models.NutritionRecordItem{},
 		&models.ServiceRequest{},
+		&models.DietPlan{},
+		&models.PlanDay{},
+		&models.Meal{},
+		&models.Food{},
+		&models.PlanExecution{},
 	)
 }
 

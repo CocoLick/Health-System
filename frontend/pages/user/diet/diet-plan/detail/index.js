@@ -23,6 +23,8 @@ Page({
     console.log('膳食计划详情页面显示');
     // 显示tabBar
     wx.showTabBar();
+    // 兜底刷新：避免从其他页面返回时仍显示旧缓存
+    this.loadPlanData();
   },
 
   initDate() {
@@ -133,17 +135,37 @@ Page({
       content: '确定要放弃当前膳食计划吗？此操作不可撤销。',
       success: (res) => {
         if (res.confirm) {
-          // 移除当前膳食计划
-          wx.removeStorageSync('currentDietPlan');
-          // 显示提示
-          wx.showToast({ title: '已放弃当前计划', icon: 'success' });
-          // 添加短暂延时，确保存储操作完成
-          setTimeout(() => {
-            // 使用switchTab跳转，因为膳食计划是tabBar页面
-            wx.switchTab({
-              url: '/pages/user/diet/diet-plan/index'
-            });
-          }, 500);
+          const plan = this.data.plan;
+
+          const finalize = () => {
+            wx.removeStorageSync('currentDietPlan');
+            this.setData({ plan: null });
+            wx.showToast({ title: '已放弃当前计划', icon: 'success', duration: 1000 });
+            setTimeout(() => {
+              wx.switchTab({
+                url: '/pages/user/diet/diet-plan/index',
+                fail: () => {
+                  wx.reLaunch({ url: '/pages/user/diet/diet-plan/index' });
+                }
+              });
+            }, 600);
+          };
+
+          // 优先同步删除后端计划，避免 tab 页重新拉取又“复活”
+          if (plan && plan.id) {
+            api.dietPlan.remove(plan.id)
+              .then((apiRes) => {
+                console.log('放弃计划API响应:', apiRes);
+                finalize();
+              })
+              .catch((err) => {
+                console.error('放弃计划失败:', err);
+                // 网络/后端失败时也清掉前端状态，确保体验一致
+                finalize();
+              });
+          } else {
+            finalize();
+          }
         }
       }
     });
