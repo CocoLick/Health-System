@@ -177,3 +177,72 @@ func (s *ServiceRequestService) RejectServiceRequest(requestID string, dietitian
 
 	return nil
 }
+
+// GetDietitianServiceUsers 获取规划师的服务用户列表
+func (s *ServiceRequestService) GetDietitianServiceUsers(dietitianID string) ([]schemas.DietitianServiceUser, error) {
+	// 查询所有状态为approved且dietitian_id为指定值的服务请求
+	var requests []models.ServiceRequest
+	if err := s.db.Where("dietitian_id = ? AND status = ?", dietitianID, "approved").Find(&requests).Error; err != nil {
+		return nil, fmt.Errorf("failed to get dietitian service requests: %w", err)
+	}
+
+	// 提取唯一的user_id
+	userIDs := make(map[string]bool)
+	for _, req := range requests {
+		userIDs[req.UserID] = true
+	}
+
+	// 转换为切片
+	var uniqueUserIDs []string
+	for userID := range userIDs {
+		uniqueUserIDs = append(uniqueUserIDs, userID)
+	}
+
+	// 查询每个用户的信息
+	var users []schemas.DietitianServiceUser
+	for _, userID := range uniqueUserIDs {
+		// 查询用户信息
+		var user models.User
+		if err := s.db.Where("user_id = ?", userID).First(&user).Error; err != nil {
+			// 如果用户不存在，跳过
+			continue
+		}
+
+		// 查询用户是否有健康档案
+		var hasProfile bool
+		var healthData models.HealthData
+		healthDataErr := s.db.Where("user_id = ?", userID).First(&healthData).Error
+		hasProfile = healthDataErr == nil
+
+		// 查询用户是否有膳食计划
+		var hasPlan bool
+		var dietPlan models.DietPlan
+		dietPlanErr := s.db.Where("user_id = ?", userID).First(&dietPlan).Error
+		hasPlan = dietPlanErr == nil
+
+		// 查询用户是否有评估（暂时不支持，默认为false）
+		var hasEvaluation bool = false
+
+		// 查询最近的服务时间
+		var lastServiceTime string
+		var lastRequest models.ServiceRequest
+		if err := s.db.Where("user_id = ? AND dietitian_id = ?", userID, dietitianID).Order("update_time DESC").First(&lastRequest).Error; err == nil {
+			lastServiceTime = lastRequest.UpdateTime.Format("2006-01-02")
+		}
+
+		// 创建用户对象
+		serviceUser := schemas.DietitianServiceUser{
+			UserID:           user.UserID,
+			Username:         user.Username,
+			UsernameInitial:  string(user.Username[0]),
+			HasProfile:       hasProfile,
+			HasEvaluation:    hasEvaluation,
+			HasPlan:          hasPlan,
+			LastServiceTime:  lastServiceTime,
+		}
+
+		users = append(users, serviceUser)
+	}
+
+	return users, nil
+}

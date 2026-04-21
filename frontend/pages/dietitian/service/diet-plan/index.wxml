@@ -1,0 +1,193 @@
+<view class="container">
+  <!-- 顶部导航栏 -->
+  <view class="header">
+    <view class="back-btn" bindtap="goBack">
+      <text class="back-icon">←</text>
+    </view>
+    <view class="header-title">膳食计划管理</view>
+    <view class="header-right"></view>
+  </view>
+
+  <!-- 用户信息 -->
+  <view class="user-info">
+    <view class="user-avatar">{{userInfo.usernameInitial}}</view>
+    <view class="user-details">
+      <view class="user-name">{{userInfo.username}}</view>
+      <view class="user-stats">
+        <view class="stat-item">
+          <view class="stat-value">{{userInfo.healthData.height}}cm</view>
+          <view class="stat-label">身高</view>
+        </view>
+        <view class="stat-item">
+          <view class="stat-value">{{userInfo.healthData.weight}}kg</view>
+          <view class="stat-label">体重</view>
+        </view>
+        <view class="stat-item">
+          <view class="stat-value">{{calculateBMI(userInfo.healthData.height, userInfo.healthData.weight).toFixed(1)}}</view>
+          <view class="stat-label">BMI</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 计划基本信息 -->
+  <view class="plan-info">
+    <view class="section-title">计划基本信息</view>
+    <view class="form-item">
+      <view class="form-label">计划标题</view>
+      <input class="form-input" placeholder="请输入计划标题" value="{{planInfo.title}}" bindinput="bindPlanInfo" data-field="title"/>
+    </view>
+    <view class="form-item">
+      <view class="form-label">饮食目标</view>
+      <picker class="form-picker" mode="selector" range="{{dietGoals}}" bindchange="bindDietGoalChange" value="{{selectedDietGoalIndex}}">
+        <view class="picker-view">
+          {{dietGoals[selectedDietGoalIndex]}}
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <view class="form-label">计划周期</view>
+      <input class="form-input" type="number" placeholder="请输入天数" value="{{planInfo.duration}}" bindinput="bindPlanInfo" data-field="duration"/>
+    </view>
+    <view class="form-item">
+      <view class="form-label">每日热量目标</view>
+      <input class="form-input" type="number" placeholder="请输入热量目标" value="{{planInfo.dailyCalories}}" bindinput="bindPlanInfo" data-field="dailyCalories"/>
+    </view>
+  </view>
+
+  <!-- 营养比例设置 -->
+  <view class="nutrition-ratio">
+    <view class="section-title">营养比例设置</view>
+    <view class="ratio-item">
+      <view class="ratio-label">蛋白质</view>
+      <view class="ratio-input">
+        <input class="form-input" type="number" placeholder="30" value="{{planInfo.nutritionRatio.protein}}" bindinput="bindNutritionRatio" data-field="protein"/>
+        <view class="ratio-unit">%</view>
+      </view>
+    </view>
+    <view class="ratio-item">
+      <view class="ratio-label">碳水化合物</view>
+      <view class="ratio-input">
+        <input class="form-input" type="number" placeholder="40" value="{{planInfo.nutritionRatio.carbohydrate}}" bindinput="bindNutritionRatio" data-field="carbohydrate"/>
+        <view class="ratio-unit">%</view>
+      </view>
+    </view>
+    <view class="ratio-item">
+      <view class="ratio-label">脂肪</view>
+      <view class="ratio-input">
+        <input class="form-input" type="number" placeholder="30" value="{{planInfo.nutritionRatio.fat}}" bindinput="bindNutritionRatio" data-field="fat"/>
+        <view class="ratio-unit">%</view>
+      </view>
+    </view>
+    <view class="ratio-total">
+      总比例：{{calculateTotalRatio()}}%
+      <view class="ratio-status {{calculateTotalRatio() === 100 ? 'valid' : 'invalid'}}">
+        {{calculateTotalRatio() === 100 ? '✓' : '✗'}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 7天计划编辑 -->
+  <view class="plan-days">
+    <view class="section-title">7天计划编辑</view>
+    <view class="day-tabs">
+      <view class="day-tab {{currentDay === (index + 1) ? 'active' : ''}}" wx:for="{{7}}" wx:key="index" bindtap="switchDay" data-day="{{index + 1}}">
+        第{{index + 1}}天
+      </view>
+    </view>
+    <view class="day-content">
+      <view class="meals-list">
+        <view class="meal-item" wx:for="{{currentDayMeals}}" wx:for-item="meal" wx:for-index="mealIndex" wx:key="type">
+          <view class="meal-header">
+            <view class="meal-type">{{meal.type}}</view>
+            <view class="meal-time">{{meal.time}}</view>
+            <view class="meal-calories">{{meal.calories}}kcal</view>
+          </view>
+          <view class="meal-foods">
+            <view class="food-item" wx:for="{{meal.foods}}" wx:for-item="food" wx:for-index="foodIndex" wx:key="index">
+              <view class="food-name">{{food.name}}</view>
+              <view class="food-amount">{{food.amount}}</view>
+              <view class="food-calories">{{food.calories}}kcal</view>
+              <view class="food-actions">
+                <button class="action-btn delete-btn" bindtap="deleteFood" data-meal-index="{{mealIndex}}" data-food-index="{{foodIndex}}">删除</button>
+              </view>
+            </view>
+            <button class="add-food-btn" bindtap="addFood" data-meal-index="{{mealIndex}}">添加食物</button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <button class="action-btn save-btn" bindtap="savePlan">保存计划</button>
+    <button class="action-btn publish-btn" bindtap="publishPlan">发布计划</button>
+  </view>
+
+  <!-- 食物选择模态框 -->
+  <view class="modal {{showFoodModal ? 'show' : ''}}" catchtap="closeFoodModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <view class="modal-title">选择食物</view>
+        <view class="modal-close" bindtap="closeFoodModal">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="search-box">
+          <input class="search-input" placeholder="搜索食物" value="{{searchKeyword}}" bindinput="bindSearchKeyword"/>
+        </view>
+        <!-- 搜索结果 -->
+        <view class="search-results" wx:if="{{showSearchResults}}">
+          <view wx:for="{{searchResults}}" wx:key="index" class="search-result-item" bindtap="selectIngredient" data-ingredient="{{item}}">
+            <view class="result-name">{{item.name}}</view>
+            <view class="result-info">
+              <text class="result-calorie">{{item.calorie_100g || 0}}kcal/100g</text>
+            </view>
+          </view>
+        </view>
+        <!-- 食材分类（可选） -->
+        <view class="ingredient-categories" wx:if="{{!showSearchResults && ingredients.length > 0}}">
+          <view class="category-title">常用食材</view>
+          <view class="ingredient-grid">
+            <view wx:for="{{ingredients.slice(0, 9)}}" wx:key="index" class="ingredient-item" bindtap="selectIngredient" data-ingredient="{{item}}">
+            <view class="ingredient-item-inner">
+              <view class="ingredient-name">{{item.name}}</view>
+              <view class="ingredient-calorie">{{item.calorie_100g || 0}}kcal/100g</view>
+            </view>
+          </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 食物用量设置模态框 -->
+  <view class="modal {{showAmountModal ? 'show' : ''}}" catchtap="closeAmountModal">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <view class="modal-title">设置用量</view>
+        <view class="modal-close" bindtap="closeAmountModal">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="amount-info">
+          <view class="amount-food-name">{{selectedFood.name}}</view>
+          <view class="amount-calories">{{selectedFood.calories || 0}}kcal/100g</view>
+        </view>
+        <view class="amount-input-row">
+          <input class="form-input amount-input" type="number" placeholder="数量" value="{{foodAmount}}" bindinput="bindFoodAmount" />
+          <picker class="unit-picker" mode="selector" range="{{unitOptions}}" value="{{unitIndex}}" bindchange="changeUnit">
+            <view class="unit-display">
+              <text class="unit-text">{{foodUnit}}</text>
+              <text class="unit-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="gram-hint" wx:if="{{currentIngredient}}">
+          <text>≈ {{foodAmount * gramPerUnit}}克</text>
+        </view>
+        <button class="action-btn confirm-btn" bindtap="confirmFoodAmount">确认</button>
+      </view>
+    </view>
+  </view>
+</view>

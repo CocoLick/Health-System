@@ -35,8 +35,7 @@ func (s *DietPlanService) CreateDietPlan(req schemas.DietPlanCreate) (schemas.Di
 		Source:          req.Source,
 		DietGoal:        req.DietGoal,
 		CycleDays:       req.CycleDays,
-		AuditStatus:     "published", // 默认为已发布
-		PublishedAt:     time.Now(),
+		AuditStatus:     "draft", // 默认为草稿
 		UpdatedAt:       time.Now(),
 	}
 
@@ -239,23 +238,156 @@ func (s *DietPlanService) GetDietPlanDetail(planID, userID string) (schemas.Diet
 
 // UpdateDietPlan 更新膳食计划
 func (s *DietPlanService) UpdateDietPlan(planID, userID string, req schemas.DietPlanUpdate) (schemas.DietPlan, error) {
-	// 这里应该从数据库查询并更新，现在返回模拟数据
-	if planID != "P20260421120000" {
-		return schemas.DietPlan{}, errors.New("膳食计划不存在")
+	// 检查膳食计划是否存在
+	var plan models.DietPlan
+	if err := config.DB.Where("plan_id = ? AND user_id = ?", planID, userID).First(&plan).Error; err != nil {
+		return schemas.DietPlan{}, err
+	}
+
+	// 开始事务
+	tx := config.DB.Begin()
+
+	// 更新膳食计划基本信息
+	plan.PlanTitle = req.PlanTitle
+	plan.DietGoal = req.DietGoal
+	plan.CycleDays = req.CycleDays
+	plan.UpdatedAt = time.Now()
+
+	if err := tx.Save(&plan).Error; err != nil {
+		tx.Rollback()
+		return schemas.DietPlan{}, err
+	}
+
+	// 删除旧的计划天数、餐次和食物
+	// 删除食物
+	if err := tx.Exec("DELETE f FROM foods f JOIN meals m ON f.meal_id = m.meal_id JOIN plan_days pd ON m.day_id = pd.day_id WHERE pd.plan_id = ?", planID).Error; err != nil {
+		tx.Rollback()
+		return schemas.DietPlan{}, err
+	}
+
+	// 删除餐次
+	if err := tx.Exec("DELETE m FROM meals m JOIN plan_days pd ON m.day_id = pd.day_id WHERE pd.plan_id = ?", planID).Error; err != nil {
+		tx.Rollback()
+		return schemas.DietPlan{}, err
+	}
+
+	// 删除计划天数
+	if err := tx.Where("plan_id = ?", planID).Delete(&models.PlanDay{}).Error; err != nil {
+		tx.Rollback()
+		return schemas.DietPlan{}, err
+	}
+
+	// 创建新的计划天数、餐次和食物
+	for i, dayReq := range req.PlanDays {
+		dayID := fmt.Sprintf("D%s%d", planID, i+1)
+		planDate, err := time.Parse("2006-01-02", dayReq.PlanDate)
+		if err != nil {
+			tx.Rollback()
+			return schemas.DietPlan{}, err
+		}
+
+		day := models.PlanDay{
+			DayID:        dayID,
+			PlanID:       planID,
+			DayIndex:     dayReq.DayIndex,
+			PlanDate:     planDate,
+			Calories:     dayReq.Calories,
+			Protein:      dayReq.Protein,
+			Carbohydrate: dayReq.Carbohydrate,
+			Fat:          dayReq.Fat,
+		}
+
+		if err := tx.Create(&day).Error; err != nil {
+			tx.Rollback()
+			return schemas.DietPlan{}, err
+		}
+
+		// 创建餐次
+		for j, mealReq := range dayReq.Meals {
+			mealID := fmt.Sprintf("M%s%d", dayID, j+1)
+
+			meal := models.Meal{
+				MealID:   mealID,
+				DayID:    dayID,
+				Type:     mealReq.Type,
+				Time:     mealReq.Time,
+				Calories: mealReq.Calories,
+			}
+
+			if err := tx.Create(&meal).Error; err != nil {
+				tx.Rollback()
+				return schemas.DietPlan{}, err
+			}
+
+			// 创建食物
+			for k, foodReq := range mealReq.Foods {
+				foodID := fmt.Sprintf("F%s%d", mealID, k+1)
+
+				food := models.Food{
+					FoodID:   foodID,
+					MealID:   mealID,
+					Name:     foodReq.Name,
+					Amount:   foodReq.Amount,
+					Calories: foodReq.Calories,
+				}
+
+				if err := tx.Create(&food).Error; err != nil {
+					tx.Rollback()
+					return schemas.DietPlan{}, err
+				}
+			}
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return schemas.DietPlan{}, err
 	}
 
 	return schemas.DietPlan{
-		PlanID:          planID,
-		UserID:          userID,
-		ServiceRequestID: "SR20260421110000",
-		DietitianID:     "D20260325001",
-		PlanTitle:       req.PlanTitle,
-		Source:          "ai",
-		DietGoal:        req.DietGoal,
-		CycleDays:       7,
-		AuditStatus:     "published",
-		PublishedAt:     time.Now(),
-		UpdatedAt:       time.Now(),
+		PlanID:          plan.PlanID,
+		UserID:          plan.UserID,
+		ServiceRequestID: plan.ServiceRequestID,
+		DietitianID:     plan.DietitianID,
+		PlanTitle:       plan.PlanTitle,
+		Source:          plan.Source,
+		DietGoal:        plan.DietGoal,
+		CycleDays:       plan.CycleDays,
+		AuditStatus:     plan.AuditStatus,
+		PublishedAt:     plan.PublishedAt,
+		UpdatedAt:       plan.UpdatedAt,
+	}, nil
+}
+
+// PublishDietPlan 发布膳食计划
+func (s *DietPlanService) PublishDietPlan(planID, userID string) (schemas.DietPlan, error) {
+	// 检查膳食计划是否存在
+	var plan models.DietPlan
+	if err := config.DB.Where("plan_id = ? AND user_id = ?", planID, userID).First(&plan).Error; err != nil {
+		return schemas.DietPlan{}, err
+	}
+
+	// 更新状态为已发布
+	plan.AuditStatus = "published"
+	plan.PublishedAt = time.Now()
+	plan.UpdatedAt = time.Now()
+
+	if err := config.DB.Save(&plan).Error; err != nil {
+		return schemas.DietPlan{}, err
+	}
+
+	return schemas.DietPlan{
+		PlanID:          plan.PlanID,
+		UserID:          plan.UserID,
+		ServiceRequestID: plan.ServiceRequestID,
+		DietitianID:     plan.DietitianID,
+		PlanTitle:       plan.PlanTitle,
+		Source:          plan.Source,
+		DietGoal:        plan.DietGoal,
+		CycleDays:       plan.CycleDays,
+		AuditStatus:     plan.AuditStatus,
+		PublishedAt:     plan.PublishedAt,
+		UpdatedAt:       plan.UpdatedAt,
 	}, nil
 }
 

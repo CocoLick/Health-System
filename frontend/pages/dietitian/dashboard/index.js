@@ -14,7 +14,7 @@ Page({
       pendingPlans: 3,
       pendingArticles: 1,
       pendingFeedbacks: 5,
-      serviceUsers: 25,
+      serviceUsers: 0,
       totalPlans: 18,
       totalArticles: 5,
       totalReplies: 42,
@@ -50,44 +50,7 @@ Page({
         time: '今天 09:30'
       }
     ],
-    users: [
-      {
-        userId: 'U001',
-        username: '张三',
-        usernameInitial: '张',
-        hasProfile: true,
-        hasEvaluation: true,
-        hasPlan: true,
-        lastServiceTime: '2026-04-15'
-      },
-      {
-        userId: 'U002',
-        username: '李四',
-        usernameInitial: '李',
-        hasProfile: true,
-        hasEvaluation: true,
-        hasPlan: false,
-        lastServiceTime: '2026-04-18'
-      },
-      {
-        userId: 'U003',
-        username: '王五',
-        usernameInitial: '王',
-        hasProfile: true,
-        hasEvaluation: false,
-        hasPlan: false,
-        lastServiceTime: '2026-04-10'
-      },
-      {
-        userId: 'U004',
-        username: '赵六',
-        usernameInitial: '赵',
-        hasProfile: true,
-        hasEvaluation: true,
-        hasPlan: true,
-        lastServiceTime: '2026-04-01'
-      }
-    ],
+    users: [],
     pendingFeedbackCount: 3,
     feedbacks: [
       {
@@ -139,6 +102,38 @@ Page({
 
   loadData() {
     console.log('加载营养师工作台数据');
+    // 加载服务用户列表
+    this.loadServiceUsers();
+  },
+
+  // 加载服务用户列表
+  loadServiceUsers() {
+    console.log('加载服务用户列表');
+    api.serviceRequest.getDietitianUsers()
+      .then(res => {
+        console.log('服务用户列表API响应:', res);
+        if (res.code === 200) {
+          const users = res.data || [];
+          console.log('用户列表长度:', users.length);
+          // 转换数据格式，确保与前端期望的格式一致
+          const processedUsers = users.map(user => ({
+            userId: user.user_id,
+            username: user.username,
+            usernameInitial: user.username_initial,
+            hasProfile: user.has_profile,
+            hasEvaluation: user.has_evaluation,
+            hasPlan: user.has_plan,
+            lastServiceTime: user.last_service_time
+          }));
+          this.setData({
+            users: processedUsers,
+            'stats.serviceUsers': users.length
+          });
+        }
+      })
+      .catch(err => {
+        console.error('加载服务用户失败:', err);
+      });
   },
 
   // 加载服务请求列表
@@ -366,6 +361,17 @@ Page({
 
   filterUsers() {
     console.log('筛选用户', this.data.filterType);
+    const { searchKeyword, users } = this.data;
+    if (!searchKeyword) {
+      // 如果没有搜索关键词，显示所有用户
+      this.setData({ users: users });
+      return;
+    }
+    // 根据搜索关键词筛选用户
+    const filteredUsers = users.filter(user =>
+      user.username.includes(searchKeyword) || user.userId.includes(searchKeyword)
+    );
+    this.setData({ users: filteredUsers });
   },
 
   loadFeedbacks() {

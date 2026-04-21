@@ -278,3 +278,13 @@ func (s *AuthService) DeleteDietitian(userID string) error {
 	}
 	return nil
 }
+
+// GetUserByID 根据ID获取用户信息
+func (s *AuthService) GetUserByID(userID string) (*models.User, error) {
+	var user models.User
+	result := config.DB.Where("user_id = ?", userID).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}

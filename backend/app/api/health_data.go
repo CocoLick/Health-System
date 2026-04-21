@@ -133,6 +133,42 @@ func (h *HealthDataHandler) GetHealthDataList(c *gin.Context) {
 	})
 }
 
+// GetUserHealthDataByDietitian 获取指定用户的最新健康数据（规划师使用）
+// @Summary 获取指定用户的健康数据
+// @Description 规划师通过用户ID获取该用户的最新健康数据
+// @Tags 健康数据
+// @Produce json
+// @Param user_id path string true "用户ID"
+// @Success 200 {object} schemas.Response
+// @Failure 400 {object} schemas.Response
+// @Router /api/health-data/user/{user_id} [get]
+func (h *HealthDataHandler) GetUserHealthDataByDietitian(c *gin.Context) {
+	userID := c.Param("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "用户ID不能为空",
+		})
+		return
+	}
+
+	healthData, err := h.healthDataService.GetLatestHealthData(userID)
+	if err != nil {
+		c.JSON(http.StatusOK, schemas.Response{
+			Code:    200,
+			Message: "暂无健康数据",
+			Data:    nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "获取成功",
+		Data:    healthData,
+	})
+}
+
 // UpdateHealthData 更新健康数据
 // @Summary 更新健康数据
 // @Description 更新用户健康数据
@@ -206,6 +242,7 @@ func RegisterHealthDataRoutes(router *gin.RouterGroup) {
 		healthDataGroup.POST("", handler.SubmitHealthData)
 		healthDataGroup.GET("", handler.GetHealthDataList)
 		healthDataGroup.GET("/latest", handler.GetLatestHealthData)
+		healthDataGroup.GET("/user/:user_id", handler.GetUserHealthDataByDietitian)
 		healthDataGroup.PUT("/:data_id", handler.UpdateHealthData)
 		healthDataGroup.DELETE("/:data_id", handler.DeleteHealthData)
 	}

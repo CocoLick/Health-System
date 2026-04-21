@@ -22,6 +22,7 @@ func RegisterServiceRequestRoutes(router *gin.RouterGroup) {
 		serviceRequestGroup.POST("/", handler.CreateServiceRequest)                   // 创建服务请求
 		serviceRequestGroup.GET("/", handler.GetUserServiceRequests)                // 获取用户的服务请求列表
 		serviceRequestGroup.GET("/dietitian/list", handler.GetDietitianServiceRequests) // 获取规划师的服务请求列表
+		serviceRequestGroup.GET("/dietitian/users", handler.GetDietitianServiceUsers) // 获取规划师的服务用户列表
 		serviceRequestGroup.PUT("/:id/cancel", handler.CancelServiceRequest)         // 取消服务请求
 		serviceRequestGroup.PUT("/:id/approve", handler.ApproveServiceRequest)    // 批准服务请求
 		serviceRequestGroup.PUT("/:id/reject", handler.RejectServiceRequest)       // 拒绝服务请求

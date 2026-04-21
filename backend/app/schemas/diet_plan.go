@@ -46,12 +46,15 @@ type FoodCreate struct {
 type DietPlanUpdate struct {
 	PlanTitle string        `json:"plan_title"`
 	DietGoal  string        `json:"diet_goal"`
+	CycleDays int           `json:"cycle_days"`
 	PlanDays  []PlanDayUpdate `json:"plan_days"`
 }
 
 // PlanDayUpdate 更新天计划请求
 type PlanDayUpdate struct {
 	DayID        string        `json:"day_id" binding:"required"`
+	DayIndex     int           `json:"day_index"`
+	PlanDate     string        `json:"plan_date"`
 	Calories     int           `json:"calories"`
 	Protein      float64       `json:"protein"`
 	Carbohydrate float64       `json:"carbohydrate"`

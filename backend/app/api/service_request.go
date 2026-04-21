@@ -277,3 +277,22 @@ func (h *ServiceRequestHandler) RejectServiceRequest(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "服务请求已拒绝"})
 }
+
+// GetDietitianServiceUsers 获取规划师的服务用户列表
+func (h *ServiceRequestHandler) GetDietitianServiceUsers(c *gin.Context) {
+	// 从上下文获取规划师ID
+	dietitianID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "未授权"})
+		return
+	}
+
+	// 获取服务用户列表
+	users, err := h.serviceRequestService.GetDietitianServiceUsers(dietitianID.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取服务用户列表失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "data": users, "message": "获取服务用户列表成功"})
+}

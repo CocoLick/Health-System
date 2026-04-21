@@ -40,3 +40,14 @@ type ServiceRequestListResponse struct {
 	CreateTime   time.Time              `json:"create_time"`
 	UpdateTime   time.Time              `json:"update_time"`
 }
+
+// DietitianServiceUser 规划师服务用户的响应结构
+type DietitianServiceUser struct {
+	UserID           string `json:"user_id"`
+	Username         string `json:"username"`
+	UsernameInitial  string `json:"username_initial"`
+	HasProfile       bool   `json:"has_profile"`
+	HasEvaluation    bool   `json:"has_evaluation"`
+	HasPlan          bool   `json:"has_plan"`
+	LastServiceTime  string `json:"last_service_time"`
+}

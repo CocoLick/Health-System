@@ -97,6 +97,10 @@ const auth = {
   // 管理员登录
   adminLogin: function(data) {
     return post('/api/auth/admin/login', data);
+  },
+  // 根据ID获取用户信息
+  getUserByID: function(userID) {
+    return get(`/api/auth/user/${userID}`);
   }
 };
 
@@ -178,6 +182,10 @@ const healthData = {
   getLatest: function() {
     return get('/api/health-data/latest');
   },
+  // 根据用户ID获取健康数据（规划师使用）
+  getUserHealthData: function(userId) {
+    return get(`/api/health-data/user/${userId}`);
+  },
   // 更新健康数据
   update: function(id, data) {
     return put(`/api/health-data/${id}`, data);
@@ -213,6 +221,10 @@ const serviceRequest = {
   // 拒绝服务请求
   reject: function(id) {
     return put(`/api/service-request/${id}/reject`);
+  },
+  // 获取规划师的服务用户列表
+  getDietitianUsers: function() {
+    return get('/api/service-request/dietitian/users');
   }
 };
 
@@ -291,20 +303,22 @@ const dietPlan = {
     return post('/api/diet-plans', data);
   },
   // 获取膳食计划详情
-  getDetail: function(id) {
-    return get(`/api/diet-plans/${id}`);
+  getDetail: function(id, userId) {
+    const url = userId ? `/api/diet-plans/${id}?user_id=${userId}` : `/api/diet-plans/${id}`;
+    return get(url);
   },
   // 更新膳食计划
-  update: function(id, data) {
-    return put(`/api/diet-plans/${id}`, data);
+  update: function(id, data, userId) {
+    return put(`/api/diet-plans/${id}?user_id=${userId}`, data);
   },
   // 删除膳食计划
   remove: function(id) {
     return del(`/api/diet-plans/${id}`);
   },
   // 获取用户的膳食计划
-  getUserPlans: function() {
-    return get('/api/diet-plans/user');
+  getUserPlans: function(userId) {
+    const url = userId ? `/api/diet-plans/user?user_id=${userId}` : '/api/diet-plans/user';
+    return get(url);
   },
   // 更新执行状态
   updateExecuteStatus: function(id, data) {
@@ -313,6 +327,10 @@ const dietPlan = {
   // 申请优化
   requestOptimization: function(id, data) {
     return put(`/api/diet-plans/${id}/optimization`, data);
+  },
+  // 发布膳食计划
+  publish: function(id, userId) {
+    return put(`/api/diet-plans/${id}/publish?user_id=${userId}`);
   }
 };
 

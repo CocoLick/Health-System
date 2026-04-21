@@ -20,6 +20,7 @@
     "pages/admin/ingredient-management/index",
     "pages/dietitian/dashboard/index",
     "pages/dietitian/service/user-panel",
+    "pages/dietitian/service/diet-plan/index",
     "pages/user/dietitian/select/index",
     "pages/user/dietitian/detail/index",
     "pages/user/dietitian/request/index",

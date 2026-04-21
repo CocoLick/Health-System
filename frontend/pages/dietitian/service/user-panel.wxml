@@ -20,9 +20,7 @@
       <view class="card-header">
         <text class="card-icon">👤</text>
         <text class="card-title">健康档案</text>
-        <text class="card-status {{userInfo.hasProfile ? 'status-ok' : 'status-warning'}}">
-          {{userInfo.hasProfile ? '✅ 已完善' : '❌ 未完善'}}
-        </text>
+        <text class="card-status {{userInfo.hasProfile ? 'status-ok' : 'status-warning'}}">{{userInfo.hasProfile ? '✅ 已完善' : '❌ 未完善'}}</text>
       </view>
       <view class="card-body" wx:if="{{userInfo.hasProfile}}">
         <view class="health-item">
@@ -41,6 +39,14 @@
           <text class="health-label">血糖：</text>
           <text class="health-value">{{userInfo.healthData.bloodSugar}}</text>
         </view>
+        <view class="health-item">
+          <text class="health-label">心率：</text>
+          <text class="health-value">{{userInfo.healthData.heartRate}}次/分钟</text>
+        </view>
+        <view class="health-item">
+          <text class="health-label">过敏史：</text>
+          <text class="health-value">{{userInfo.healthData.allergyHistory || '无'}}</text>
+        </view>
       </view>
       <view class="card-footer">
         <text class="card-action">{{userInfo.hasProfile ? '查看/编辑档案' : '请完善档案'}}</text>
@@ -51,9 +57,7 @@
       <view class="card-header">
         <text class="card-icon">🔍</text>
         <text class="card-title">营养评估</text>
-        <text class="card-status {{userInfo.hasEvaluation ? 'status-ok' : 'status-warning'}}">
-          {{userInfo.hasEvaluation ? '✅ 有效' : '❌ 未评估'}}
-        </text>
+        <text class="card-status {{userInfo.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{userInfo.hasEvaluation ? '✅ 有效' : '❌ 未评估'}}</text>
       </view>
       <view class="card-body" wx:if="{{userInfo.hasEvaluation}}">
         <view class="evaluation-info">
@@ -70,9 +74,7 @@
       <view class="card-header">
         <text class="card-icon">📋</text>
         <text class="card-title">膳食计划</text>
-        <text class="card-status {{userInfo.hasPlan ? 'status-ok' : 'status-warning'}}">
-          {{userInfo.hasPlan ? '✅ 有效' : '❌ 无计划'}}
-        </text>
+        <text class="card-status {{userInfo.hasPlan ? 'status-ok' : 'status-warning'}}">{{userInfo.hasPlan ? '✅ 有效' : '❌ 无计划'}}</text>
       </view>
       <view class="card-body" wx:if="{{userInfo.hasPlan}}">
         <view class="plan-info">

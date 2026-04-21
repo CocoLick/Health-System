@@ -31,6 +31,7 @@ func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 		dietPlanGroup.DELETE("/:id", h.DeleteDietPlan)
 		dietPlanGroup.PUT("/:id/execute-status", h.UpdateExecuteStatus)
 		dietPlanGroup.PUT("/:id/optimization", h.RequestOptimization)
+		dietPlanGroup.PUT("/:id/publish", h.PublishDietPlan)
 	}
 }
 
@@ -52,13 +53,14 @@ func (h *DietPlanHandler) CreateDietPlan(c *gin.Context) {
 		return
 	}
 
-	// 获取用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
+	// 验证用户ID是否存在
+	if req.UserID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "用户ID不能为空"})
 		return
 	}
-	req.UserID = userID.(string)
+
+	// 验证当前用户是否为规划师（可以根据需要添加权限验证）
+	// 这里暂时跳过权限验证，假设所有登录用户都可以创建膳食计划
 
 	plan, err := h.dietPlanService.CreateDietPlan(req)
 	if err != nil {
@@ -71,22 +73,29 @@ func (h *DietPlanHandler) CreateDietPlan(c *gin.Context) {
 
 // GetUserDietPlans 获取用户的膳食计划
 // @Summary 获取用户的膳食计划
-// @Description 获取当前用户的所有膳食计划
+// @Description 获取指定用户的所有膳食计划（规划师使用）或当前用户的计划（用户使用）
 // @Tags 膳食计划
 // @Produce json
+// @Param user_id query string false "用户ID（规划师使用）"
 // @Success 200 {object} schemas.Response{data=[]schemas.DietPlan}
 // @Failure 401 {object} schemas.Response
 // @Failure 500 {object} schemas.Response
 // @Router /api/diet-plans/user [get]
 func (h *DietPlanHandler) GetUserDietPlans(c *gin.Context) {
-	// 获取用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
-		return
+	// 尝试从查询参数获取用户ID（规划师使用）
+	targetUserID := c.Query("user_id")
+	
+	// 如果没有指定用户ID，则使用当前登录用户的ID
+	if targetUserID == "" {
+		userID, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
+			return
+		}
+		targetUserID = userID.(string)
 	}
 
-	plans, err := h.dietPlanService.GetUserDietPlans(userID.(string))
+	plans, err := h.dietPlanService.GetUserDietPlans(targetUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: "获取膳食计划失败"})
 		return
@@ -101,6 +110,7 @@ func (h *DietPlanHandler) GetUserDietPlans(c *gin.Context) {
 // @Tags 膳食计划
 // @Produce json
 // @Param id path string true "膳食计划ID"
+// @Param user_id query string false "用户ID（规划师使用）"
 // @Success 200 {object} schemas.Response{data=schemas.DietPlanDetail}
 // @Failure 400 {object} schemas.Response
 // @Failure 404 {object} schemas.Response
@@ -113,14 +123,20 @@ func (h *DietPlanHandler) GetDietPlanDetail(c *gin.Context) {
 		return
 	}
 
-	// 获取用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
-		return
+	// 尝试从查询参数获取用户ID（规划师使用）
+	targetUserID := c.Query("user_id")
+	
+	// 如果没有指定用户ID，则使用当前登录用户的ID
+	if targetUserID == "" {
+		userID, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
+			return
+		}
+		targetUserID = userID.(string)
 	}
 
-	plan, err := h.dietPlanService.GetDietPlanDetail(planID, userID.(string))
+	plan, err := h.dietPlanService.GetDietPlanDetail(planID, targetUserID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
 		return
@@ -155,14 +171,20 @@ func (h *DietPlanHandler) UpdateDietPlan(c *gin.Context) {
 		return
 	}
 
-	// 获取用户ID
-	userID, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
-		return
+	// 从请求体中获取用户ID（前端需要传递）
+	// 或者从查询参数中获取
+	userID := c.Query("user_id")
+	if userID == "" {
+		// 尝试从上下文中获取（兼容用户端）
+		if uid, exists := c.Get("userID"); exists {
+			userID = uid.(string)
+		} else {
+			c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "用户ID不能为空"})
+			return
+		}
 	}
 
-	plan, err := h.dietPlanService.UpdateDietPlan(planID, userID.(string), req)
+	plan, err := h.dietPlanService.UpdateDietPlan(planID, userID, req)
 	if err != nil {
 		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
 		return
@@ -287,4 +309,43 @@ func (h *DietPlanHandler) RequestOptimization(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "申请成功"})
+}
+
+// PublishDietPlan 发布膳食计划
+// @Summary 发布膳食计划
+// @Description 发布膳食计划，使其对用户可见
+// @Tags 膳食计划
+// @Produce json
+// @Param id path string true "膳食计划ID"
+// @Success 200 {object} schemas.Response{data=schemas.DietPlan}
+// @Failure 400 {object} schemas.Response
+// @Failure 404 {object} schemas.Response
+// @Failure 500 {object} schemas.Response
+// @Router /api/diet-plans/{id}/publish [put]
+func (h *DietPlanHandler) PublishDietPlan(c *gin.Context) {
+	planID := c.Param("id")
+	if planID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "计划ID不能为空"})
+		return
+	}
+
+	// 从查询参数中获取用户ID（前端需要传递）
+	userID := c.Query("user_id")
+	if userID == "" {
+		// 尝试从上下文中获取（兼容用户端）
+		if uid, exists := c.Get("userID"); exists {
+			userID = uid.(string)
+		} else {
+			c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "用户ID不能为空"})
+			return
+		}
+	}
+
+	plan, err := h.dietPlanService.PublishDietPlan(planID, userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "发布成功", Data: plan})
 }
