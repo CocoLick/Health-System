@@ -13,14 +13,30 @@ Page({
 
   onLoad() {
     console.log('页面加载');
+    // 检查是否有当前膳食计划，如果有则直接跳转到详情页面
+    this.checkDietPlan();
     this.checkPendingRequest();
     this.loadLatestRequest();
   },
 
   onShow() {
     console.log('页面显示');
+    // 检查是否有当前膳食计划，如果有则直接跳转到详情页面
+    this.checkDietPlan();
     this.checkPendingRequest();
     this.loadLatestRequest();
+  },
+
+  // 检查是否有当前膳食计划
+  checkDietPlan() {
+    const currentPlan = wx.getStorageSync('currentDietPlan');
+    if (currentPlan && currentPlan.status === 'published') {
+      // 有膳食计划，直接跳转到详情页面
+      // 使用redirectTo替代navigateTo，减少跳转感知
+      wx.redirectTo({
+        url: '/pages/user/diet/diet-plan/detail/index'
+      });
+    }
   },
 
   checkPendingRequest() {
@@ -111,7 +127,9 @@ Page({
       wx.showToast({ title: '暂无计划', icon: 'none' });
       return;
     }
-    wx.showToast({ title: '查看计划详情', icon: 'none' });
+    wx.navigateTo({
+      url: '/pages/user/diet/diet-plan/detail/index'
+    });
   },
 
   applyOptimization() {
@@ -248,7 +266,10 @@ Page({
       wx.setStorageSync('currentDietPlan', plan);
       this.setData({ currentPlan: plan });
       this.determineStatus();
-      wx.showToast({ title: '推荐方案已生成', icon: 'success' });
+      // 直接跳转到膳食计划详情页面
+      wx.navigateTo({
+        url: '/pages/user/diet/diet-plan/detail/index'
+      });
     }, 1500);
   },
 

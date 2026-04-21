@@ -41,7 +41,7 @@ Page({
     selectedMealFoods: []
   },
 
-  onLoad() {
+  onLoad(options) {
     // 设置今日日期
     const today = new Date().toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -63,6 +63,15 @@ Page({
       selectedDateText
     });
     
+    // 检查本地存储中是否有nutritionTab参数，如果有则切换到对应的标签页
+    const nutritionTab = wx.getStorageSync('nutritionTab');
+    if (nutritionTab) {
+      this.setData({ activeTab: nutritionTab });
+      // 清除本地存储中的参数，避免下次打开页面时仍然切换到该标签页
+      wx.removeStorageSync('nutritionTab');
+    }
+    
+    this.loadTargetIntake();
     this.loadTodayData();
     this.loadRecords();
   },
@@ -80,7 +89,15 @@ Page({
     // 清除缓存，确保每次都从后端获取最新数据
     wx.removeStorageSync('todayNutritionRecords');
     
-    this.loadRecommendation();
+    // 检查本地存储中是否有nutritionTab参数，如果有则切换到对应的标签页
+    const nutritionTab = wx.getStorageSync('nutritionTab');
+    if (nutritionTab) {
+      this.setData({ activeTab: nutritionTab });
+      // 清除本地存储中的参数，避免下次打开页面时仍然切换到该标签页
+      wx.removeStorageSync('nutritionTab');
+    }
+    
+    this.loadTargetIntake();
     this.loadTodayData();
     this.loadRecords();
   },
@@ -151,7 +168,83 @@ Page({
       });
   },
 
-  // 加载营养推荐标准
+  // 加载目标摄入量（优先使用膳食计划）
+  loadTargetIntake() {
+    this.setData({ isLoading: true });
+    
+    // 优先检查是否存在当日膳食计划
+    const currentPlan = wx.getStorageSync('currentDietPlan');
+    if (currentPlan && currentPlan.status === 'published') {
+      // 使用膳食计划的营养目标
+      const formattedNutrients = {
+        calories: parseFloat(this.formatNumber(currentPlan.calories)),
+        protein: parseFloat(this.formatNumber(currentPlan.protein)),
+        carbohydrate: parseFloat(this.formatNumber(currentPlan.carbohydrate)),
+        fat: parseFloat(this.formatNumber(currentPlan.fat))
+      };
+      
+      this.setData({
+        targetIntake: formattedNutrients,
+        bmr: 0, // 膳食计划模式下不使用BMR
+        isLoading: false
+      });
+      
+      console.log('使用膳食计划的营养目标');
+      return;
+    }
+    
+    // 如果没有膳食计划，使用基于个人健康数据的推荐标准
+    api.nutrition.getRecommendation()
+      .then(res => {
+        if (res.code === 200 && res.data) {
+          const recommendation = res.data;
+          
+          // 处理小数，保留1位小数
+          const formattedNutrients = {
+            calories: parseFloat(this.formatNumber(recommendation.nutrients.calories)),
+            protein: parseFloat(this.formatNumber(recommendation.nutrients.protein)),
+            carbohydrate: parseFloat(this.formatNumber(recommendation.nutrients.carbohydrate)),
+            fat: parseFloat(this.formatNumber(recommendation.nutrients.fat))
+          };
+          
+          this.setData({
+            targetIntake: formattedNutrients,
+            bmr: parseFloat(this.formatNumber(recommendation.bmr))
+          });
+          
+          // 缓存推荐标准
+          wx.setStorageSync('nutritionRecommendation', {
+            ...recommendation,
+            nutrients: formattedNutrients,
+            bmr: parseFloat(this.formatNumber(recommendation.bmr))
+          });
+        }
+      })
+      .catch(() => {
+        console.log('获取推荐标准失败，使用默认值');
+        // 尝试使用缓存
+        const cached = wx.getStorageSync('nutritionRecommendation');
+        if (cached) {
+          // 处理小数，保留1位小数
+          const formattedNutrients = {
+            calories: parseFloat(this.formatNumber(cached.nutrients.calories)),
+            protein: parseFloat(this.formatNumber(cached.nutrients.protein)),
+            carbohydrate: parseFloat(this.formatNumber(cached.nutrients.carbohydrate)),
+            fat: parseFloat(this.formatNumber(cached.nutrients.fat))
+          };
+          
+          this.setData({
+            targetIntake: formattedNutrients,
+            bmr: parseFloat(this.formatNumber(cached.bmr))
+          });
+        }
+      })
+      .finally(() => {
+        this.setData({ isLoading: false });
+      });
+  },
+
+  // 加载营养推荐标准（保留原方法，供需要时使用）
   loadRecommendation() {
     this.setData({ isLoading: true });
     
