@@ -94,10 +94,10 @@
       </view>
     </view>
 
-    <view class="section">
+    <view class="section" id="eval-section">
       <view class="section-header">
-        <view class="section-title">健康评估</view>
-        <view class="section-action" bindtap="viewEvaluation">查看详情</view>
+        <view class="section-title">营养评估</view>
+        <view class="section-action" wx:if="{{evaluationId}}" bindtap="viewEvaluation">查看详情</view>
       </view>
       <view class="evaluation-card" wx:if="{{evaluation}}">
         <view class="evaluation-header">
@@ -114,14 +114,14 @@
             <text class="evaluation-value">{{evaluation.nutritionStatus}}</text>
           </view>
           <view class="evaluation-item">
-            <text class="evaluation-label">健康建议：</text>
+            <text class="evaluation-label">评估结论：</text>
             <text class="evaluation-value">{{evaluation.suggestion}}</text>
           </view>
         </view>
       </view>
       <view class="evaluation-empty" wx:else>
-        <text>暂无评估记录</text>
-        <text class="evaluation-tip">完善健康数据后，将获得专业评估</text>
+        <text>暂无专业营养评估</text>
+        <text class="evaluation-tip">规划师完成评估后，将在此展示结论摘要；您也可在「膳食计划」中跳转查看。</text>
       </view>
     </view>
 

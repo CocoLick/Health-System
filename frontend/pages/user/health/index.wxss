@@ -156,6 +156,11 @@
   color: #ff9800;
 }
 
+.evaluation-status.expired {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
 .evaluation-time {
   font-size: 24rpx;
   color: #999;

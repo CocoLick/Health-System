@@ -243,13 +243,22 @@ const serviceRequest = {
 
 // 评估相关API
 const evaluation = {
-  // 提交评估
+  // 提交评估（规划师）
   submit: function(data) {
     return post('/api/evaluation', data);
   },
-  // 获取用户的评估记录
-  getUserEvaluations: function() {
-    return get('/api/evaluation/user');
+  // 当前登录用户自己的评估列表
+  getUserEvaluations: function(limit) {
+    const q = limit ? `?limit=${limit}` : '';
+    return get('/api/evaluation/user' + q);
+  },
+  // 规划师按用户查询评估列表
+  listByUser: function(userId, limit) {
+    let q = `?user_id=${encodeURIComponent(userId)}`;
+    if (limit) {
+      q += `&limit=${limit}`;
+    }
+    return get('/api/evaluation/by-user' + q);
   },
   // 获取评估详情
   getDetail: function(id) {

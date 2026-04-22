@@ -327,5 +327,12 @@ Page({
     wx.switchTab({
       url: '/pages/user/diet/nutrition/index'
     });
+  },
+
+  goToNutritionEvaluation() {
+    wx.setStorageSync('healthScrollToEvaluation', true);
+    wx.switchTab({
+      url: '/pages/user/health/index'
+    });
   }
 });

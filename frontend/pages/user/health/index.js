@@ -1,5 +1,43 @@
 const api = require('../../../utils/api');
 
+function formatEvalDateTime(iso) {
+  if (!iso) {
+    return '';
+  }
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) {
+    return String(iso);
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:${min}`;
+}
+
+function nutritionStatusLabel(code) {
+  const map = {
+    normal: '总体正常',
+    excess_energy: '能量过剩倾向',
+    low_energy: '能量不足倾向',
+    imbalanced: '膳食结构不均衡',
+    unclear_data: '依据有限待复评'
+  };
+  return map[code] || code || '—';
+}
+
+function evaluationExpired(ev) {
+  if (!ev || !ev.valid_until) {
+    return false;
+  }
+  const end = new Date(ev.valid_until);
+  const today = new Date();
+  end.setHours(23, 59, 59, 999);
+  today.setHours(0, 0, 0, 0);
+  return end < today;
+}
+
 Page({
   data: {
     hasHealthData: false,
@@ -36,6 +74,7 @@ Page({
     activityLevelIndex: 2, // 0: sedentary, 1: lightly_active, 2: moderately_active, 3: very_active
     nutritionGoalIndex: 1, // 0: lose_weight, 1: maintain, 2: healthy_gain
     evaluation: null,
+    evaluationId: '',
     historyList: []
   },
 
@@ -44,7 +83,19 @@ Page({
   },
 
   onShow() {
+    const scrollEval = wx.getStorageSync('healthScrollToEvaluation');
+    if (scrollEval) {
+      wx.removeStorageSync('healthScrollToEvaluation');
+    }
     this.loadHealthData();
+    if (scrollEval) {
+      setTimeout(() => {
+        wx.pageScrollTo({
+          selector: '#eval-section',
+          duration: 300
+        });
+      }, 500);
+    }
   },
 
   onPullDownRefresh() {
@@ -64,7 +115,9 @@ Page({
       console.log('loadHealthData - 未登录');
       this.setData({
         hasHealthData: false,
-        isLoggedIn: false
+        isLoggedIn: false,
+        evaluation: null,
+        evaluationId: ''
       });
       return;
     }
@@ -83,6 +136,7 @@ Page({
 
     this.loadLatestHealthData();
     this.loadHistory();
+    this.loadEvaluation();
   },
 
   loadLatestHealthData() {
@@ -209,21 +263,41 @@ Page({
   },
 
   loadEvaluation() {
-    const evaluation = wx.getStorageSync('cachedEvaluation');
-    if (evaluation) {
-      this.setData({ evaluation });
-    } else {
-      this.setData({
-        evaluation: {
-          status: 'pending',
-          statusText: '待评估',
-          evalTime: '',
-          bmi: '--',
-          nutritionStatus: '--',
-          suggestion: '请先完善健康数据'
-        }
-      });
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      this.setData({ evaluation: null, evaluationId: '' });
+      return;
     }
+    api.evaluation
+      .getUserEvaluations(10)
+      .then((res) => {
+        if (res.code !== 200 && res.code !== '200') {
+          this.setData({ evaluation: null, evaluationId: '' });
+          return;
+        }
+        const list = Array.isArray(res.data) ? res.data : [];
+        if (!list.length) {
+          this.setData({ evaluation: null, evaluationId: '' });
+          return;
+        }
+        const ev = list[0];
+        const expired = evaluationExpired(ev);
+        const card = {
+          status: expired ? 'expired' : 'completed',
+          statusText: expired ? '已过期' : '最新',
+          evalTime: formatEvalDateTime(ev.created_at),
+          bmi: ev.bmi != null && ev.bmi !== '' ? String(ev.bmi) : '—',
+          nutritionStatus: nutritionStatusLabel(ev.nutrition_status),
+          suggestion: (ev.professional_conclusion || '—').slice(0, 220)
+        };
+        this.setData({
+          evaluation: card,
+          evaluationId: ev.evaluation_id || ''
+        });
+      })
+      .catch(() => {
+        this.setData({ evaluation: null, evaluationId: '' });
+      });
   },
 
   editBasicInfo() {
@@ -471,46 +545,14 @@ Page({
   },
 
   viewEvaluation() {
-    if (!this.data.hasHealthData) {
-      wx.showToast({ title: '请先录入健康数据', icon: 'none' });
+    const id = this.data.evaluationId;
+    if (!id) {
+      wx.showToast({ title: '暂无专业营养评估', icon: 'none' });
       return;
     }
-
-    const { height, weight } = this.data.healthData;
-    if (height && weight) {
-      const heightM = height / 100;
-      const bmi = (weight / (heightM * heightM)).toFixed(1);
-      let status = '';
-      let suggestion = '';
-
-      if (bmi < 18.5) {
-        status = '偏瘦';
-        suggestion = '建议增加营养摄入，适当增重';
-      } else if (bmi < 24) {
-        status = '正常';
-        suggestion = '继续保持良好的饮食习惯';
-      } else if (bmi < 28) {
-        status = '偏胖';
-        suggestion = '建议控制饮食，增加运动';
-      } else {
-        status = '肥胖';
-        suggestion = '建议制定减重计划，咨询专业营养师';
-      }
-
-      const evaluation = {
-        status: 'completed',
-        statusText: '已完成',
-        evalTime: new Date().toLocaleDateString(),
-        bmi: bmi,
-        nutritionStatus: status,
-        suggestion: suggestion
-      };
-
-      wx.setStorageSync('cachedEvaluation', evaluation);
-      this.setData({ evaluation });
-    }
-
-    wx.showToast({ title: '查看评估详情', icon: 'none' });
+    wx.navigateTo({
+      url: '/pages/user/health/evaluation-detail/index?id=' + encodeURIComponent(id)
+    });
   },
 
   gotoLogin() {

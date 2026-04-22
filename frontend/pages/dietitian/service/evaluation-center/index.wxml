@@ -1,0 +1,95 @@
+<view class="page">
+  <view class="user-hint" wx:if="{{username}}">
+    <text class="user-hint-label">服务对象</text>
+    <text class="user-hint-name">{{username}}</text>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-block">
+    <view class="state-skeleton"></view>
+    <text class="state-text">加载中</text>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state-block">
+    <text class="state-text err">{{loadError}}</text>
+    <view class="retry-btn" bindtap="loadList">重试</view>
+  </view>
+
+  <block wx:else>
+    <view class="section">
+      <text class="section-eyebrow">OVERVIEW</text>
+      <text class="section-title">当前评估</text>
+      <text class="section-desc">最新一条专业结论；过期后请发起新评估。</text>
+
+      <view wx:if="{{!current}}" class="current-empty">
+        <text class="current-empty-title">暂无评估记录</text>
+        <text class="current-empty-tip">使用下方按钮为该用户创建首条营养评估。</text>
+      </view>
+
+      <view wx:else class="current-card" bindtap="openDetail" data-id="{{current.evaluation_id}}">
+        <view class="current-card-inner">
+          <view class="current-topline">
+            <text class="validity-chip {{current.expired ? 'is-expired' : 'is-ok'}}">{{current.expired ? '已过期' : '有效'}}</text>
+            <text class="current-time">{{current.createdAtText}}</text>
+          </view>
+
+          <view class="current-bmi-row">
+            <view class="bmi-block">
+              <text class="bmi-label">BMI</text>
+              <text class="bmi-value">{{current.bmiText}}</text>
+            </view>
+            <view class="status-pill" wx:if="{{current.nutritionStatusText}}">{{current.nutritionStatusText}}</view>
+          </view>
+
+          <view class="meta-line" wx:if="{{current.validUntilText}}">
+            <text class="meta-k">有效期至</text>
+            <text class="meta-v">{{current.validUntilText}}</text>
+          </view>
+
+          <view class="current-conclusion">{{current.conclusionShort}}</view>
+          <text class="tap-hint">查看完整详情</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="primary-wrap">
+      <button
+        class="btn-primary"
+        hover-class="btn-primary-hover"
+        bindtap="startNewEvaluation"
+      >
+        发起新评估
+      </button>
+    </view>
+
+    <view class="section history-section">
+      <text class="section-eyebrow">ARCHIVE</text>
+      <text class="section-title">历史记录</text>
+
+      <view wx:if="{{!hasOlderHistory}}" class="history-empty">
+        <view class="history-empty-art" aria-hidden="true">
+          <view class="history-empty-ring"></view>
+          <view class="history-empty-line"></view>
+        </view>
+        <text class="history-empty-text">暂无更早记录</text>
+        <text class="history-empty-sub">仅有一条评估时，请查看上方「当前评估」摘要。</text>
+      </view>
+
+      <view wx:else class="history-list">
+        <view
+          class="history-row"
+          wx:for="{{historyList}}"
+          wx:key="evaluation_id"
+          bindtap="openDetail"
+          data-id="{{item.evaluation_id}}"
+        >
+          <view class="history-row-head">
+            <text class="history-pill">{{item.nutritionStatusText}}</text>
+            <text class="history-expired-tag" wx:if="{{item.expired}}">已过期</text>
+          </view>
+          <text class="history-sub">{{item.subtitle}}</text>
+          <text class="history-time">{{item.createdAtText}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

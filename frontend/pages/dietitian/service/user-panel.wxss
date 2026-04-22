@@ -109,6 +109,11 @@
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
+.service-card.card-static:active {
+  transform: none;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
 .card-header {
   display: flex;
   align-items: center;
@@ -154,25 +159,50 @@
   border-radius: 12rpx;
 }
 
-.health-item {
-  display: flex;
-  margin-bottom: 12rpx;
-}
-
-.health-item:last-child {
+.profile-placeholder {
   margin-bottom: 0;
 }
 
-.health-label {
-  width: 100rpx;
+.profile-placeholder-text {
   font-size: 26rpx;
-  color: #6c757d;
+  color: #868e96;
+  line-height: 1.55;
+}
+
+.health-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -10rpx;
+}
+
+.health-cell {
+  box-sizing: border-box;
+  width: 50%;
+  padding: 10rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.health-cell.span-2 {
+  width: 100%;
+}
+
+.health-cell-empty {
+  pointer-events: none;
+}
+
+.health-label {
+  font-size: 24rpx;
+  color: #868e96;
+  line-height: 1.4;
+  margin-bottom: 6rpx;
 }
 
 .health-value {
-  flex: 1;
-  font-size: 26rpx;
-  color: #1a1a1a;
+  font-size: 28rpx;
+  color: #212529;
+  line-height: 1.5;
+  word-break: break-word;
 }
 
 .evaluation-info {

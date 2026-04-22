@@ -16,48 +16,68 @@
   </view>
 
   <view class="service-cards">
-    <view class="service-card {{userInfo.hasProfile ? 'card-ok' : 'card-warning'}}" bindtap="viewProfile">
+    <view class="service-card card-static {{userInfo.hasProfile ? 'card-ok' : 'card-warning'}}">
       <view class="card-header">
         <text class="card-icon">👤</text>
         <text class="card-title">健康档案</text>
         <text class="card-status {{userInfo.hasProfile ? 'status-ok' : 'status-warning'}}">{{userInfo.hasProfile ? '✅ 已完善' : '❌ 未完善'}}</text>
       </view>
       <view class="card-body" wx:if="{{userInfo.hasProfile}}">
-        <view class="health-item">
-          <text class="health-label">身高：</text>
-          <text class="health-value">{{userInfo.healthData.height}}cm</text>
-        </view>
-        <view class="health-item">
-          <text class="health-label">体重：</text>
-          <text class="health-value">{{userInfo.healthData.weight}}kg</text>
-        </view>
-        <view class="health-item">
-          <text class="health-label">血压：</text>
-          <text class="health-value">{{userInfo.healthData.bloodPressure}}</text>
-        </view>
-        <view class="health-item">
-          <text class="health-label">血糖：</text>
-          <text class="health-value">{{userInfo.healthData.bloodSugar}}</text>
-        </view>
-        <view class="health-item">
-          <text class="health-label">心率：</text>
-          <text class="health-value">{{userInfo.healthData.heartRate}}次/分钟</text>
-        </view>
-        <view class="health-item">
-          <text class="health-label">过敏史：</text>
-          <text class="health-value">{{userInfo.healthData.allergyHistory || '无'}}</text>
+        <view class="health-grid">
+          <view class="health-cell">
+            <text class="health-label">身高</text>
+            <text class="health-value">{{userInfo.healthData.height}} cm</text>
+          </view>
+          <view class="health-cell">
+            <text class="health-label">体重</text>
+            <text class="health-value">{{userInfo.healthData.weight}} kg</text>
+          </view>
+          <view class="health-cell">
+            <text class="health-label">血压</text>
+            <text class="health-value">{{userInfo.healthData.bloodPressure || '—'}}</text>
+          </view>
+          <view class="health-cell">
+            <text class="health-label">血糖</text>
+            <text class="health-value">{{userInfo.healthData.bloodSugar || '—'}}</text>
+          </view>
+          <view class="health-cell">
+            <text class="health-label">活动水平</text>
+            <text class="health-value">{{userInfo.healthData.activityLevelText || '—'}}</text>
+          </view>
+          <view class="health-cell">
+            <text class="health-label">饮食目标</text>
+            <text class="health-value">{{userInfo.dietGoalText}}</text>
+          </view>
+          <view class="health-cell span-2">
+            <text class="health-label">过敏史</text>
+            <text class="health-value">{{userInfo.healthData.allergyHistory || '无'}}</text>
+          </view>
+          <view class="health-cell">
+            <text class="health-label">心率</text>
+            <text class="health-value">{{userInfo.healthData.heartRate}} 次/分钟</text>
+          </view>
+          <view class="health-cell health-cell-empty"></view>
         </view>
       </view>
-      <view class="card-footer">
-        <text class="card-action">{{userInfo.hasProfile ? '查看/编辑档案' : '请完善档案'}}</text>
+      <view class="card-body profile-placeholder" wx:if="{{!userInfo.hasProfile}}">
+        <text class="profile-placeholder-text">用户尚未在端内完善健康档案；规划师可结合服务申请信息与上方摘要参考使用。</text>
       </view>
     </view>
 
-    <view class="service-card {{userInfo.hasEvaluation ? 'card-ok' : 'card-warning'}}" bindtap="doEvaluation">
+    <view
+      class="service-card {{userInfo.hasEvaluation && !userInfo.evaluationExpired ? 'card-ok' : 'card-warning'}}"
+      bindtap="doEvaluation"
+    >
       <view class="card-header">
         <text class="card-icon">🔍</text>
         <text class="card-title">营养评估</text>
-        <text class="card-status {{userInfo.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{userInfo.hasEvaluation ? '✅ 有效' : '❌ 未评估'}}</text>
+        <text
+          class="card-status {{userInfo.hasEvaluation && !userInfo.evaluationExpired ? 'status-ok' : 'status-warning'}}"
+        >
+          <block wx:if="{{userInfo.hasEvaluation && userInfo.evaluationExpired}}">已过期</block>
+          <block wx:elif="{{userInfo.hasEvaluation}}">有效</block>
+          <block wx:else>未评估</block>
+        </text>
       </view>
       <view class="card-body" wx:if="{{userInfo.hasEvaluation}}">
         <view class="evaluation-info">
@@ -66,7 +86,7 @@
         </view>
       </view>
       <view class="card-footer">
-        <text class="card-action">{{userInfo.hasEvaluation ? '进行新评估 / 查看历史' : '进行评估'}}</text>
+        <text class="card-action">进入评估中心</text>
       </view>
     </view>
 

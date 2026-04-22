@@ -815,6 +815,12 @@
   border: 2rpx solid #2196f3;
 }
 
+.action-btn.eval-link {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 2rpx solid #81c784;
+}
+
 .action-btn.abandon {
   background-color: #fff;
   color: #f44336;

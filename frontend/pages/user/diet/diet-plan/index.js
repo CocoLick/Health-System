@@ -1050,6 +1050,14 @@ Page({
     });
   },
 
+  /** 跳转健康 Tab 并滚动到「营养评估」区块 */
+  goToNutritionEvaluation() {
+    wx.setStorageSync('healthScrollToEvaluation', true);
+    wx.switchTab({
+      url: '/pages/user/health/index'
+    });
+  },
+
   // 解除服务：删除当前膳食计划，并将关联服务申请置为 completed（后端）
   terminateService() {
     const plan = this.data.currentPlan;

@@ -102,6 +102,7 @@
     <view class="action-btn" bindtap="recordDiet">记录饮食</view>
     <view class="action-btn optimize" bindtap="applyOptimization">申请优化</view>
     <view class="action-btn compare" bindtap="viewDetailedComparison">查看对比</view>
+    <view class="action-btn eval-link" bindtap="goToNutritionEvaluation">查看营养评估</view>
     <view class="action-btn abandon" bindtap="terminateService">解除服务</view>
   </view>
 </view>

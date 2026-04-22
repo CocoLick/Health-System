@@ -1,0 +1,81 @@
+<view class="page">
+  <view class="header">
+    <view class="title">编写营养评估</view>
+    <view class="sub">请结合下方参考信息与维度提示撰写；带 * 为必填</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">用户与申请上下文</view>
+    <view class="ctx-row">
+      <text class="label">用户ID</text>
+      <view class="ctx-value">{{userId}}</view>
+    </view>
+    <view class="ctx-row" wx:if="{{context.bmi}}">
+      <text class="label">参考 BMI</text>
+      <view class="ctx-value">{{context.bmi}}（由身高体重估算，可在表单中覆盖）</view>
+    </view>
+    <view class="ctx-row">
+      <text class="label">活动水平</text>
+      <view class="ctx-value">{{context.activityText || '—'}}</view>
+    </view>
+    <view class="ctx-row">
+      <text class="label">饮食目标</text>
+      <view class="ctx-value">{{context.dietGoalText}}</view>
+    </view>
+    <view class="ctx-row" wx:if="{{context.otherGoal}}">
+      <text class="label">其他目标说明</text>
+      <view class="ctx-value">{{context.otherGoal}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">维度提示（写作提纲）</view>
+    <view class="hint">1. 体成分与 BMI：结合身高体重、腰围（若有）说明偏瘦/正常/超重等。</view>
+    <view class="hint">2. 膳食结构：供能比、多样性、油盐糖、优质蛋白来源；若缺少饮食记录请注明依据有限。</view>
+    <view class="hint">3. 能量与营养素：是否存在能量过剩/不足；微量营养素与纤维（有数据再写）。</view>
+    <view class="hint">4. 风险与禁忌：疾病、用药、过敏对饮食的影响。</view>
+    <view class="hint">5. 结论与配餐衔接：给出可执行的配餐优先事项。</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">评估表单</view>
+    <view class="field-label">营养状态标签</view>
+    <picker mode="selector" range="{{statusLabels}}" value="{{statusIndex}}" bindchange="onStatusChange">
+      <view class="picker">{{statusLabels[statusIndex]}}</view>
+    </picker>
+
+    <view class="field-label">体成分与 BMI 判断</view>
+    <view class="hint">对应上文「体成分」维度</view>
+    <textarea class="textarea" value="{{form.body_composition_text}}" bindinput="onInput" data-field="body_composition_text" placeholder="例如：BMI 26.2，属超重范围，建议控制总能量…" />
+
+    <view class="field-label">饮食结构评估</view>
+    <textarea class="textarea" value="{{form.dietary_pattern_text}}" bindinput="onInput" data-field="dietary_pattern_text" placeholder="例如：碳水供能比偏高，蔬菜摄入可能不足…" />
+
+    <view class="field-label">微量营养素与纤维（可选）</view>
+    <textarea class="textarea" value="{{form.micronutrient_text}}" bindinput="onInput" data-field="micronutrient_text" placeholder="数据不足时可写「依据有限，建议补充膳食记录后再评」" />
+
+    <view class="field-label">风险与禁忌摘要</view>
+    <textarea class="textarea" value="{{form.risks_text}}" bindinput="onInput" data-field="risks_text" placeholder="过敏、慢病相关饮食注意…" />
+
+    <view class="field-label">主要问题（每行一条，将存为列表）</view>
+    <textarea class="textarea" value="{{form.priority_lines}}" bindinput="onInput" data-field="priority_lines" placeholder="能量过剩&#10;蔬菜不足" />
+
+    <view class="field-label">专业评估结论 *</view>
+    <textarea class="textarea textarea-lg" value="{{form.professional_conclusion}}" bindinput="onInput" data-field="professional_conclusion" placeholder="面向用户的总结性结论，2～4 段为宜" />
+
+    <view class="field-label">对膳食计划的建议（可选）</view>
+    <textarea class="textarea" value="{{form.plan_recommendations}}" bindinput="onInput" data-field="plan_recommendations" placeholder="能量区间、宏量调整方向、必须遵守的约束等" />
+
+    <view class="field-label">估算日能量需求 kcal（可选）</view>
+    <input class="input input-energy" type="number" value="{{form.energy_need_kcal}}" bindinput="onInput" data-field="energy_need_kcal" placeholder="例如 1800" />
+
+    <view class="field-label">评估有效期至（可选，默认约 3 个月）</view>
+    <picker mode="date" value="{{form.valid_until}}" bindchange="onValidUntilChange">
+      <view class="picker">{{form.valid_until || '使用默认'}}</view>
+    </picker>
+  </view>
+
+  <view class="submit-bar">
+    <view class="submit-btn" bindtap="submit">提交评估</view>
+  </view>
+</view>

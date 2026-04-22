@@ -1,0 +1,63 @@
+<view class="page">
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+  <view class="error" wx:elif="{{errorMsg}}">{{errorMsg}}</view>
+  <block wx:else>
+    <view class="section">
+      <view class="section-title">评估概览</view>
+      <view class="meta-row">
+        <text>评估编号：{{detail.evaluation_id}}</text>
+      </view>
+      <view class="meta-row">
+        <text>评估时间：{{detail.createdAtText}}</text>
+      </view>
+      <view class="meta-row" wx:if="{{detail.validUntilText}}">
+        <text>有效期至：{{detail.validUntilText}}</text>
+        <text class="meta-tag {{detail.expired ? 'expired' : ''}}">{{detail.expired ? '已过期' : '有效'}}</text>
+      </view>
+      <view class="meta-row" wx:if="{{detail.bmi != null && detail.bmi !== ''}}">
+        <text>参考 BMI：{{detail.bmi}}</text>
+      </view>
+      <view class="meta-row" wx:if="{{detail.nutritionStatusText}}">
+        <text>营养状态：{{detail.nutritionStatusText}}</text>
+      </view>
+      <view class="meta-row" wx:if="{{detail.energyNeedKcal}}">
+        <text>估算日能量：{{detail.energyNeedKcal}} kcal</text>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{detail.priorityIssues && detail.priorityIssues.length}}">
+      <view class="section-title">主要问题</view>
+      <view class="priority-item" wx:for="{{detail.priorityIssues}}" wx:key="*this">{{item}}</view>
+    </view>
+
+    <view class="section" wx:if="{{detail.body_composition_text}}">
+      <view class="section-title">体成分与 BMI</view>
+      <view class="block-text">{{detail.body_composition_text}}</view>
+    </view>
+
+    <view class="section" wx:if="{{detail.dietary_pattern_text}}">
+      <view class="section-title">饮食结构</view>
+      <view class="block-text">{{detail.dietary_pattern_text}}</view>
+    </view>
+
+    <view class="section" wx:if="{{detail.micronutrient_text}}">
+      <view class="section-title">微量营养素与纤维</view>
+      <view class="block-text">{{detail.micronutrient_text}}</view>
+    </view>
+
+    <view class="section" wx:if="{{detail.risks_text}}">
+      <view class="section-title">风险与禁忌</view>
+      <view class="block-text">{{detail.risks_text}}</view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">专业评估结论</view>
+      <view class="block-text">{{detail.professional_conclusion}}</view>
+    </view>
+
+    <view class="section" wx:if="{{detail.plan_recommendations}}">
+      <view class="section-title">对膳食计划的建议</view>
+      <view class="block-text">{{detail.plan_recommendations}}</view>
+    </view>
+  </block>
+</view>

@@ -251,8 +251,8 @@ func (s *ServiceRequestService) GetDietitianServiceUsers(dietitianID string) ([]
 		dietPlanErr := s.db.Where("user_id = ?", userID).First(&dietPlan).Error
 		hasPlan = dietPlanErr == nil
 
-		// 查询用户是否有评估（暂时不支持，默认为false）
-		var hasEvaluation bool = false
+		evalSvc := NewNutritionEvaluationService()
+		hasEvaluation := evalSvc.UserHasEvaluationFromDietitian(dietitianID, userID)
 
 		// 查询最近的服务时间
 		var lastServiceTime string
