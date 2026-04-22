@@ -19,7 +19,7 @@
         </view>
       </view>
       <view class="plan-title">{{currentPlan.title}}</view>
-      <view class="plan-goal">饮食目标：{{currentPlan.goal}}</view>
+      <view class="plan-goal">饮食目标：{{currentPlan.goalText || currentPlan.goal}}</view>
       <view class="plan-date">创建时间：{{currentPlan.createTime}}</view>
       <view class="plan-period">计划周期：7天</view>
       
@@ -111,7 +111,7 @@
       <view class="action-btn" bindtap="recordDiet">记录饮食</view>
       <view class="action-btn optimize" bindtap="applyOptimization">申请优化</view>
       <view class="action-btn compare" bindtap="viewDetailedComparison">查看对比</view>
-      <view class="action-btn abandon" bindtap="abandonPlan">放弃计划</view>
+      <view class="action-btn abandon" bindtap="terminateService">解除服务</view>
     </view>
   </view>
 
@@ -132,7 +132,7 @@
         <view class="application-info">
           <view class="info-row">
             <text class="label">规划师：</text>
-            <text class="value">{{latestRequest.dietitian_id}}</text>
+            <text class="value">{{latestRequest.dietitian_name || latestRequest.dietitian_id}}</text>
           </view>
           <view class="info-row">
             <text class="label">服务类型：</text>
@@ -184,7 +184,7 @@
           <view class="request-info">
             <view class="info-row">
               <text class="label">规划师：</text>
-              <text class="value">{{pendingRequest.dietitian_id}}</text>
+              <text class="value">{{pendingRequest.dietitian_name || pendingRequest.dietitian_id}}</text>
             </view>
             <view class="info-row">
               <text class="label">服务类型：</text>
@@ -216,7 +216,7 @@
           <view class="plan-title">{{currentPlan.title}}</view>
           <view class="plan-info">
             <text>规划师：{{currentPlan.dietitianName}}</text>
-            <text>目标：{{currentPlan.goal}}</text>
+            <text>目标：{{currentPlan.goalText || currentPlan.goal}}</text>
           </view>
           <view class="plan-desc">您的膳食计划已提交，正在等待管理员审核</view>
           <view class="action-btn" bindtap="viewPlanDetail">查看计划详情</view>

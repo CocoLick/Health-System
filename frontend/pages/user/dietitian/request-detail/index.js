@@ -29,6 +29,10 @@ Page({
           // 处理数据，添加格式化后的字段
           const requestData = res.data;
           requestData.serviceTypeName = this.getServiceTypeName(requestData.service_type);
+          requestData.dietitianDisplay = this.formatDietitianDisplay(
+            requestData.dietitian_name,
+            requestData.dietitian_id
+          );
           requestData.dietGoalText = this.getDietGoalText(requestData.diet_goal, requestData.other_goal);
           requestData.statusText = this.getStatusText(requestData.status);
           requestData.createTimeFormatted = this.formatDate(requestData.create_time);
@@ -53,6 +57,21 @@ Page({
     wx.reLaunch({
       url: '/pages/user/diet/diet-plan/index'
     });
+  },
+
+  formatDietitianDisplay(name, id) {
+    const n = (name && String(name).trim()) || '';
+    const i = (id && String(id).trim()) || '';
+    if (n && i) {
+      return `${n}（${i}）`;
+    }
+    if (n) {
+      return n;
+    }
+    if (i) {
+      return i;
+    }
+    return '—';
   },
 
   getServiceTypeName(type) {
@@ -84,7 +103,9 @@ Page({
     const statusMap = {
       'pending': '待处理',
       'approved': '已通过',
-      'rejected': '已拒绝'
+      'rejected': '已拒绝',
+      'completed': '已完成',
+      'cancelled': '已取消'
     };
     return statusMap[status] || status;
   },

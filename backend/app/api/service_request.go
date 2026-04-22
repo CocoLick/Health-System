@@ -51,17 +51,19 @@ func (h *ServiceRequestHandler) CreateServiceRequest(c *gin.Context) {
 		json.Unmarshal([]byte(serviceRequest.HealthData), &healthData)
 	}
 
+	dietitianNames := h.serviceRequestService.DietitianNamesByIDs([]string{serviceRequest.DietitianID})
 	response := schemas.ServiceRequestResponse{
-		RequestID:    serviceRequest.RequestID,
-		UserID:       serviceRequest.UserID,
-		DietitianID:  serviceRequest.DietitianID,
-		ServiceType:  serviceRequest.ServiceType,
-		DietGoal:     serviceRequest.DietGoal,
-		OtherGoal:    serviceRequest.OtherGoal,
-		HealthData:   healthData,
-		Status:       serviceRequest.Status,
-		CreateTime:   serviceRequest.CreateTime,
-		UpdateTime:   serviceRequest.UpdateTime,
+		RequestID:     serviceRequest.RequestID,
+		UserID:        serviceRequest.UserID,
+		DietitianID:   serviceRequest.DietitianID,
+		DietitianName: dietitianNames[serviceRequest.DietitianID],
+		ServiceType:   serviceRequest.ServiceType,
+		DietGoal:      serviceRequest.DietGoal,
+		OtherGoal:     serviceRequest.OtherGoal,
+		HealthData:    healthData,
+		Status:        serviceRequest.Status,
+		CreateTime:    serviceRequest.CreateTime,
+		UpdateTime:    serviceRequest.UpdateTime,
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": response, "message": "服务请求创建成功"})
@@ -83,6 +85,12 @@ func (h *ServiceRequestHandler) GetUserServiceRequests(c *gin.Context) {
 		return
 	}
 
+	dietitianIDs := make([]string, 0, len(requests))
+	for _, req := range requests {
+		dietitianIDs = append(dietitianIDs, req.DietitianID)
+	}
+	dietitianNames := h.serviceRequestService.DietitianNamesByIDs(dietitianIDs)
+
 	// 构建响应
 	response := make([]schemas.ServiceRequestListResponse, 0, len(requests))
 	for _, req := range requests {
@@ -92,16 +100,17 @@ func (h *ServiceRequestHandler) GetUserServiceRequests(c *gin.Context) {
 			json.Unmarshal([]byte(req.HealthData), &healthData)
 		}
 		response = append(response, schemas.ServiceRequestListResponse{
-			RequestID:    req.RequestID,
-			UserID:       req.UserID,
-			DietitianID:  req.DietitianID,
-			ServiceType:  req.ServiceType,
-			DietGoal:     req.DietGoal,
-			OtherGoal:    req.OtherGoal,
-			HealthData:   healthData,
-			Status:       req.Status,
-			CreateTime:   req.CreateTime,
-			UpdateTime:   req.UpdateTime,
+			RequestID:     req.RequestID,
+			UserID:        req.UserID,
+			DietitianID:   req.DietitianID,
+			DietitianName: dietitianNames[req.DietitianID],
+			ServiceType:   req.ServiceType,
+			DietGoal:      req.DietGoal,
+			OtherGoal:     req.OtherGoal,
+			HealthData:    healthData,
+			Status:        req.Status,
+			CreateTime:    req.CreateTime,
+			UpdateTime:    req.UpdateTime,
 		})
 	}
 
@@ -143,17 +152,19 @@ func (h *ServiceRequestHandler) GetServiceRequestByID(c *gin.Context) {
 		json.Unmarshal([]byte(request.HealthData), &healthData)
 	}
 
+	dietitianNames := h.serviceRequestService.DietitianNamesByIDs([]string{request.DietitianID})
 	response := schemas.ServiceRequestResponse{
-		RequestID:    request.RequestID,
-		UserID:       request.UserID,
-		DietitianID:  request.DietitianID,
-		ServiceType:  request.ServiceType,
-		DietGoal:     request.DietGoal,
-		OtherGoal:    request.OtherGoal,
-		HealthData:   healthData,
-		Status:       request.Status,
-		CreateTime:   request.CreateTime,
-		UpdateTime:   request.UpdateTime,
+		RequestID:     request.RequestID,
+		UserID:        request.UserID,
+		DietitianID:   request.DietitianID,
+		DietitianName: dietitianNames[request.DietitianID],
+		ServiceType:   request.ServiceType,
+		DietGoal:      request.DietGoal,
+		OtherGoal:     request.OtherGoal,
+		HealthData:    healthData,
+		Status:        request.Status,
+		CreateTime:    request.CreateTime,
+		UpdateTime:    request.UpdateTime,
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "data": response, "message": "获取服务请求成功"})
@@ -210,16 +221,16 @@ func (h *ServiceRequestHandler) GetDietitianServiceRequests(c *gin.Context) {
 			json.Unmarshal([]byte(req.HealthData), &healthData)
 		}
 		response = append(response, schemas.ServiceRequestListResponse{
-			RequestID:    req.RequestID,
-			UserID:       req.UserID,
-			DietitianID:  req.DietitianID,
-			ServiceType:  req.ServiceType,
-			DietGoal:     req.DietGoal,
-			OtherGoal:    req.OtherGoal,
-			HealthData:   healthData,
-			Status:       req.Status,
-			CreateTime:   req.CreateTime,
-			UpdateTime:   req.UpdateTime,
+			RequestID:   req.RequestID,
+			UserID:      req.UserID,
+			DietitianID: req.DietitianID,
+			ServiceType: req.ServiceType,
+			DietGoal:    req.DietGoal,
+			OtherGoal:   req.OtherGoal,
+			HealthData:  healthData,
+			Status:      req.Status,
+			CreateTime:  req.CreateTime,
+			UpdateTime:  req.UpdateTime,
 		})
 	}
 

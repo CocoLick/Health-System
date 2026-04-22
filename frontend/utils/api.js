@@ -20,10 +20,23 @@ function request(options) {
   }
 
   return new Promise((resolve, reject) => {
+    const method = (options.method || 'GET').toUpperCase();
+    let data = options.data;
+    // 小程序在 Content-Type: application/json 时，需将 data 序列化为 JSON 字符串，否则嵌套结构可能无法被后端正确解析
+    if (
+      method !== 'GET' && method !== 'HEAD' &&
+      data != null && typeof data === 'object' &&
+      !Array.isArray(data) && !(data instanceof ArrayBuffer) &&
+      (headers['Content-Type'] || headers['content-type'] || '')
+        .toLowerCase()
+        .indexOf('application/json') !== -1
+    ) {
+      data = JSON.stringify(data);
+    }
     wx.request({
       url: `${baseUrl}${options.url}`,
       method: options.method || 'GET',
-      data: options.data,
+      data,
       header: headers,
       success: (res) => {
         // 兼容 RESTful 常见返回码：201(created), 204(no content) 等

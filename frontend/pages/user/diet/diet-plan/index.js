@@ -62,7 +62,17 @@ Page({
       });
   },
 
+  /** 切换账号后本地仍缓存他人膳食计划时，避免误删导致 403 */
+  clearStaleDietPlanCache() {
+    const plan = wx.getStorageSync('currentDietPlan');
+    const me = (wx.getStorageSync('userInfo') || {}).user_id;
+    if (plan && plan.user_id && me && plan.user_id !== me) {
+      wx.removeStorageSync('currentDietPlan');
+    }
+  },
+
   loadData() {
+    this.clearStaleDietPlanCache();
     const selectedDietitian = wx.getStorageSync('selectedDietitian');
     let pendingRequest = wx.getStorageSync('pendingServiceRequest');
     // 只保留状态为pending的请求
@@ -95,14 +105,27 @@ Page({
                 .then(detailRes => {
                   if (detailRes.code === 200) {
                     const detailData = detailRes.data;
+                    const planGoalRaw = this.normalizePlanGoalRaw(detailData);
                     // 转换数据格式以适应前端需求
+                    // 尝试从plan_days中获取开始时间（取第一天的日期）
+                    let startDate = '';
+                    if (detailData.plan_days && detailData.plan_days.length > 0) {
+                      startDate = detailData.plan_days[0].date || detailData.plan_days[0].plan_date || '';
+                    }
+                    
                     currentPlan = {
                       id: detailData.id,
+                      user_id: detailData.user_id,
+                      dietitian_id: detailData.dietitian_id,
                       title: detailData.title,
-                      source: detailData.source,
-                      dietitianName: detailData.dietitian_name || '系统智能',
+                      source: detailData.source || (detailData.dietitian_name ? 'dietitian' : 'ai'),
+                      // 规划师计划但后端没返回名字时，避免误显示“系统智能”
+                      dietitianName: detailData.dietitian_name || detailData.dietitian_id || '规划师',
                       status: detailData.status,
-                      goal: detailData.diet_goal,
+                      // 后端详情/列表均使用 json 字段名 goal（饮食目标快照）
+                      goal: planGoalRaw,
+                      goalText: this.getDietGoalText(planGoalRaw, detailData.other_goal),
+                      startDate: startDate,
                       calories: detailData.plan_days && detailData.plan_days.length > 0 ? detailData.plan_days[0].calories : 0,
                       protein: detailData.plan_days && detailData.plan_days.length > 0 ? detailData.plan_days[0].protein : 0,
                       carbohydrate: detailData.plan_days && detailData.plan_days.length > 0 ? detailData.plan_days[0].carbohydrate : 0,
@@ -124,6 +147,7 @@ Page({
                         plan_id: day.plan_id,
                         day_index: day.day_index,
                         date: day.date,
+                        plan_date: day.plan_date,
                         calories: day.calories,
                         protein: day.protein,
                         carbohydrate: day.carbohydrate,
@@ -664,14 +688,18 @@ Page({
         }
         const detailData = detailRes.data;
         const day0 = detailData.plan_days && detailData.plan_days.length > 0 ? detailData.plan_days[0] : null;
+        const planGoalRaw = this.normalizePlanGoalRaw(detailData);
 
         const plan = {
           id: detailData.id,
+          user_id: detailData.user_id,
+          dietitian_id: detailData.dietitian_id,
           title: detailData.title,
           source: detailData.source,
           dietitianName: detailData.dietitian_name || '系统智能',
           status: detailData.status,
-          goal: detailData.diet_goal,
+          goal: planGoalRaw,
+          goalText: this.getDietGoalText(planGoalRaw, detailData.other_goal),
           calories: day0 ? day0.calories : 0,
           protein: day0 ? day0.protein : 0,
           carbohydrate: day0 ? day0.carbohydrate : 0,
@@ -792,10 +820,21 @@ Page({
     return typeMap[type] || type;
   },
 
-  // 获取饮食目标文本
+  /** 从膳食计划接口对象中取出饮食目标（兼容 goal / diet_goal） */
+  normalizePlanGoalRaw(detail) {
+    if (!detail) return '';
+    const g = detail.goal != null && detail.goal !== '' ? detail.goal : (detail.diet_goal != null ? detail.diet_goal : (detail.dietGoal || ''));
+    return String(g).trim();
+  },
+
+  // 获取饮食目标展示文案（枚举 + 快照全文）
   getDietGoalText(goal, otherGoal) {
-    if (goal === 'other' && otherGoal) {
-      return otherGoal;
+    const g = goal != null ? String(goal).trim() : '';
+    if (!g || g === '—') {
+      return '未填写';
+    }
+    if (g === 'other' && otherGoal) {
+      return String(otherGoal).trim();
     }
     const goalMap = {
       'weight_loss': '减脂',
@@ -805,7 +844,7 @@ Page({
       'sports_nutrition': '运动营养',
       'pregnancy': '孕期营养'
     };
-    return goalMap[goal] || goal;
+    return goalMap[g] || g;
   },
 
   // 获取状态文本
@@ -886,8 +925,42 @@ Page({
     const currentPlan = this.data.currentPlan;
     if (!currentPlan || !currentPlan.plan_days) return;
     
-    // 找到对应日期的天计划
-    const dayPlan = currentPlan.plan_days.find(day => day.date === selectedDate);
+    const normalizeDate = (d) => {
+      if (!d) return '';
+      const s = String(d).trim();
+      // 兼容 "2026-04-22" / "2026/04/22" / "2026-04-22T00:00:00Z" 等格式
+      const first10 = s.slice(0, 10).replace(/\//g, '-');
+      const parsed = new Date(first10);
+      if (!isNaN(parsed.getTime())) {
+        const y = parsed.getFullYear();
+        const m = String(parsed.getMonth() + 1).padStart(2, '0');
+        const day = String(parsed.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      return first10;
+    };
+    const targetDate = normalizeDate(selectedDate);
+
+    // 找到对应日期的天计划，支持 date 或 plan_date 字段
+    let dayPlan = currentPlan.plan_days.find(day => {
+      const dayDate = normalizeDate(day.date || day.plan_date);
+      return dayDate === targetDate;
+    });
+    
+    // 如果没有找到对应日期的计划，尝试根据开始时间计算第几天
+    if (!dayPlan) {
+      const start = normalizeDate(currentPlan.startDate) || normalizeDate(currentPlan.plan_days[0] && (currentPlan.plan_days[0].date || currentPlan.plan_days[0].plan_date));
+      if (start) {
+        const startDate = new Date(start);
+        const target = new Date(targetDate);
+        const dayDiff = Math.floor((target - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+        if (dayDiff > 0 && dayDiff <= currentPlan.plan_days.length) {
+          dayPlan = currentPlan.plan_days[dayDiff - 1];
+        }
+      }
+    }
+    
     if (dayPlan) {
       // 更新页面显示的数据
       this.setData({
@@ -977,79 +1050,49 @@ Page({
     });
   },
 
-  // 放弃计划
-  abandonPlan() {
-    console.log('放弃计划');
+  // 解除服务：删除当前膳食计划，并将关联服务申请置为 completed（后端）
+  terminateService() {
     const plan = this.data.currentPlan;
-    if (!plan) return;
-    
+    if (!plan || !plan.id) {
+      wx.showToast({ title: '暂无膳食计划', icon: 'none' });
+      return;
+    }
+    const me = (wx.getStorageSync('userInfo') || {}).user_id;
+    if (plan.user_id && me && plan.user_id !== me) {
+      wx.showModal({
+        title: '无法解除服务',
+        content: '当前膳食计划属于其他用户账号，与当前登录不一致（常见于切换账号后未刷新）。请重新进入本页或清除缓存后再试。',
+        showCancel: false
+      });
+      return;
+    }
+
     wx.showModal({
-      title: '放弃计划',
-      content: '您确定要放弃当前膳食计划吗？',
+      title: '解除服务',
+      content: '将删除当前膳食计划，并结束与当前规划师的服务关系（服务申请标记为已完成）。此操作不可撤销。',
       success: (res) => {
-        if (res.confirm) {
-          // 调用API删除膳食计划
-          api.dietPlan.remove(plan.id)
-            .then(res => {
-              console.log('放弃计划API响应:', res);
-              if (res.code === 200) {
-                // 移除本地存储
-                wx.removeStorageSync('currentDietPlan');
-                // 显示成功提示
-                wx.showToast({
-                  title: '已放弃当前计划',
-                  icon: 'success',
-                  duration: 1000
-                });
-                // 延时后刷新页面
-                setTimeout(() => {
-                  // 刷新页面
-                  this.setData({
-                    currentPlan: null,
-                    planStatus: 0
-                  });
-                  // 重新加载数据
-                  this.loadData();
-                }, 1000);
-              } else {
-                // API调用失败，但是仍然移除本地存储，确保前端状态正确
-                wx.removeStorageSync('currentDietPlan');
-                wx.showToast({
-                  title: '已放弃当前计划',
-                  icon: 'success',
-                  duration: 1000
-                });
-                setTimeout(() => {
-                  this.setData({
-                    currentPlan: null,
-                    planStatus: 0
-                  });
-                  this.loadData();
-                }, 1000);
-              }
-            })
-            .catch(err => {
-              console.error('放弃计划失败:', err);
-              // 网络错误，只移除本地存储
+        if (!res.confirm) return;
+        wx.showLoading({ title: '处理中...' });
+        api.dietPlan.remove(plan.id)
+          .then((apiRes) => {
+            wx.hideLoading();
+            if (apiRes.code === 200) {
               wx.removeStorageSync('currentDietPlan');
-              // 显示成功提示
-              wx.showToast({
-                title: '已放弃当前计划',
-                icon: 'success',
-                duration: 1000
-              });
-              // 延时后刷新页面
+              wx.showToast({ title: '已解除服务', icon: 'success', duration: 1500 });
               setTimeout(() => {
-                // 刷新页面
-                this.setData({
-                  currentPlan: null,
-                  planStatus: 0
-                });
-                // 重新加载数据
+                this.setData({ currentPlan: null, planStatus: 0 });
                 this.loadData();
-              }, 1000);
-            });
-        }
+              }, 800);
+            } else {
+              wx.showToast({ title: apiRes.message || '解除失败', icon: 'none' });
+            }
+          })
+          .catch((err) => {
+            wx.hideLoading();
+            console.error('解除服务失败:', err);
+            const msg = (err && err.data && err.data.message) || (err && err.message) || '网络异常，请重试';
+            wx.showToast({ title: msg, icon: 'none', duration: 3000 });
+          });
       }
     });
   }

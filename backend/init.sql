@@ -79,24 +79,30 @@ CREATE TABLE IF NOT EXISTS `plan_days` (
     FOREIGN KEY (`plan_id`) REFERENCES `diet_plan`(`plan_id`)
 );
 
--- 创建餐次表
+-- 餐次表
 CREATE TABLE IF NOT EXISTS `meals` (
     `meal_id` VARCHAR(20) PRIMARY KEY,
     `day_id` VARCHAR(20) NOT NULL,
-    `type` VARCHAR(50) NOT NULL,
+    `type` VARCHAR(20) NOT NULL,
     `time` VARCHAR(10) NOT NULL,
     `calories` INT NOT NULL,
+    `protein` FLOAT NOT NULL DEFAULT 0,
+    `carbohydrate` FLOAT NOT NULL DEFAULT 0,
+    `fat` FLOAT NOT NULL DEFAULT 0,
     FOREIGN KEY (`day_id`) REFERENCES `plan_days`(`day_id`)
 );
 
--- 创建食物表
+-- 食物表
 CREATE TABLE IF NOT EXISTS `foods` (
     `food_id` VARCHAR(20) PRIMARY KEY,
     `meal_id` VARCHAR(20) NOT NULL,
-    `name` VARCHAR(255) NOT NULL,
-    `amount` VARCHAR(100) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `amount` VARCHAR(50) NOT NULL,
     `calories` INT NOT NULL,
-    FOREIGN KEY (`meal_id`) REFERENCES `meals`(`meal_id`)
+    `protein` FLOAT NOT NULL DEFAULT 0,
+    `carbohydrate` FLOAT NOT NULL DEFAULT 0,
+    `fat` FLOAT NOT NULL DEFAULT 0,
+    FOREIGN KEY (`meal_id`) REFERENCES `meals`(`meal_id`) ON DELETE CASCADE
 );
 
 -- 创建计划执行表

@@ -3,6 +3,7 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/yourusername/nutrition-system/app/models"
@@ -22,6 +23,36 @@ func NewServiceRequestService() *ServiceRequestService {
 	return &ServiceRequestService{db: config.DB}
 }
 
+// DietitianNamesByIDs 批量查询规划师展示名（优先 name，否则 username）
+func (s *ServiceRequestService) DietitianNamesByIDs(ids []string) map[string]string {
+	seen := make(map[string]bool)
+	var uniq []string
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		uniq = append(uniq, id)
+	}
+	out := make(map[string]string)
+	if len(uniq) == 0 {
+		return out
+	}
+	var users []models.User
+	if err := s.db.Select("user_id", "name", "username").Where("user_id IN ?", uniq).Find(&users).Error; err != nil {
+		return out
+	}
+	for _, u := range users {
+		n := strings.TrimSpace(u.Name)
+		if n == "" {
+			n = strings.TrimSpace(u.Username)
+		}
+		out[u.UserID] = n
+	}
+	return out
+}
+
 // CreateServiceRequest 创建服务请求
 func (s *ServiceRequestService) CreateServiceRequest(userID string, req schemas.CreateServiceRequestRequest) (*models.ServiceRequest, error) {
 	// 生成请求ID
@@ -35,16 +66,16 @@ func (s *ServiceRequestService) CreateServiceRequest(userID string, req schemas.
 
 	// 创建服务请求
 	serviceRequest := &models.ServiceRequest{
-		RequestID:    requestID,
-		UserID:       userID,
-		DietitianID:  req.DietitianID,
-		ServiceType:  req.ServiceType,
-		DietGoal:     req.DietGoal,
-		OtherGoal:    req.OtherGoal,
-		HealthData:   string(healthDataJSON),
-		Status:       "pending",
-		CreateTime:   time.Now(),
-		UpdateTime:   time.Now(),
+		RequestID:   requestID,
+		UserID:      userID,
+		DietitianID: req.DietitianID,
+		ServiceType: req.ServiceType,
+		DietGoal:    req.DietGoal,
+		OtherGoal:   req.OtherGoal,
+		HealthData:  string(healthDataJSON),
+		Status:      "pending",
+		CreateTime:  time.Now(),
+		UpdateTime:  time.Now(),
 	}
 
 	// 保存到数据库
@@ -232,13 +263,13 @@ func (s *ServiceRequestService) GetDietitianServiceUsers(dietitianID string) ([]
 
 		// 创建用户对象
 		serviceUser := schemas.DietitianServiceUser{
-			UserID:           user.UserID,
-			Username:         user.Username,
-			UsernameInitial:  string(user.Username[0]),
-			HasProfile:       hasProfile,
-			HasEvaluation:    hasEvaluation,
-			HasPlan:          hasPlan,
-			LastServiceTime:  lastServiceTime,
+			UserID:          user.UserID,
+			Username:        user.Username,
+			UsernameInitial: string(user.Username[0]),
+			HasProfile:      hasProfile,
+			HasEvaluation:   hasEvaluation,
+			HasPlan:         hasPlan,
+			LastServiceTime: lastServiceTime,
 		}
 
 		users = append(users, serviceUser)

@@ -14,6 +14,10 @@
         <text class="value">{{request.serviceTypeName}}</text>
       </view>
       <view class="detail-item">
+        <text class="label">规划师：</text>
+        <text class="value">{{request.dietitianDisplay}}</text>
+      </view>
+      <view class="detail-item">
         <text class="label">饮食目标：</text>
         <text class="value">{{request.dietGoalText}}</text>
       </view>

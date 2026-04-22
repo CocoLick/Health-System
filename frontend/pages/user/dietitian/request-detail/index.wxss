@@ -74,9 +74,11 @@
 .label {
   font-size: 26rpx;
   color: #666;
-  width: 140rpx;
+  min-width: 160rpx;
   flex-shrink: 0;
   padding-top: 4rpx;
+  padding-right: 12rpx;
+  white-space: nowrap;
 }
 
 .value {

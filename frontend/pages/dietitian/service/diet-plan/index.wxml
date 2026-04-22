@@ -38,6 +38,15 @@
       <view class="form-label">计划周期</view>
       <input class="form-input" type="number" placeholder="请输入天数" value="{{planInfo.duration}}" bindinput="bindPlanInfo" bindblur="bindPlanBlur" data-field="duration"/>
     </view>
+    <view class="form-item">
+      <view class="form-label">计划开始时间</view>
+      <picker class="form-picker" mode="date" start="{{today}}" bindchange="bindStartDateChange">
+        <view class="picker-view">
+          {{planInfo.startDate || '请选择开始日期'}}
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
   </view>
 
   <!-- 计划编辑 -->

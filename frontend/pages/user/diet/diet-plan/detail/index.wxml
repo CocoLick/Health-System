@@ -12,12 +12,12 @@
         <text wx:else>👨‍⚕️</text>
         <text>{{plan.source === 'ai' ? '系统智能推荐' : '规划师定制'}}</text>
       </view>
-      <view class="plan-dietitian" wx:if="{{plan.source !== 'ai'}}">
-        {{plan.dietitianName}}
-      </view>
+    </view>
+    <view class="plan-dietitian-meta" wx:if="{{plan.source !== 'ai' && plan.dietitianDisplay}}">
+      <text class="plan-dietitian-text">规划师：{{plan.dietitianDisplay}}</text>
     </view>
     <view class="plan-title">{{plan.title}}</view>
-    <view class="plan-goal">饮食目标：{{plan.goal}}</view>
+    <view class="plan-goal">饮食目标：{{plan.goalText || plan.goal || '未填写'}}</view>
     <view class="plan-date">创建时间：{{plan.createTime}}</view>
     
     <view class="date-selector">
@@ -102,6 +102,6 @@
     <view class="action-btn" bindtap="recordDiet">记录饮食</view>
     <view class="action-btn optimize" bindtap="applyOptimization">申请优化</view>
     <view class="action-btn compare" bindtap="viewDetailedComparison">查看对比</view>
-    <view class="action-btn abandon" bindtap="abandonPlan">放弃计划</view>
+    <view class="action-btn abandon" bindtap="terminateService">解除服务</view>
   </view>
 </view>

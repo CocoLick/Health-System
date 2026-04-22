@@ -15,8 +15,10 @@ Page({
     },
     planInfo: {
       title: '',
-      duration: 7
+      duration: 7,
+      startDate: ''
     },
+    today: '',
     currentDay: 1,
     currentDayMeals: [],
     planDays: [],
@@ -39,9 +41,20 @@ Page({
   onLoad(options) {
     const userId = options.userId || 'U001';
     console.log('=== onLoad 开始 === userId:', userId);
+    
+    // 初始化今天的日期
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    
     this.setData({
-      userId: userId
+      userId: userId,
+      today: todayStr,
+      'planInfo.startDate': todayStr
     });
+    
     this.initPlanDays();
     this.loadIngredients();
     this.loadUserInfo(userId);
@@ -263,9 +276,13 @@ Page({
   },
 
   getDateByDayIndex(dayIndex) {
-    const date = new Date();
+    const startDate = this.data.planInfo.startDate || new Date().toISOString().split('T')[0];
+    const date = new Date(startDate);
     date.setDate(date.getDate() + dayIndex - 1);
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   },
 
   calculateBMI(height, weight) {
@@ -328,6 +345,15 @@ Page({
         }
       }
     }
+  },
+
+  bindStartDateChange(e) {
+    const startDate = e.detail.value;
+    this.setData({
+      'planInfo.startDate': startDate
+    });
+    // 重新初始化计划天数，使用新的开始日期
+    this.initPlanDays();
   },
 
 
@@ -420,12 +446,13 @@ Page({
 
   selectIngredient(e) {
     const ingredient = e.currentTarget.dataset.ingredient;
+    const nutrition = ingredient.nutrition_100g || {};
     const selectedFood = {
       name: ingredient.name,
       calories: ingredient.calorie_100g || 0,
-      protein: ingredient.protein || 0,
-      carbohydrate: ingredient.carbohydrate || 0,
-      fat: ingredient.fat || 0
+      protein: nutrition.protein || 0,
+      carbohydrate: nutrition.carbohydrate || 0,
+      fat: nutrition.fat || 0
     };
     this.setData({
       selectedFood: selectedFood,
@@ -479,11 +506,17 @@ Page({
     
     const actualGrams = foodAmount * gramPerUnit;
     const calories = (selectedFood.calories * actualGrams) / 100;
+    const protein = ((selectedFood.protein || 0) * actualGrams) / 100;
+    const carbohydrate = ((selectedFood.carbohydrate || 0) * actualGrams) / 100;
+    const fat = ((selectedFood.fat || 0) * actualGrams) / 100;
     
     planDays[dayIndex].meals[selectedMealIndex].foods.push({
       name: selectedFood.name,
       amount: `${foodAmount}${foodUnit}`,
-      calories: Math.round(calories)
+      calories: Math.round(calories),
+      protein: parseFloat(protein.toFixed(1)),
+      carbohydrate: parseFloat(carbohydrate.toFixed(1)),
+      fat: parseFloat(fat.toFixed(1))
     });
     
     this.calculateMealCalories(dayIndex, selectedMealIndex);
@@ -504,10 +537,19 @@ Page({
     const planDays = this.data.planDays;
     const meal = planDays[dayIndex].meals[mealIndex];
     let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbohydrate = 0;
+    let totalFat = 0;
     meal.foods.forEach(food => {
       totalCalories += food.calories;
+      totalProtein += food.protein || 0;
+      totalCarbohydrate += food.carbohydrate || 0;
+      totalFat += food.fat || 0;
     });
     meal.calories = totalCalories;
+    meal.protein = parseFloat(totalProtein.toFixed(1));
+    meal.carbohydrate = parseFloat(totalCarbohydrate.toFixed(1));
+    meal.fat = parseFloat(totalFat.toFixed(1));
     this.setData({ planDays });
   },
 
@@ -521,6 +563,12 @@ Page({
 
   stopPropagation() {},
 
+  /** 当前登录规划师在 user 表中的 user_id（与 service_request.dietitian_id 一致） */
+  getDietitianId() {
+    const info = wx.getStorageSync('userInfo') || {};
+    return info.user_id || info.userId || '';
+  },
+
   savePlan() {
     const { planInfo, planDays, userId, planId } = this.data;
     
@@ -528,7 +576,12 @@ Page({
       wx.showToast({ title: '请输入计划标题', icon: 'none' });
       return;
     }
-    
+    const dietitianId = this.getDietitianId();
+    if (!dietitianId) {
+      wx.showToast({ title: '请先登录规划师账号', icon: 'none' });
+      return;
+    }
+
     const requestData = {
       plan_title: planInfo.title,
       cycle_days: planInfo.duration,
@@ -536,17 +589,23 @@ Page({
         day_index: day.dayIndex,
         plan_date: day.date,
         calories: day.meals.reduce((total, meal) => total + meal.calories, 0),
-        protein: 0,
-        carbohydrate: 0,
-        fat: 0,
+        protein: parseFloat(day.meals.reduce((t, m) => t + (m.protein || 0), 0).toFixed(1)),
+        carbohydrate: parseFloat(day.meals.reduce((t, m) => t + (m.carbohydrate || 0), 0).toFixed(1)),
+        fat: parseFloat(day.meals.reduce((t, m) => t + (m.fat || 0), 0).toFixed(1)),
         meals: day.meals.map(meal => ({
           type: meal.type,
           time: meal.time,
           calories: meal.calories,
+          protein: meal.protein || 0,
+          carbohydrate: meal.carbohydrate || 0,
+          fat: meal.fat || 0,
           foods: meal.foods
         }))
       }))
     };
+    
+    console.log('=== 保存计划数据 ===', requestData);
+    console.log('=== 第一天数据 ===', requestData.plan_days[0]);
     
     wx.showLoading({ title: '保存中...' });
     
@@ -566,7 +625,7 @@ Page({
       const createData = {
         user_id: userId,
         service_request_id: '',
-        dietitian_id: 'D001',
+        dietitian_id: dietitianId,
         plan_title: planInfo.title,
         source: 'dietitian',
         cycle_days: planInfo.duration,
@@ -578,7 +637,7 @@ Page({
           wx.hideLoading();
           if (res.code === 200) {
             wx.showToast({ title: '计划保存成功', icon: 'success' });
-            this.setData({ planId: res.data.plan_id });
+            this.setData({ planId: (res.data && (res.data.id || res.data.plan_id || res.data.planId)) || '' });
           }
         })
         .catch(err => {
@@ -595,7 +654,12 @@ Page({
       wx.showToast({ title: '请输入计划标题', icon: 'none' });
       return;
     }
-    
+    const dietitianId = this.getDietitianId();
+    if (!dietitianId) {
+      wx.showToast({ title: '请先登录规划师账号', icon: 'none' });
+      return;
+    }
+
     wx.showModal({
       title: '发布计划',
       content: '确定要发布此膳食计划吗？发布后用户将可以看到。',
@@ -610,13 +674,16 @@ Page({
                 day_index: day.dayIndex,
                 plan_date: day.date,
                 calories: day.meals.reduce((total, meal) => total + meal.calories, 0),
-                protein: 0,
-                carbohydrate: 0,
-                fat: 0,
+                protein: parseFloat(day.meals.reduce((t, m) => t + (m.protein || 0), 0).toFixed(1)),
+                carbohydrate: parseFloat(day.meals.reduce((t, m) => t + (m.carbohydrate || 0), 0).toFixed(1)),
+                fat: parseFloat(day.meals.reduce((t, m) => t + (m.fat || 0), 0).toFixed(1)),
                 meals: day.meals.map(meal => ({
                   type: meal.type,
                   time: meal.time,
                   calories: meal.calories,
+                  protein: meal.protein || 0,
+                  carbohydrate: meal.carbohydrate || 0,
+                  fat: meal.fat || 0,
                   foods: meal.foods
                 }))
               }))
@@ -658,7 +725,7 @@ Page({
             const requestData = {
               user_id: userId,
               service_request_id: '',
-              dietitian_id: 'D001',
+              dietitian_id: dietitianId,
               plan_title: planInfo.title,
               source: 'dietitian',
               cycle_days: planInfo.duration,
@@ -666,13 +733,16 @@ Page({
                 day_index: day.dayIndex,
                 plan_date: day.date,
                 calories: day.meals.reduce((total, meal) => total + meal.calories, 0),
-                protein: 0,
-                carbohydrate: 0,
-                fat: 0,
+                protein: parseFloat(day.meals.reduce((t, m) => t + (m.protein || 0), 0).toFixed(1)),
+                carbohydrate: parseFloat(day.meals.reduce((t, m) => t + (m.carbohydrate || 0), 0).toFixed(1)),
+                fat: parseFloat(day.meals.reduce((t, m) => t + (m.fat || 0), 0).toFixed(1)),
                 meals: day.meals.map(meal => ({
                   type: meal.type,
                   time: meal.time,
                   calories: meal.calories,
+                  protein: meal.protein || 0,
+                  carbohydrate: meal.carbohydrate || 0,
+                  fat: meal.fat || 0,
                   foods: meal.foods
                 }))
               }))

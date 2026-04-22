@@ -53,9 +53,9 @@
 
 .plan-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  margin-bottom: 20rpx;
+  margin-bottom: 12rpx;
 }
 
 .plan-source {
@@ -70,10 +70,15 @@
   font-size: 32rpx;
 }
 
-.plan-dietitian {
-  font-size: 24rpx;
-  color: #ff9800;
-  font-weight: 500;
+.plan-dietitian-meta {
+  margin-bottom: 16rpx;
+}
+
+.plan-dietitian-text {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
 }
 
 .plan-title {

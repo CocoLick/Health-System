@@ -1,12 +1,27 @@
 package api
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/nutrition-system/app/schemas"
 	"github.com/yourusername/nutrition-system/app/services"
 )
+
+// actorDietitianIDFromContext 当前登录用户为规划师时返回其 user_id，用于纠正请求体中的占位 dietitian_id
+func actorDietitianIDFromContext(c *gin.Context) string {
+	rt, ok := c.Get("roleType")
+	if !ok || rt.(string) != "dietitian" {
+		return ""
+	}
+	uid, ok := c.Get("userID")
+	if !ok {
+		return ""
+	}
+	return uid.(string)
+}
 
 // DietPlanHandler 膳食计划处理器
 type DietPlanHandler struct {
@@ -57,6 +72,25 @@ func (h *DietPlanHandler) CreateDietPlan(c *gin.Context) {
 	if req.UserID == "" {
 		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "用户ID不能为空"})
 		return
+	}
+
+	if id := actorDietitianIDFromContext(c); id != "" {
+		req.DietitianID = id
+	} else if req.DietitianID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "规划师ID不能为空"})
+		return
+	}
+
+	// 打印接收到的数据
+	fmt.Println("=== 接收到的膳食计划数据 ===")
+	fmt.Println("PlanTitle:", req.PlanTitle)
+	fmt.Println("CycleDays:", req.CycleDays)
+	if len(req.PlanDays) > 0 {
+		fmt.Println("第一天数据:")
+		fmt.Println("  Calories:", req.PlanDays[0].Calories)
+		fmt.Println("  Protein:", req.PlanDays[0].Protein)
+		fmt.Println("  Carbohydrate:", req.PlanDays[0].Carbohydrate)
+		fmt.Println("  Fat:", req.PlanDays[0].Fat)
 	}
 
 	// 验证当前用户是否为规划师（可以根据需要添加权限验证）
@@ -184,7 +218,8 @@ func (h *DietPlanHandler) UpdateDietPlan(c *gin.Context) {
 		}
 	}
 
-	plan, err := h.dietPlanService.UpdateDietPlan(planID, userID, req)
+	actorDietitianID := actorDietitianIDFromContext(c)
+	plan, err := h.dietPlanService.UpdateDietPlan(planID, userID, actorDietitianID, req)
 	if err != nil {
 		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
 		return
@@ -220,7 +255,14 @@ func (h *DietPlanHandler) DeleteDietPlan(c *gin.Context) {
 
 	err := h.dietPlanService.DeleteDietPlan(planID, userID.(string))
 	if err != nil {
-		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
+		switch {
+		case errors.Is(err, services.ErrDietPlanNotFound):
+			c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: err.Error()})
+		case errors.Is(err, services.ErrDietPlanForbidden):
+			c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		}
 		return
 	}
 
@@ -341,7 +383,8 @@ func (h *DietPlanHandler) PublishDietPlan(c *gin.Context) {
 		}
 	}
 
-	plan, err := h.dietPlanService.PublishDietPlan(planID, userID)
+	actorDietitianID := actorDietitianIDFromContext(c)
+	plan, err := h.dietPlanService.PublishDietPlan(planID, userID, actorDietitianID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
 		return

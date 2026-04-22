@@ -45,13 +45,16 @@ func (PlanDay) TableName() string {
 
 // Meal 餐次模型
 type Meal struct {
-	MealID   string  `json:"meal_id" gorm:"primaryKey;column:meal_id"`
-	DayID    string  `json:"day_id" gorm:"column:day_id;index"`
-	Type     string  `json:"type" gorm:"column:type"`
-	Time     string  `json:"time" gorm:"column:time"`
-	Calories int     `json:"calories" gorm:"column:calories"`
-	Foods    []Food  `json:"foods,omitempty" gorm:"foreignKey:MealID"`
-	Executed bool    `json:"executed,omitempty" gorm:"column:executed"`
+	MealID        string  `json:"meal_id" gorm:"primaryKey;column:meal_id"`
+	DayID         string  `json:"day_id" gorm:"column:day_id;index"`
+	Type          string  `json:"type" gorm:"column:type"`
+	Time          string  `json:"time" gorm:"column:time"`
+	Calories      int     `json:"calories" gorm:"column:calories"`
+	Protein       float64 `json:"protein" gorm:"column:protein"`
+	Carbohydrate  float64 `json:"carbohydrate" gorm:"column:carbohydrate"`
+	Fat           float64 `json:"fat" gorm:"column:fat"`
+	Foods         []Food  `json:"foods,omitempty" gorm:"foreignKey:MealID"`
+	Executed      bool    `json:"executed,omitempty" gorm:"column:executed"`
 }
 
 // TableName 指定表名
@@ -61,11 +64,14 @@ func (Meal) TableName() string {
 
 // Food 食物模型
 type Food struct {
-	FoodID   string `json:"food_id" gorm:"primaryKey;column:food_id"`
-	MealID   string `json:"meal_id" gorm:"column:meal_id;index"`
-	Name     string `json:"name" gorm:"column:name"`
-	Amount   string `json:"amount" gorm:"column:amount"`
-	Calories int    `json:"calories" gorm:"column:calories"`
+	FoodID        string  `json:"food_id" gorm:"primaryKey;column:food_id"`
+	MealID        string  `json:"meal_id" gorm:"column:meal_id;index"`
+	Name          string  `json:"name" gorm:"column:name"`
+	Amount        string  `json:"amount" gorm:"column:amount"`
+	Calories      int     `json:"calories" gorm:"column:calories"`
+	Protein       float64 `json:"protein" gorm:"column:protein"`
+	Carbohydrate  float64 `json:"carbohydrate" gorm:"column:carbohydrate"`
+	Fat           float64 `json:"fat" gorm:"column:fat"`
 }
 
 // TableName 指定表名
