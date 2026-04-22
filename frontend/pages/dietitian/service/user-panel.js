@@ -127,7 +127,7 @@ Page({
   loadDietPlanInfo(userId) {
     console.log('加载膳食计划信息', userId);
     
-    return api.dietPlan.getUserPlans(userId)
+    return api.dietPlan.getUserPlans({ user_id: userId })
       .then(res => {
         console.log('膳食计划API响应:', res);
         if (res.code === 200 && res.data && res.data.length > 0) {

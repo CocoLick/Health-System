@@ -15,18 +15,8 @@ Page({
     },
     planInfo: {
       title: '',
-      dietGoal: 'weight_loss',
-      duration: 7,
-      dailyCalories: 1800,
-      nutritionRatio: {
-        protein: 30,
-        carbohydrate: 40,
-        fat: 30
-      }
+      duration: 7
     },
-    dietGoals: ['减脂', '增重', '控糖', '养生', '运动营养', '孕期营养', '其他'],
-    dietGoalValues: ['weight_loss', 'weight_gain', 'diabetes_control', 'health_maintain', 'sports_nutrition', 'pregnancy', 'other'],
-    selectedDietGoalIndex: 0,
     currentDay: 1,
     currentDayMeals: [],
     planDays: [],
@@ -60,49 +50,68 @@ Page({
 
   loadUserDietPlan(userId) {
     console.log('=== 1. loadUserDietPlan 开始 === userId:', userId);
-    
-    api.dietPlan.getUserPlans(userId)
+
+    // 统一用 query 参数形式，保证能查到目标用户计划（草稿/已发布）
+    api.dietPlan.getUserPlans({ user_id: userId })
       .then(res => {
-        console.log('=== 2. getUserPlans 响应 === code:', res.code);
-        console.log('=== 2. getUserPlans 数据 === data:', res.data);
-        
-        if (res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
-          const plans = res.data;
-          
-          plans.sort((a, b) => new Date(b.update_time) - new Date(a.update_time));
-          const latestPlan = plans[0];
-          
-          console.log('=== 3. 最新计划 ===', latestPlan);
-          console.log('=== 4. 计划ID ===', latestPlan.id);
-          console.log('=== 5. 计划标题 ===', latestPlan.title);
-          console.log('=== 6. 计划目标 ===', latestPlan.goal);
-          console.log('=== 7. 计划天数 ===', latestPlan.cycle_days);
-          
-          this.setData({
-            planId: latestPlan.id,
-            planInfo: {
-              title: latestPlan.title || '',
-              dietGoal: latestPlan.goal || 'weight_loss',
-              duration: latestPlan.cycle_days || 7,
-              dailyCalories: 1800,
-              nutritionRatio: {
-                protein: 30,
-                carbohydrate: 40,
-                fat: 30
-              }
-            },
-            selectedDietGoalIndex: Math.max(0, this.data.dietGoalValues.indexOf(latestPlan.goal || 'weight_loss'))
+        console.log('=== 2. getUserPlans 响应 === code:', res && res.code);
+        console.log('=== 2. getUserPlans 数据 === data:', res && res.data);
+
+        const rawData = res ? res.data : null;
+        const plans = Array.isArray(rawData)
+          ? rawData.slice()
+          : (rawData && Array.isArray(rawData.plans)) ? rawData.plans.slice()
+            : (rawData && Array.isArray(rawData.items)) ? rawData.items.slice()
+              : (rawData && Array.isArray(rawData.list)) ? rawData.list.slice()
+                : [];
+
+        if (res && res.code === 200 && plans.length > 0) {
+          const getStatus = (p) => (p && (p.status || p.audit_status || p.auditStatus)) || '';
+          const getUpdateTime = (p) => (p && (p.update_time || p.updated_at || p.updateTime)) || '';
+          const getId = (p) => (p && (p.id || p.plan_id || p.planId)) || '';
+          const getTitle = (p) => (p && (p.title || p.plan_title || p.planTitle)) || '';
+          // 不再需要获取 goal，因为我们已经删除了 dietGoal 字段
+          const getGoal = (p) => (p && (p.goal || p.diet_goal || p.dietGoal)) || '';
+          const getCycleDays = (p) => (p && (p.cycle_days || p.cycleDays)) || 7;
+
+          // 按更新时间排序，选择最新的计划（与服务面板逻辑一致）
+          plans.sort((a, b) => {
+            const tA = getUpdateTime(a);
+            const tB = getUpdateTime(b);
+            const dA = tA ? new Date(tA) : new Date(0);
+            const dB = tB ? new Date(tB) : new Date(0);
+            return dB - dA;
           });
-          
-          console.log('=== 8. setData 完成 ===');
-          console.log('=== 8. 当前 planInfo.title ===', this.data.planInfo.title);
-          
-          if (latestPlan.id) {
+          const latestPlan = plans[0];
+
+          const planId = getId(latestPlan);
+          const title = getTitle(latestPlan);
+          const duration = getCycleDays(latestPlan);
+
+          console.log('=== 3. 选中的计划 ===', latestPlan);
+          console.log('=== 4. 计划ID ===', planId);
+          console.log('=== 5. 计划标题 ===', title);
+          console.log('=== 6. 计划天数 ===', duration);
+
+          this.setData({
+            planId,
+            planInfo: {
+              ...this.data.planInfo,
+              title,
+              duration
+            }
+          });
+
+          console.log('=== 8. setData 完成 === 当前 planInfo.title ===', this.data.planInfo.title);
+
+          if (planId) {
             console.log('=== 9. 准备调用 loadPlanDays ===');
-            this.loadPlanDays(latestPlan.id, userId);
+            this.loadPlanDays(planId, userId);
+          } else {
+            wx.showToast({ title: '草稿计划ID缺失', icon: 'none' });
           }
         } else {
-          console.log('=== 2a. 没有找到计划 ===');
+          console.log('=== 2a. 没有找到计划 ===', res);
         }
       })
       .catch(err => {
@@ -113,7 +122,8 @@ Page({
   loadPlanDays(planId, userId) {
     console.log('=== 10. loadPlanDays 开始 === planId:', planId, 'userId:', userId);
     
-    api.dietPlan.getDetail(planId, userId)
+    // 统一用 query 参数形式传 user_id，否则后端会按“当前登录用户”查，规划师场景会查不到
+    api.dietPlan.getDetail(planId, { user_id: userId })
       .then(res => {
         console.log('=== 11. getDetail 响应 ===', res);
         
@@ -123,8 +133,9 @@ Page({
           console.log('=== 13. planDetail.plan_days ===', planDetail.plan_days);
           
           if (planDetail.plan_days && planDetail.plan_days.length > 0) {
-            const planDays = planDetail.plan_days.map(day => ({
-              dayIndex: day.day_index,
+            const duration = parseInt(this.data.planInfo.duration) || 7;
+            const planDays = planDetail.plan_days.map((day, index) => ({
+              dayIndex: day.day_index || (index + 1),
               date: day.date || day.plan_date,
               meals: day.meals || [
                 { type: '早餐', time: '08:00', calories: 0, foods: [] },
@@ -134,7 +145,7 @@ Page({
               ]
             }));
             
-            while (planDays.length < 7) {
+            while (planDays.length < duration) {
               const dayIndex = planDays.length + 1;
               planDays.push({
                 dayIndex: dayIndex,
@@ -187,22 +198,52 @@ Page({
   },
 
   loadUserInfo(userId) {
-    api.user.getUserInfo(userId)
-      .then(res => {
-        if (res.code === 200) {
-          this.setData({
-            userInfo: res.data
-          });
+    console.log('=== loadUserInfo 开始 === userId:', userId);
+    
+    // 先获取用户基本信息
+    api.auth.getUserByID(userId)
+      .then(userRes => {
+        console.log('=== 1. 获取用户基本信息成功 ===', userRes);
+        if (userRes.code === 200) {
+          const userData = userRes.data;
+          
+          // 然后获取用户健康数据
+          return api.healthData.getUserHealthData(userId)
+            .then(healthRes => {
+              console.log('=== 2. 获取健康数据成功 ===', healthRes);
+              const healthData = healthRes.code === 200 ? healthRes.data : {};
+              
+              // 合并数据
+              const userInfo = {
+                ...userData,
+                usernameInitial: userData.username ? userData.username.charAt(0) : '?',
+                healthData: {
+                  height: healthData.height || 0,
+                  weight: healthData.weight || 0,
+                  bloodPressure: healthData.blood_pressure || '',
+                  bloodSugar: healthData.blood_sugar || '',
+                  heartRate: healthData.heart_rate || 0,
+                  allergyHistory: healthData.allergy_history || ''
+                }
+              };
+              
+              console.log('=== 3. 合并后用户信息 ===', userInfo);
+              console.log('=== 3.1 身高 ===', userInfo.healthData.height);
+              console.log('=== 3.2 体重 ===', userInfo.healthData.weight);
+              console.log('=== 3.3 测试BMI ===', this.calculateBMI(userInfo.healthData.height, userInfo.healthData.weight));
+              this.setData({ userInfo });
+            });
         }
       })
       .catch(err => {
-        console.error('loadUserInfo error:', err);
+        console.error('=== loadUserInfo 错误 ===', err);
       });
   },
 
   initPlanDays() {
+    const duration = parseInt(this.data.planInfo.duration) || 7;
     const planDays = [];
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1; i <= duration; i++) {
       planDays.push({
         dayIndex: i,
         date: this.getDateByDayIndex(i),
@@ -214,6 +255,7 @@ Page({
         ]
       });
     }
+    console.log('=== initPlanDays 生成的 planDays ===', planDays);
     this.setData({
       planDays: planDays,
       currentDayMeals: planDays[0].meals
@@ -227,37 +269,100 @@ Page({
   },
 
   calculateBMI(height, weight) {
+    console.log('=== calculateBMI 调用 === height:', height, 'weight:', weight);
+    if (!height || !weight || height <= 0 || weight <= 0) {
+      console.log('=== 身高或体重无效 ===');
+      return 0;
+    }
     const heightInMeters = height / 100;
-    return weight / (heightInMeters * heightInMeters);
+    const bmi = weight / (heightInMeters * heightInMeters);
+    console.log('=== BMI 计算结果 ===', bmi);
+    return bmi;
   },
 
   bindPlanInfo(e) {
     const field = e.currentTarget.dataset.field;
     const value = e.detail.value;
+    
+    // 只更新输入框的值，不触发天数调整
     this.setData({
       [`planInfo.${field}`]: value
     });
   },
 
-  bindDietGoalChange(e) {
-    const index = e.detail.value;
-    this.setData({
-      selectedDietGoalIndex: index,
-      [`planInfo.dietGoal`]: this.data.dietGoalValues[index]
-    });
-  },
-
-  bindNutritionRatio(e) {
+  bindPlanBlur(e) {
     const field = e.currentTarget.dataset.field;
     const value = e.detail.value;
-    this.setData({
-      [`planInfo.nutritionRatio.${field}`]: value
-    });
+    
+    // 当计划周期输入框失去焦点时，处理天数变化
+    if (field === 'duration') {
+      const oldDuration = this.data.planInfo.duration;
+      const newDuration = value === '' ? '' : (parseInt(value) || 7);
+      
+      // 更新最终值
+      this.setData({
+        [`planInfo.${field}`]: newDuration
+      });
+      
+      // 处理天数变化
+      if (newDuration !== '' && !isNaN(newDuration)) {
+        if (newDuration < oldDuration) {
+          // 天数减少，显示确认对话框
+          wx.showModal({
+            title: '确认修改',
+            content: `将计划天数从 ${oldDuration} 天减少到 ${newDuration} 天，会丢失最后 ${oldDuration - newDuration} 天的编辑内容，确定要继续吗？`,
+            success: (res) => {
+              if (res.confirm) {
+                this.adjustPlanDays(newDuration);
+              } else {
+                // 取消修改，恢复原天数
+                this.setData({
+                  [`planInfo.${field}`]: oldDuration
+                });
+              }
+            }
+          });
+        } else {
+          // 天数增加，直接调整
+          this.adjustPlanDays(newDuration);
+        }
+      }
+    }
   },
 
-  calculateTotalRatio() {
-    const { protein, carbohydrate, fat } = this.data.planInfo.nutritionRatio;
-    return parseInt(protein) + parseInt(carbohydrate) + parseInt(fat);
+
+
+  adjustPlanDays(newDuration) {
+    const oldPlanDays = this.data.planDays;
+    const validDuration = Math.max(1, parseInt(newDuration) || 7);
+    const newPlanDays = [...oldPlanDays];
+    
+    if (validDuration > oldPlanDays.length) {
+      // 天数增加，在末尾追加新的天
+      for (let i = oldPlanDays.length + 1; i <= validDuration; i++) {
+        newPlanDays.push({
+          dayIndex: i,
+          date: this.getDateByDayIndex(i),
+          meals: [
+            { type: '早餐', time: '08:00', calories: 0, foods: [] },
+            { type: '午餐', time: '12:00', calories: 0, foods: [] },
+            { type: '晚餐', time: '18:00', calories: 0, foods: [] },
+            { type: '加餐', time: '15:00', calories: 0, foods: [] }
+          ]
+        });
+      }
+    } else if (validDuration < oldPlanDays.length) {
+      // 天数减少，从末尾删除多出来的天
+      newPlanDays.splice(validDuration);
+    }
+    
+    console.log('=== adjustPlanDays 调整后 ===', newPlanDays);
+    
+    // 更新数据
+    this.setData({
+      planDays: newPlanDays,
+      currentDayMeals: newPlanDays[0].meals
+    });
   },
 
   switchDay(e) {
@@ -424,14 +529,8 @@ Page({
       return;
     }
     
-    if (this.calculateTotalRatio() !== 100) {
-      wx.showToast({ title: '营养比例总和必须为100%', icon: 'none' });
-      return;
-    }
-    
     const requestData = {
       plan_title: planInfo.title,
-      diet_goal: planInfo.dietGoal,
       cycle_days: planInfo.duration,
       plan_days: planDays.map(day => ({
         day_index: day.dayIndex,
@@ -470,7 +569,6 @@ Page({
         dietitian_id: 'D001',
         plan_title: planInfo.title,
         source: 'dietitian',
-        diet_goal: planInfo.dietGoal,
         cycle_days: planInfo.duration,
         plan_days: requestData.plan_days
       };
@@ -498,38 +596,71 @@ Page({
       return;
     }
     
-    if (this.calculateTotalRatio() !== 100) {
-      wx.showToast({ title: '营养比例总和必须为100%', icon: 'none' });
-      return;
-    }
-    
     wx.showModal({
       title: '发布计划',
       content: '确定要发布此膳食计划吗？发布后用户将可以看到。',
       success: (res) => {
         if (res.confirm) {
           if (planId) {
+            // 更新并发布现有计划
+            const updateData = {
+              plan_title: planInfo.title,
+              cycle_days: planInfo.duration,
+              plan_days: planDays.map(day => ({
+                day_index: day.dayIndex,
+                plan_date: day.date,
+                calories: day.meals.reduce((total, meal) => total + meal.calories, 0),
+                protein: 0,
+                carbohydrate: 0,
+                fat: 0,
+                meals: day.meals.map(meal => ({
+                  type: meal.type,
+                  time: meal.time,
+                  calories: meal.calories,
+                  foods: meal.foods
+                }))
+              }))
+            };
+            
             wx.showLoading({ title: '发布中...' });
-            api.dietPlan.publish(planId, userId)
-              .then(res => {
+            
+            // 先更新计划内容
+            api.dietPlan.update(planId, updateData, userId)
+              .then(updateRes => {
+                if (updateRes.code === 200) {
+                  // 然后发布计划
+                  return api.dietPlan.publish(planId, userId);
+                }
+                throw new Error('更新计划失败');
+              })
+              .then(publishRes => {
                 wx.hideLoading();
-                if (res.code === 200) {
-                  wx.showToast({ title: '计划发布成功', icon: 'success' });
-                  this.goBack();
+                if (publishRes.code === 200) {
+                  wx.showToast({
+                    title: '计划发布成功',
+                    icon: 'success',
+                    duration: 1500,
+                    success: function() {
+                      setTimeout(function() {
+                        this.goBack();
+                      }.bind(this), 1500);
+                    }.bind(this)
+                  });
                 }
               })
               .catch(err => {
                 wx.hideLoading();
                 console.error('publishPlan error:', err);
+                wx.showToast({ title: '发布失败', icon: 'none' });
               });
           } else {
+            // 创建并发布新计划
             const requestData = {
               user_id: userId,
               service_request_id: '',
               dietitian_id: 'D001',
               plan_title: planInfo.title,
               source: 'dietitian',
-              diet_goal: planInfo.dietGoal,
               cycle_days: planInfo.duration,
               plan_days: planDays.map(day => ({
                 day_index: day.dayIndex,
@@ -553,13 +684,22 @@ Page({
               .then(res => {
                 wx.hideLoading();
                 if (res.code === 200) {
-                  wx.showToast({ title: '计划发布成功', icon: 'success' });
-                  this.goBack();
+                  wx.showToast({
+                    title: '计划发布成功',
+                    icon: 'success',
+                    duration: 1500,
+                    success: function() {
+                      setTimeout(function() {
+                        this.goBack();
+                      }.bind(this), 1500);
+                    }.bind(this)
+                  });
                 }
               })
               .catch(err => {
                 wx.hideLoading();
                 console.error('publishPlan error:', err);
+                wx.showToast({ title: '发布失败', icon: 'none' });
               });
           }
         }

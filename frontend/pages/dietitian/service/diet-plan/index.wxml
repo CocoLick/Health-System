@@ -15,17 +15,14 @@
       <view class="user-name">{{userInfo.username}}</view>
       <view class="user-stats">
         <view class="stat-item">
-          <view class="stat-value">{{userInfo.healthData.height}}cm</view>
           <view class="stat-label">身高</view>
+          <view class="stat-value">{{userInfo.healthData.height}}cm</view>
         </view>
         <view class="stat-item">
-          <view class="stat-value">{{userInfo.healthData.weight}}kg</view>
           <view class="stat-label">体重</view>
+          <view class="stat-value">{{userInfo.healthData.weight}}kg</view>
         </view>
-        <view class="stat-item">
-          <view class="stat-value">{{calculateBMI(userInfo.healthData.height, userInfo.healthData.weight).toFixed(1)}}</view>
-          <view class="stat-label">BMI</view>
-        </view>
+
       </view>
     </view>
   </view>
@@ -38,62 +35,25 @@
       <input class="form-input" placeholder="请输入计划标题" value="{{planInfo.title}}" bindinput="bindPlanInfo" data-field="title"/>
     </view>
     <view class="form-item">
-      <view class="form-label">饮食目标</view>
-      <picker class="form-picker" mode="selector" range="{{dietGoals}}" bindchange="bindDietGoalChange" value="{{selectedDietGoalIndex}}">
-        <view class="picker-view">
-          {{dietGoals[selectedDietGoalIndex]}}
-          <text class="picker-arrow">▼</text>
-        </view>
-      </picker>
-    </view>
-    <view class="form-item">
       <view class="form-label">计划周期</view>
-      <input class="form-input" type="number" placeholder="请输入天数" value="{{planInfo.duration}}" bindinput="bindPlanInfo" data-field="duration"/>
-    </view>
-    <view class="form-item">
-      <view class="form-label">每日热量目标</view>
-      <input class="form-input" type="number" placeholder="请输入热量目标" value="{{planInfo.dailyCalories}}" bindinput="bindPlanInfo" data-field="dailyCalories"/>
+      <input class="form-input" type="number" placeholder="请输入天数" value="{{planInfo.duration}}" bindinput="bindPlanInfo" bindblur="bindPlanBlur" data-field="duration"/>
     </view>
   </view>
 
-  <!-- 营养比例设置 -->
-  <view class="nutrition-ratio">
-    <view class="section-title">营养比例设置</view>
-    <view class="ratio-item">
-      <view class="ratio-label">蛋白质</view>
-      <view class="ratio-input">
-        <input class="form-input" type="number" placeholder="30" value="{{planInfo.nutritionRatio.protein}}" bindinput="bindNutritionRatio" data-field="protein"/>
-        <view class="ratio-unit">%</view>
-      </view>
-    </view>
-    <view class="ratio-item">
-      <view class="ratio-label">碳水化合物</view>
-      <view class="ratio-input">
-        <input class="form-input" type="number" placeholder="40" value="{{planInfo.nutritionRatio.carbohydrate}}" bindinput="bindNutritionRatio" data-field="carbohydrate"/>
-        <view class="ratio-unit">%</view>
-      </view>
-    </view>
-    <view class="ratio-item">
-      <view class="ratio-label">脂肪</view>
-      <view class="ratio-input">
-        <input class="form-input" type="number" placeholder="30" value="{{planInfo.nutritionRatio.fat}}" bindinput="bindNutritionRatio" data-field="fat"/>
-        <view class="ratio-unit">%</view>
-      </view>
-    </view>
-    <view class="ratio-total">
-      总比例：{{calculateTotalRatio()}}%
-      <view class="ratio-status {{calculateTotalRatio() === 100 ? 'valid' : 'invalid'}}">
-        {{calculateTotalRatio() === 100 ? '✓' : '✗'}}
-      </view>
-    </view>
-  </view>
-
-  <!-- 7天计划编辑 -->
+  <!-- 计划编辑 -->
   <view class="plan-days">
-    <view class="section-title">7天计划编辑</view>
+    <view class="section-title">{{planInfo.duration}}天计划编辑</view>
     <view class="day-tabs">
-      <view class="day-tab {{currentDay === (index + 1) ? 'active' : ''}}" wx:for="{{7}}" wx:key="index" bindtap="switchDay" data-day="{{index + 1}}">
-        第{{index + 1}}天
+      <view
+        class="day-tab {{currentDay === day.dayIndex ? 'active' : ''}}"
+        wx:for="{{planDays}}"
+        wx:for-item="day"
+        wx:for-index="idx"
+        wx:key="dayIndex"
+        bindtap="switchDay"
+        data-day="{{day.dayIndex}}"
+      >
+        第{{day.dayIndex}}天
       </view>
     </view>
     <view class="day-content">

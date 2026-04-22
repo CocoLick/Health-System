@@ -303,8 +303,14 @@ const dietPlan = {
     return post('/api/diet-plans', data);
   },
   // 获取膳食计划详情
-  getDetail: function(id, userId) {
-    const url = userId ? `/api/diet-plans/${id}?user_id=${userId}` : `/api/diet-plans/${id}`;
+  getDetail: function(id, params) {
+    let user_id = '';
+    if (typeof params === 'string') {
+      user_id = params;
+    } else if (typeof params === 'object' && params.user_id) {
+      user_id = params.user_id;
+    }
+    const url = user_id ? `/api/diet-plans/${id}?user_id=${user_id}` : `/api/diet-plans/${id}`;
     return get(url);
   },
   // 更新膳食计划
@@ -316,9 +322,15 @@ const dietPlan = {
     return del(`/api/diet-plans/${id}`);
   },
   // 获取用户的膳食计划
-  getUserPlans: function(userId) {
-    const url = userId ? `/api/diet-plans/user?user_id=${userId}` : '/api/diet-plans/user';
-    return get(url);
+  getUserPlans: function(params) {
+    // 兼容两种调用：
+    // 1) getUserPlans() -> 当前登录用户
+    // 2) getUserPlans(userId) -> 指定用户（规划师）
+    // 3) getUserPlans({ user_id }) -> 指定用户（推荐）
+    if (!params) return get('/api/diet-plans/user');
+    if (typeof params === 'string') return get(`/api/diet-plans/user?user_id=${params}`);
+    if (typeof params === 'object' && params.user_id) return get('/api/diet-plans/user', params);
+    return get('/api/diet-plans/user', params);
   },
   // 更新执行状态
   updateExecuteStatus: function(id, data) {

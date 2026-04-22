@@ -74,12 +74,11 @@
       <view class="card-header">
         <text class="card-icon">📋</text>
         <text class="card-title">膳食计划</text>
-        <text class="card-status {{userInfo.hasPlan ? 'status-ok' : 'status-warning'}}">{{userInfo.hasPlan ? '✅ 有效' : '❌ 无计划'}}</text>
+        <text class="card-status {{userInfo.hasPlan ? 'status-ok' : 'status-warning'}}">{{userInfo.planStatus}}</text>
       </view>
       <view class="card-body" wx:if="{{userInfo.hasPlan}}">
         <view class="plan-info">
           <text class="plan-title">{{userInfo.planTitle}}</text>
-          <text class="plan-status">{{userInfo.planStatus}}</text>
         </view>
       </view>
       <view class="card-footer">
