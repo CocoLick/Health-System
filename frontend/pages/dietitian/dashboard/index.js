@@ -88,7 +88,14 @@ Page({
     serviceRequests: [],
     filteredRequests: [],
     selectedRequest: null,
-    showRequestDetail: false
+    showRequestDetail: false,
+    heList: [],
+    heFilteredList: [],
+    heDraftCount: 0,
+    heStatusLabels: ['全部', '草稿', '已发布'],
+    heStatusIndex: 0,
+    heVisLabels: ['全部', '公开', '指派'],
+    heVisIndex: 0
   },
 
   onLoad() {
@@ -98,6 +105,7 @@ Page({
 
   onShow() {
     this.loadServiceRequests();
+    this.loadHealthEducationList();
   },
 
   loadData() {
@@ -334,6 +342,91 @@ Page({
     this.setData({
       serviceSubTab: subtab
     });
+    if (subtab === 'education') {
+      this.loadHealthEducationList();
+    }
+  },
+
+  formatHeItem(raw) {
+    const users = raw.target_users || [];
+    const names = users.map((u) => u.username || u.user_id).filter(Boolean);
+    let timeText = '';
+    if (raw.updated_at) {
+      const s = String(raw.updated_at);
+      timeText = s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s;
+    }
+    return Object.assign({}, raw, {
+      targetNamesText: names.length ? names.join('、') : '',
+      updated_at: timeText
+    });
+  },
+
+  loadHealthEducationList() {
+    api.healthEducation
+      .list({})
+      .then((res) => {
+        if (res.code !== 200) {
+          return;
+        }
+        const raw = res.data || [];
+        const list = raw.map((x) => this.formatHeItem(x));
+        const draftCount = list.filter((x) => x.content_status === 'draft').length;
+        this.setData({ heList: list, heDraftCount: draftCount });
+        this.applyHeFilters();
+      })
+      .catch(() => {});
+  },
+
+  applyHeFilters() {
+    const { heList, heStatusIndex, heVisIndex } = this.data;
+    let rows = heList.slice();
+    if (heStatusIndex === 1) {
+      rows = rows.filter((x) => x.content_status === 'draft');
+    } else if (heStatusIndex === 2) {
+      rows = rows.filter((x) => x.content_status === 'published');
+    }
+    if (heVisIndex === 1) {
+      rows = rows.filter((x) => x.visibility === 'public');
+    } else if (heVisIndex === 2) {
+      rows = rows.filter((x) => x.visibility === 'assigned');
+    }
+    this.setData({ heFilteredList: rows });
+  },
+
+  onHeStatusPick(e) {
+    const idx = Number(e.detail.value) || 0;
+    this.setData({ heStatusIndex: idx });
+    this.applyHeFilters();
+  },
+
+  onHeVisPick(e) {
+    const idx = Number(e.detail.value) || 0;
+    this.setData({ heVisIndex: idx });
+    this.applyHeFilters();
+  },
+
+  navigateToHealthEducationTab() {
+    this.setData({
+      activeTab: 'service',
+      serviceSubTab: 'education'
+    });
+    this.loadHealthEducationList();
+  },
+
+  navigateToHealthEducationNew() {
+    wx.navigateTo({
+      url: '/pages/dietitian/health-education/edit'
+    });
+  },
+
+  openHealthEducationEdit(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/dietitian/health-education/edit?id=' + encodeURIComponent(id)
+    });
   },
 
   switchFilter(e) {
@@ -385,10 +478,7 @@ Page({
   },
 
   navigateToArticle() {
-    wx.showToast({
-      title: '撰写文章功能开发中',
-      icon: 'none'
-    });
+    this.navigateToHealthEducationTab();
   },
 
   navigateToFeedback() {

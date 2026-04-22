@@ -1,10 +1,13 @@
 <view class="user-panel">
   <view class="panel-header">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">&lt;</text>
-      <text class="back-text">返回</text>
+    <view class="header-side header-side-left">
+      <view class="back-btn" bindtap="goBack" hover-class="back-btn-hover">
+        <text class="back-chevron">‹</text>
+        <text class="back-text">返回</text>
+      </view>
     </view>
     <text class="panel-title">用户服务面板</text>
+    <view class="header-side header-side-right"></view>
   </view>
 
   <view class="user-info-card">
@@ -90,6 +93,20 @@
       </view>
     </view>
 
+    <view class="service-card card-edu" bindtap="openHealthEducation">
+      <view class="card-header">
+        <text class="card-icon">📖</text>
+        <text class="card-title">健康教育</text>
+        <text class="card-status status-ok">编写</text>
+      </view>
+      <view class="card-body">
+        <text class="profile-placeholder-text">为该用户撰写膳食与健康知识内容；默认仅指派给当前用户，可在编辑页改为公开或多选其他服务用户。</text>
+      </view>
+      <view class="card-footer">
+        <text class="card-action">去编辑</text>
+      </view>
+    </view>
+
     <view class="service-card {{userInfo.hasPlan ? 'card-ok' : 'card-warning'}}" bindtap="managePlan">
       <view class="card-header">
         <text class="card-icon">📋</text>
@@ -104,15 +121,6 @@
       <view class="card-footer">
         <text class="card-action">{{userInfo.hasPlan ? '查看/修改计划' : '生成新计划'}}</text>
       </view>
-    </view>
-  </view>
-
-  <view class="quick-service">
-    <text class="section-title">🚀 一键服务</text>
-    <view class="service-btn primary" bindtap="startServiceWizard">
-      <text class="btn-icon">▶️</text>
-      <text class="btn-text">开始服务向导</text>
-      <text class="btn-hint">按流程完成服务</text>
     </view>
   </view>
 

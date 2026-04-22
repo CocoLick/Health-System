@@ -37,11 +37,11 @@
             <text class="stat-label">待制定计划</text>
           </view>
         </view>
-        <view class="stat-card" bindtap="navigateToArticle">
+        <view class="stat-card" bindtap="navigateToHealthEducationTab">
           <view class="stat-icon article-icon">📄</view>
           <view class="stat-content">
-            <text class="stat-number">{{stats.pendingArticles || 0}}</text>
-            <text class="stat-label">待审核文章</text>
+            <text class="stat-number">{{heDraftCount}}</text>
+            <text class="stat-label">健康教育草稿</text>
           </view>
         </view>
         <view class="stat-card" bindtap="navigateToFeedback">
@@ -67,9 +67,9 @@
             <view class="btn-icon">👥</view>
             <text class="btn-text">服务用户</text>
           </view>
-          <view class="quick-btn" bindtap="navigateToArticle">
+          <view class="quick-btn" bindtap="navigateToHealthEducationNew">
             <view class="btn-icon">✍️</view>
-            <text class="btn-text">撰写文章</text>
+            <text class="btn-text">健康教育</text>
           </view>
         </view>
       </view>
@@ -114,6 +114,9 @@
         </view>
         <view class="sub-tab-item {{serviceSubTab === 'users' ? 'active' : ''}}" bindtap="switchServiceSubTab" data-subtab="users">
           <text class="sub-tab-text">用户列表</text>
+        </view>
+        <view class="sub-tab-item {{serviceSubTab === 'education' ? 'active' : ''}}" bindtap="switchServiceSubTab" data-subtab="education">
+          <text class="sub-tab-text">健康教育</text>
         </view>
       </view>
 
@@ -170,6 +173,41 @@
       </view>
 
       <!-- 用户列表 -->
+      <view wx:if="{{serviceSubTab === 'education'}}" class="sub-tab-content he-tab">
+        <view class="he-toolbar">
+          <view class="he-filter-row">
+            <picker mode="selector" range="{{heStatusLabels}}" value="{{heStatusIndex}}" bindchange="onHeStatusPick">
+              <view class="he-picker">状态：{{heStatusLabels[heStatusIndex]}}</view>
+            </picker>
+            <picker mode="selector" range="{{heVisLabels}}" value="{{heVisIndex}}" bindchange="onHeVisPick">
+              <view class="he-picker">范围：{{heVisLabels[heVisIndex]}}</view>
+            </picker>
+          </view>
+          <view class="he-new-btn" bindtap="navigateToHealthEducationNew">+ 新建</view>
+        </view>
+        <view class="he-list">
+          <view wx:for="{{heFilteredList}}" wx:key="he_id" class="he-item" bindtap="openHealthEducationEdit" data-id="{{item.he_id}}">
+            <view class="he-item-top">
+              <text class="he-title">{{item.title}}</text>
+              <text class="he-badge status-{{item.content_status}}">{{item.content_status === 'published' ? '已发布' : '草稿'}}</text>
+            </view>
+            <text class="he-summary" wx:if="{{item.summary}}">{{item.summary}}</text>
+            <view class="he-item-meta">
+              <text class="he-tag">{{item.visibility === 'assigned' ? '指派' : '公开'}}</text>
+              <text class="he-time">{{item.updated_at}}</text>
+            </view>
+            <view class="he-targets" wx:if="{{item.targetNamesText}}">
+              <text class="he-targets-label">对象：</text>
+              <text class="he-targets-text">{{item.targetNamesText}}</text>
+            </view>
+          </view>
+          <view wx:if="{{heFilteredList.length === 0}}" class="empty-state">
+            <text class="empty-icon">📄</text>
+            <text class="empty-text">暂无健康教育内容</text>
+          </view>
+        </view>
+      </view>
+
       <view wx:if="{{serviceSubTab === 'users'}}" class="sub-tab-content">
         <view class="service-users">
           <view class="search-box">

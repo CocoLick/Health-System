@@ -75,7 +75,12 @@ Page({
     nutritionGoalIndex: 1, // 0: lose_weight, 1: maintain, 2: healthy_gain
     evaluation: null,
     evaluationId: '',
-    historyList: []
+    historyList: [],
+    healthMainTab: 'data',
+    heUserFilter: 'all',
+    heUserListDisplay: [],
+    heEduLoading: false,
+    heEduHint: ''
   },
 
   onLoad() {
@@ -87,7 +92,12 @@ Page({
     if (scrollEval) {
       wx.removeStorageSync('healthScrollToEvaluation');
     }
+    const ui = wx.getStorageSync('userInfo');
+    const token = wx.getStorageSync('token');
     this.loadHealthData();
+    if (ui && token && this.data.healthMainTab === 'education') {
+      this.loadEducationReaderList();
+    }
     if (scrollEval) {
       setTimeout(() => {
         wx.pageScrollTo({
@@ -99,8 +109,92 @@ Page({
   },
 
   onPullDownRefresh() {
-    this.loadHealthData();
-    wx.stopPullDownRefresh();
+    const ui = wx.getStorageSync('userInfo');
+    const token = wx.getStorageSync('token');
+    if (ui && token && this.data.healthMainTab === 'education') {
+      this.loadEducationReaderList().finally(() => wx.stopPullDownRefresh());
+    } else {
+      this.loadHealthData();
+      wx.stopPullDownRefresh();
+    }
+  },
+
+  switchHealthMainTab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    if (!tab || tab === this.data.healthMainTab) {
+      return;
+    }
+    this.setData({ healthMainTab: tab });
+    if (tab === 'education') {
+      this.loadEducationReaderList();
+    }
+  },
+
+  setHeUserFilter(e) {
+    const v = e.currentTarget.dataset.v;
+    if (!v || v === this.data.heUserFilter) {
+      return;
+    }
+    this.setData({ heUserFilter: v });
+    this.loadEducationReaderList();
+  },
+
+  formatHeReaderRow(item) {
+    const s = item.updated_at ? String(item.updated_at) : '';
+    const updatedAtText = s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s;
+    const vis = item.visibility === 'assigned' ? 'assigned' : 'public';
+    return Object.assign({}, item, {
+      updated_at_text: updatedAtText,
+      visibility: vis,
+      visibilityLabel: vis === 'assigned' ? '指派' : '公开',
+      dietitian_name: item.dietitian_name || ''
+    });
+  },
+
+  loadEducationReaderList() {
+    const ui = wx.getStorageSync('userInfo');
+    if (!ui || ui.role_type !== 'user') {
+      this.setData({
+        heUserListDisplay: [],
+        heEduLoading: false,
+        heEduHint: '当前登录身份无法浏览健康教育，请使用普通用户账号。'
+      });
+      return Promise.resolve();
+    }
+    this.setData({ heEduLoading: true, heEduHint: '' });
+    return api.healthEducation
+      .readerList({ visibility: this.data.heUserFilter })
+      .then((res) => {
+        if (res.code === 200) {
+          const raw = res.data || [];
+          const heUserListDisplay = raw.map((x) => this.formatHeReaderRow(x));
+          this.setData({ heUserListDisplay });
+        } else {
+          this.setData({
+            heUserListDisplay: [],
+            heEduHint: res.message || '加载失败'
+          });
+        }
+      })
+      .catch(() => {
+        this.setData({
+          heUserListDisplay: [],
+          heEduHint: '网络错误，请稍后重试'
+        });
+      })
+      .finally(() => {
+        this.setData({ heEduLoading: false });
+      });
+  },
+
+  openHeDetail(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/user/health/education-detail/index?id=' + encodeURIComponent(id)
+    });
   },
 
   loadHealthData() {
@@ -117,7 +211,10 @@ Page({
         hasHealthData: false,
         isLoggedIn: false,
         evaluation: null,
-        evaluationId: ''
+        evaluationId: '',
+        healthMainTab: 'data',
+        heUserListDisplay: [],
+        heEduHint: ''
       });
       return;
     }

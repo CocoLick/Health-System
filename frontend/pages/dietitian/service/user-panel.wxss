@@ -7,26 +7,58 @@
 .panel-header {
   display: flex;
   align-items: center;
-  padding: 30rpx;
+  justify-content: space-between;
+  padding: 22rpx 20rpx 22rpx 12rpx;
   background: white;
   border-bottom: 1rpx solid #f0f0f0;
 }
 
-.back-btn {
+.header-side {
+  min-width: 200rpx;
+  max-width: 220rpx;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8rpx;
 }
 
-.back-icon {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #2196f3;
+.header-side-left {
+  justify-content: flex-start;
+}
+
+.header-side-right {
+  justify-content: flex-end;
+}
+
+.back-btn {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10rpx;
+  padding: 8rpx 22rpx 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(61, 58, 54, 0.06);
+}
+
+.back-btn-hover {
+  background: rgba(61, 58, 54, 0.11);
+}
+
+.back-chevron {
+  flex-shrink: 0;
+  width: 40rpx;
+  text-align: center;
+  font-size: 44rpx;
+  line-height: 44rpx;
+  font-weight: 300;
+  color: #3d3a36;
 }
 
 .back-text {
+  flex-shrink: 0;
   font-size: 28rpx;
-  color: #2196f3;
+  line-height: 44rpx;
+  color: #5c5348;
+  font-weight: 500;
 }
 
 .panel-title {
@@ -35,7 +67,7 @@
   font-size: 32rpx;
   font-weight: 600;
   color: #1a1a1a;
-  margin-right: 80rpx;
+  min-width: 0;
 }
 
 .user-info-card {
@@ -112,6 +144,10 @@
 .service-card.card-static:active {
   transform: none;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.service-card.card-edu {
+  border-left-color: #c4a882;
 }
 
 .card-header {
@@ -251,10 +287,6 @@
   font-weight: 500;
 }
 
-.quick-service {
-  padding: 30rpx 20rpx;
-}
-
 .section-title {
   font-size: 32rpx;
   font-weight: 600;
@@ -263,45 +295,8 @@
   display: block;
 }
 
-.service-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 40rpx;
-  background: white;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.service-btn:active {
-  transform: translateY(4rpx);
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
-}
-
-.service-btn.primary {
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-}
-
-.btn-icon {
-  font-size: 48rpx;
-  margin-bottom: 16rpx;
-}
-
-.btn-text {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: white;
-  margin-bottom: 8rpx;
-}
-
-.btn-hint {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
-}
-
 .service-history {
-  padding: 30rpx 20rpx;
+  padding: 8rpx 20rpx 30rpx;
 }
 
 .history-list {

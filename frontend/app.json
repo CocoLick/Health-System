@@ -1,10 +1,12 @@
 {
   "pages": [
+    "pages/launch/index",
     "pages/home/index",
     "pages/user/diet/nutrition/index",
     "pages/user/diet/add-record/index",
     "pages/user/diet/diet-plan/index",
     "pages/user/health/index",
+    "pages/user/health/education-detail/index",
     "pages/user/health/evaluation-detail/index",
     "pages/user/profile/index",
     "pages/auth/login/login",
@@ -20,6 +22,7 @@
     "pages/admin/data-statistics/index",
     "pages/admin/ingredient-management/index",
     "pages/dietitian/dashboard/index",
+    "pages/dietitian/health-education/edit",
     "pages/dietitian/service/user-panel",
     "pages/dietitian/service/evaluation-center/index",
     "pages/dietitian/service/nutrition-eval/index",

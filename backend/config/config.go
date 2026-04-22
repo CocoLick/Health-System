@@ -95,6 +95,7 @@ func autoMigrate() error {
 		&models.Meal{},
 		&models.Food{},
 		&models.PlanExecution{},
+		&models.HealthEducation{},
 	)
 }
 

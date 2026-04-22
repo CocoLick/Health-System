@@ -1047,7 +1047,7 @@
 }
 
 .sub-tab-text {
-  font-size: 28rpx;
+  font-size: 24rpx;
   font-weight: 500;
 }
 
@@ -1354,4 +1354,133 @@
 .request-detail-modal .modal-btn.reject {
   background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
   color: white;
+}
+
+/* 健康教育（服务中心子 Tab） */
+.he-tab {
+  padding-bottom: 24rpx;
+}
+
+.he-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+  flex-wrap: wrap;
+}
+
+.he-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  flex: 1;
+}
+
+.he-picker {
+  font-size: 24rpx;
+  color: #495057;
+  background: #fff;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
+}
+
+.he-new-btn {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #c4a882 0%, #a68960 100%);
+  padding: 16rpx 28rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 4rpx 12rpx rgba(166, 137, 96, 0.35);
+}
+
+.he-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.he-item {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx 28rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+
+.he-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.he-title {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.he-badge {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 20rpx;
+  white-space: nowrap;
+}
+
+.he-badge.status-draft {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.he-badge.status-published {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.he-summary {
+  font-size: 24rpx;
+  color: #6c757d;
+  line-height: 1.45;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.he-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.he-tag {
+  font-size: 22rpx;
+  color: #5c5348;
+  background: #f0ebe4;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.he-time {
+  font-size: 22rpx;
+  color: #9aa0a6;
+}
+
+.he-targets {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #5c5348;
+  line-height: 1.4;
+}
+
+.he-targets-label {
+  color: #8a8278;
+}
+
+.he-targets-text {
+  color: #3d3a36;
 }

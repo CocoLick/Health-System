@@ -241,6 +241,44 @@ const serviceRequest = {
   }
 };
 
+// 健康教育（规划师，与文章合并）
+const healthEducation = {
+  list: function(params) {
+    const q = params && typeof params === 'object' ? params : {};
+    const parts = [];
+    if (q.content_status && q.content_status !== 'all') {
+      parts.push(`content_status=${encodeURIComponent(q.content_status)}`);
+    }
+    if (q.visibility && q.visibility !== 'all') {
+      parts.push(`visibility=${encodeURIComponent(q.visibility)}`);
+    }
+    const s = parts.length ? `?${parts.join('&')}` : '';
+    return get('/api/health-education' + s);
+  },
+  create: function(data) {
+    return post('/api/health-education', data);
+  },
+  getDetail: function(id) {
+    return get(`/api/health-education/${encodeURIComponent(id)}`);
+  },
+  update: function(id, data) {
+    return put(`/api/health-education/${encodeURIComponent(id)}`, data);
+  },
+  publish: function(id, data) {
+    return post(`/api/health-education/${encodeURIComponent(id)}/publish`, data);
+  },
+  // 用户端阅读（普通用户）
+  readerList: function(params) {
+    const q = params && typeof params === 'object' ? params : {};
+    const v = q.visibility && q.visibility !== 'all' ? `visibility=${encodeURIComponent(q.visibility)}` : '';
+    const s = v ? `?${v}` : '';
+    return get('/api/health-education/reader' + s);
+  },
+  readerDetail: function(id) {
+    return get(`/api/health-education/reader/${encodeURIComponent(id)}`);
+  }
+};
+
 // 评估相关API
 const evaluation = {
   // 提交评估（规划师）
@@ -376,6 +414,7 @@ module.exports = {
   user,
   healthData,
   serviceRequest,
+  healthEducation,
   evaluation,
   ingredient,
   dietPlan,

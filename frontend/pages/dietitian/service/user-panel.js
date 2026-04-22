@@ -304,6 +304,16 @@ Page({
       });
   },
 
+  openHealthEducation() {
+    const uid = (this.data.userId || '').trim();
+    if (!uid) {
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/dietitian/health-education/edit?userId=' + encodeURIComponent(uid)
+    });
+  },
+
   goBack() {
     wx.navigateBack();
   },
@@ -324,13 +334,6 @@ Page({
   managePlan() {
     wx.navigateTo({
       url: '/pages/dietitian/service/diet-plan/index?userId=' + this.data.userId
-    });
-  },
-
-  startServiceWizard() {
-    wx.showToast({
-      title: '请依次完成：评估 → 膳食计划',
-      icon: 'none'
     });
   }
 });

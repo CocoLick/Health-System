@@ -1,0 +1,15 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+  <view wx:elif="{{error}}" class="state err">{{error}}</view>
+  <scroll-view wx:else scroll-y class="scroll" enhanced show-scrollbar="{{false}}">
+    <view class="meta">
+      <text class="tag">{{article.visibility_label}}</text>
+      <text class="time">{{article.updated_at_text}}</text>
+    </view>
+    <view class="title">{{article.title}}</view>
+    <view class="author">规划师：{{article.dietitian_name || '—'}}</view>
+    <view class="category" wx:if="{{article.category}}">分类：{{article.category}}</view>
+    <view class="summary" wx:if="{{article.summary}}">{{article.summary}}</view>
+    <view class="body">{{article.body}}</view>
+  </scroll-view>
+</view>
