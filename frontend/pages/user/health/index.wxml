@@ -27,11 +27,6 @@
     </view>
 
     <view wx:if="{{healthMainTab === 'data'}}">
-      <view class="header">
-        <view class="header-title">健康数据</view>
-        <view class="header-subtitle">记录您的健康指标，追踪身体变化</view>
-      </view>
-
       <view class="section">
         <view class="section-header">
           <view class="section-title">基本信息</view>

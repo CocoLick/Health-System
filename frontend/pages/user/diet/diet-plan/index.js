@@ -1058,6 +1058,19 @@ Page({
     });
   },
 
+  goFeedbackPlan() {
+    const plan = this.data.currentPlan;
+    const planId = plan && (plan.id || plan.plan_id);
+    if (!planId) {
+      wx.showToast({ title: '暂无计划信息', icon: 'none' });
+      return;
+    }
+    const rawTitle = (plan && (plan.title || plan.plan_title)) || '';
+    wx.navigateTo({
+      url: `/pages/user/feedback/index?category=diet_plan&plan_id=${encodeURIComponent(planId)}&plan_title=${encodeURIComponent(rawTitle)}`
+    });
+  },
+
   // 解除服务：删除当前膳食计划，并将关联服务申请置为 completed（后端）
   terminateService() {
     const plan = this.data.currentPlan;

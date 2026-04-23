@@ -279,6 +279,35 @@ const healthEducation = {
   }
 };
 
+// 意见反馈（用户提交 + 规划师处理）
+const feedback = {
+  submit: function(data) {
+    return post('/api/feedback', data);
+  },
+  listUser: function() {
+    return get('/api/feedback/user');
+  },
+  detailUser: function(id) {
+    return get(`/api/feedback/user/${encodeURIComponent(id)}`);
+  },
+  replyUser: function(id, data) {
+    return post(`/api/feedback/user/${encodeURIComponent(id)}/replies`, data);
+  },
+  listDietitian: function(params) {
+    const st = params && params.status ? `?status=${encodeURIComponent(params.status)}` : '';
+    return get('/api/feedback/dietitian' + st);
+  },
+  pendingCount: function() {
+    return get('/api/feedback/dietitian/pending-count');
+  },
+  detail: function(id) {
+    return get(`/api/feedback/${encodeURIComponent(id)}`);
+  },
+  reply: function(id, data) {
+    return post(`/api/feedback/${encodeURIComponent(id)}/replies`, data);
+  }
+};
+
 // 评估相关API
 const evaluation = {
   // 提交评估（规划师）
@@ -415,6 +444,7 @@ module.exports = {
   healthData,
   serviceRequest,
   healthEducation,
+  feedback,
   evaluation,
   ingredient,
   dietPlan,

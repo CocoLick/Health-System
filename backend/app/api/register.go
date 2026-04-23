@@ -77,6 +77,9 @@ func RegisterRoutes(router *gin.Engine) {
 			// 健康教育（规划师）
 			RegisterHealthEducationRoutes(authGroup)
 
+			// 用户反馈（用户提交 + 规划师处理）
+			RegisterFeedbackRoutes(authGroup)
+
 			// 注册膳食计划路由
 			dietPlanService := services.NewDietPlanService()
 			dietPlanHandler := NewDietPlanHandler(dietPlanService)

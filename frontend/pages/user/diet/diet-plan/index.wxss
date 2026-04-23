@@ -821,6 +821,12 @@
   border: 2rpx solid #81c784;
 }
 
+.action-btn.feedback-plan {
+  background-color: #fff8e1;
+  color: #f57f17;
+  border: 2rpx solid #ffcc80;
+}
+
 .action-btn.abandon {
   background-color: #fff;
   color: #f44336;

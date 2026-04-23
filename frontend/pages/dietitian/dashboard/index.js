@@ -13,7 +13,7 @@ Page({
     stats: {
       pendingPlans: 3,
       pendingArticles: 1,
-      pendingFeedbacks: 5,
+      pendingFeedbacks: 0,
       serviceUsers: 0,
       totalPlans: 18,
       totalArticles: 5,
@@ -51,39 +51,8 @@ Page({
       }
     ],
     users: [],
-    pendingFeedbackCount: 3,
-    feedbacks: [
-      {
-        id: 1,
-        username: '张三',
-        userInitial: '张',
-        title: '关于计划执行问题',
-        content: '今天的减脂餐感觉份量有点少，下午容易饿，能否调整一下？',
-        status: '待回复',
-        time: '2026-04-18 10:30',
-        type: '计划执行'
-      },
-      {
-        id: 2,
-        username: '李四',
-        userInitial: '李',
-        title: '希望调整饮食口味',
-        content: '不太喜欢清淡口味，能否增加一些有味道的菜品？',
-        status: '待回复',
-        time: '2026-04-17 15:20',
-        type: '口味调整'
-      },
-      {
-        id: 3,
-        username: '王五',
-        userInitial: '王',
-        title: '执行效果很好',
-        content: '按照计划执行了一周，体重下降了1公斤，感觉很好！',
-        status: '待回复',
-        time: '2026-04-16 09:00',
-        type: '效果反馈'
-      }
-    ],
+    pendingFeedbackCount: 0,
+    feedbacks: [],
     // 服务请求相关数据
     serviceRequests: [],
     filteredRequests: [],
@@ -101,11 +70,16 @@ Page({
   onLoad() {
     this.loadData();
     this.loadServiceRequests();
+    this.loadPendingFeedbackCount();
   },
 
   onShow() {
     this.loadServiceRequests();
     this.loadHealthEducationList();
+    this.loadPendingFeedbackCount();
+    if (this.data.activeTab === 'feedback') {
+      this.loadFeedbacks();
+    }
   },
 
   loadData() {
@@ -335,6 +309,62 @@ Page({
     this.setData({
       activeTab: tab
     });
+    if (tab === 'feedback') {
+      this.loadFeedbacks();
+    }
+    if (tab === 'home') {
+      this.loadPendingFeedbackCount();
+    }
+  },
+
+  loadPendingFeedbackCount() {
+    const ui = wx.getStorageSync('userInfo');
+    if (!ui || ui.role_type !== 'dietitian') {
+      return;
+    }
+    api.feedback
+      .pendingCount()
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          const c = res.data.count != null ? Number(res.data.count) : 0;
+          this.setData({
+            pendingFeedbackCount: c,
+            'stats.pendingFeedbacks': c
+          });
+        }
+      })
+      .catch(() => {});
+  },
+
+  formatFeedbackListTime(iso) {
+    if (!iso) {
+      return '';
+    }
+    const s = String(iso);
+    return s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s;
+  },
+
+  loadFeedbacks() {
+    const ui = wx.getStorageSync('userInfo');
+    if (!ui || ui.role_type !== 'dietitian') {
+      return;
+    }
+    const status = this.data.feedbackSubTab === 'pending' ? 'pending' : 'replied';
+    api.feedback
+      .listDietitian({ status })
+      .then((res) => {
+        if (res.code === 200) {
+          const rows = (res.data || []).map((r) =>
+            Object.assign({}, r, {
+              display_time: this.formatFeedbackListTime(r.created_at)
+            })
+          );
+          this.setData({ feedbacks: rows });
+        }
+      })
+      .catch(() => {
+        this.setData({ feedbacks: [] });
+      });
   },
 
   switchServiceSubTab(e) {
@@ -443,6 +473,7 @@ Page({
       feedbackSubTab: subtab
     });
     this.loadFeedbacks();
+    this.loadPendingFeedbackCount();
   },
 
   onSearchUser(e) {
@@ -467,10 +498,6 @@ Page({
     this.setData({ users: filteredUsers });
   },
 
-  loadFeedbacks() {
-    console.log('加载反馈列表', this.data.feedbackSubTab);
-  },
-
   navigateToService() {
     this.setData({
       activeTab: 'service'
@@ -486,6 +513,8 @@ Page({
       activeTab: 'feedback',
       feedbackSubTab: 'pending'
     });
+    this.loadFeedbacks();
+    this.loadPendingFeedbackCount();
   },
 
   enterUserPanel(e) {
@@ -496,13 +525,13 @@ Page({
   },
 
   viewFeedbackDetail(e) {
-    const index = e.currentTarget.dataset.index;
-    const feedback = this.data.feedbacks[index];
-    wx.showToast({
-      title: '查看反馈详情',
-      icon: 'none'
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/dietitian/feedback/detail/index?id=' + encodeURIComponent(id)
     });
-    console.log('查看反馈详情', feedback);
   },
 
   showPersonalCenter() {

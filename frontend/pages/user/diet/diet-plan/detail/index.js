@@ -334,5 +334,18 @@ Page({
     wx.switchTab({
       url: '/pages/user/health/index'
     });
+  },
+
+  goFeedbackPlan() {
+    const plan = this.data.plan;
+    const planId = plan && (plan.id || plan.plan_id);
+    if (!planId) {
+      wx.showToast({ title: '暂无计划信息', icon: 'none' });
+      return;
+    }
+    const rawTitle = (plan && (plan.title || plan.plan_title)) || '';
+    wx.navigateTo({
+      url: `/pages/user/feedback/index?category=diet_plan&plan_id=${encodeURIComponent(planId)}&plan_title=${encodeURIComponent(rawTitle)}`
+    });
   }
 });

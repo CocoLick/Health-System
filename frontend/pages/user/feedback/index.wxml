@@ -1,0 +1,241 @@
+<view class="page">
+  <scroll-view
+    class="scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollIntoView}}"
+    scroll-with-animation="{{true}}"
+  >
+    <view wx:if="{{!isLoggedIn}}" class="login-tip">
+      <text>登录后可提交反馈，规划师将处理与膳食计划、规划服务相关的问题。</text>
+      <button class="login-btn" bindtap="goLogin">去登录</button>
+    </view>
+
+    <view wx:if="{{isLoggedIn}}" class="card my-fb">
+      <view class="my-fb-head">
+        <text class="my-fb-title">我的反馈与回复</text>
+        <view class="btn-new-fb" bindtap="goNewFeedback">填写新反馈</view>
+      </view>
+      <view class="my-fb-hint">「填写新反馈」将清空草稿并跳到下方表单，便于专注填写。</view>
+
+      <view wx:if="{{myFeedbacksLoading}}" class="empty">加载中…</view>
+      <block wx:elif="{{!myFeedbacksAll.length}}">
+        <view class="empty">暂无记录。提交后，与规划师相关的工单可在此查看回复。</view>
+      </block>
+      <block wx:else>
+        <view class="fb-toolbar">
+          <input
+            class="fb-search"
+            placeholder="搜索标题、描述、规划师回复"
+            value="{{searchKeyword}}"
+            bindinput="onSearchInput"
+            confirm-type="search"
+          />
+          <view class="sort-btn" bindtap="onSortTap">
+            {{sortOrder === 'desc' ? '最新更新' : '最早更新'}}
+          </view>
+        </view>
+        <view class="type-tabs">
+          <view
+            class="type-tab {{primaryTypeFilter === 'all' ? 'on' : ''}}"
+            data-f="all"
+            bindtap="onPrimaryTypeTap"
+          >全部</view>
+          <view
+            class="type-tab {{primaryTypeFilter === 'diet_plan' ? 'on' : ''}}"
+            data-f="diet_plan"
+            bindtap="onPrimaryTypeTap"
+          >膳食计划</view>
+          <view
+            class="type-tab {{primaryTypeFilter === 'dietitian_service' ? 'on' : ''}}"
+            data-f="dietitian_service"
+            bindtap="onPrimaryTypeTap"
+          >规划服务</view>
+        </view>
+        <view class="advanced-head">
+          <view class="advanced-toggle" bindtap="toggleAdvancedFilters">
+            {{showAdvancedFilters ? '收起高级筛选' : '更多筛选'}}
+          </view>
+          <view class="advanced-reset" bindtap="onResetListFilters">重置</view>
+        </view>
+        <view wx:if="{{showAdvancedFilters}}" class="advanced-panel">
+          <view
+            class="advanced-chip {{onlyCurrentPlan ? 'on' : ''}}"
+            data-key="plan"
+            bindtap="onToggleAdvancedFilter"
+          >只看当前计划</view>
+          <view
+            class="advanced-chip {{onlyCurrentDietitian ? 'on' : ''}}"
+            data-key="dietitian"
+            bindtap="onToggleAdvancedFilter"
+          >只看当前规划师</view>
+          <view
+            class="advanced-chip {{onlyPending ? 'on' : ''}}"
+            data-key="pending"
+            bindtap="onToggleAdvancedFilter"
+          >仅未回复</view>
+        </view>
+        <view wx:if="{{onlyCurrentPlan && !filterContextPlanId}}" class="filter-tip">
+          暂无「当前膳食计划」上下文：请先在「膳食」Tab 打开或生成计划，系统会用本地缓存的计划 ID 筛选。
+        </view>
+        <view wx:if="{{onlyCurrentDietitian && !filterContextDietitianId}}" class="filter-tip">
+          当前计划非规划师定制或未带规划师信息：「当前规划师」筛选不可用；可选「全部」查看历史工单。
+        </view>
+        <view class="result-summary">共 {{displayedFeedbacks.length}} 条</view>
+        <view wx:if="{{!displayedFeedbacks.length}}" class="empty">当前筛选下暂无反馈。</view>
+        <block wx:else>
+        <view wx:for="{{displayedFeedbacks}}" wx:key="feedback_id" class="fb-card">
+          <view wx:if="{{expandedFeedbackId !== item.feedback_id}}" class="fb-header" catchtap="onToggleFeedback" data-id="{{item.feedback_id}}">
+            <view class="fb-header-top">
+              <text class="fb-title">{{item.title}}</text>
+            </view>
+            <view class="fb-badges">
+              <text class="pill {{item.reply_pill_class}}">{{item.reply_pill_text}}</text>
+              <text class="pill pill-type">{{item.category_label}}</text>
+            </view>
+            <view class="fb-sub">更新于 {{item.updated_at_text}}</view>
+            <view wx:if="{{item.last_reply_preview}}" class="fb-preview">
+              <text class="fb-preview-label">规划师</text>
+              <text class="fb-preview-body">{{item.last_reply_preview}}</text>
+            </view>
+            <view wx:else class="fb-preview muted">暂无规划师回复</view>
+            <view class="fb-toggle-hint">展开查看全文与对话</view>
+          </view>
+          <view wx:else class="fb-expanded-top">
+            <text class="fb-title">{{item.title}}</text>
+            <view class="fb-collapse-btn" catchtap="onToggleFeedback" data-id="{{item.feedback_id}}">收起</view>
+          </view>
+          <view wx:if="{{expandedFeedbackId === item.feedback_id}}" class="fb-expand" catchtap="noop">
+            <view wx:if="{{expandedLoading}}" class="empty">加载详情…</view>
+            <block wx:elif="{{expandedDetail}}">
+              <view class="fb-detail-meta-rest">创建于 {{expandedDetail.created_at_text}}</view>
+              <view wx:if="{{expandedDetail.plan_title}}" class="fb-plan">关联计划：{{expandedDetail.plan_title}}</view>
+              <view class="fb-detail-label">我的描述</view>
+              <view class="fb-detail-content">{{expandedDetail.content}}</view>
+              <view class="fb-detail-label">对话记录</view>
+              <view wx:if="{{!expandedDetail.replies || !expandedDetail.replies.length}}" class="empty small">尚无回复</view>
+              <view
+                wx:for="{{expandedDetail.replies}}"
+                wx:for-item="rp"
+                wx:key="reply_id"
+                class="reply {{rp.sender_type === 'dietitian' ? 'from-dietitian' : 'from-other'}}"
+              >
+                <view class="reply-head">
+                  <text class="reply-name">{{rp.sender_name}}</text>
+                  <text class="reply-time">{{rp.created_at_text}}</text>
+                </view>
+                <view class="reply-body">{{rp.body}}</view>
+              </view>
+              <view class="fb-detail-label">继续回复</view>
+              <textarea
+                class="reply-input"
+                placeholder="补充说明或继续追问，规划师会继续跟进"
+                maxlength="500"
+                auto-height
+                value="{{expandedReplyText}}"
+                bindinput="onExpandedReplyInput"
+              />
+              <button
+                class="reply-send-btn"
+                size="mini"
+                loading="{{expandedReplySubmitting}}"
+                disabled="{{expandedReplySubmitting}}"
+                bindtap="submitExpandedReply"
+              >发送</button>
+            </block>
+          </view>
+        </view>
+        </block>
+      </block>
+    </view>
+
+    <view id="anchor-new-form" class="divider anchor" wx:if="{{isLoggedIn}}">
+      <text>填写新反馈</text>
+    </view>
+
+    <view wx:if="{{categoryLocked}}" class="hint card">
+      <text class="hint-title">反馈类型</text>
+      <text class="hint-body">膳食计划（针对当前计划）</text>
+    </view>
+
+    <view wx:else class="segment card">
+      <view
+        wx:for="{{categories}}"
+        wx:key="id"
+        class="seg-item {{category === item.id ? 'active' : ''}}"
+        data-cat="{{item.id}}"
+        bindtap="onPickCategory"
+      >{{item.name}}</view>
+    </view>
+
+    <view wx:if="{{category === 'diet_plan'}}" class="card block">
+      <view class="label">关联膳食计划</view>
+      <view wx:if="{{planLocked}}" class="readonly">{{relatedPlanTitle || '当前计划'}}</view>
+      <block wx:else>
+        <picker
+          wx:if="{{planPickerLabels.length}}"
+          mode="selector"
+          range="{{planPickerLabels}}"
+          value="{{planPickerIndex}}"
+          bindchange="onPlanPickerChange"
+        >
+          <view class="picker-line">{{planPickerLabels[planPickerIndex]}}</view>
+        </picker>
+        <view wx:else class="empty">{{plansLoading ? '加载计划中…' : '暂无已发布的膳食计划'}}</view>
+      </block>
+    </view>
+
+    <view wx:if="{{category === 'dietitian_service'}}" class="card block">
+      <view class="label">关联规划师</view>
+      <picker
+        wx:if="{{dietitianPickerLabels.length}}"
+        mode="selector"
+        range="{{dietitianPickerLabels}}"
+        value="{{dietitianIndex}}"
+        bindchange="onDietitianPickerChange"
+      >
+        <view class="picker-line">{{dietitianPickerLabels[dietitianIndex]}}</view>
+      </picker>
+      <view wx:else class="empty">{{dietitiansLoading ? '加载中…' : '暂无已通过的服务关系，需先申请并通过规划师服务'}}</view>
+    </view>
+
+    <view wx:if="{{category === 'system'}}" class="hint card muted">
+      <text>系统功能类反馈将由运营侧查看，不指派给规划师处理。</text>
+    </view>
+
+    <view class="card block">
+      <view class="label">标题 <text class="req">*</text></view>
+      <input class="input" placeholder="简要概括问题" maxlength="80" value="{{title}}" bindinput="onTitleInput" />
+    </view>
+
+    <view class="card block">
+      <view class="label">正文 <text class="req">*</text></view>
+      <textarea
+        class="textarea"
+        placeholder="请描述具体情况、复现步骤或建议"
+        maxlength="2000"
+        value="{{content}}"
+        bindinput="onContentInput"
+        auto-height
+      />
+    </view>
+
+    <view class="card block">
+      <view class="label">满意度（选填）</view>
+      <view class="stars">
+        <text
+          wx:for="{{[1,2,3,4,5]}}"
+          wx:key="*this"
+          class="star {{rating >= item ? 'on' : ''}}"
+          data-n="{{item}}"
+          bindtap="onStarTap"
+        >★</text>
+      </view>
+      <view wx:if="{{rating > 0}}" class="clear-rating" bindtap="clearRating">清除评分</view>
+    </view>
+
+    <button class="submit" loading="{{submitting}}" disabled="{{submitting || !isLoggedIn}}" bindtap="onSubmit">提交反馈</button>
+    <view class="footer-space"></view>
+  </scroll-view>
+</view>

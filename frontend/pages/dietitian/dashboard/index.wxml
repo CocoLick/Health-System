@@ -303,21 +303,21 @@
       </view>
 
       <view class="feedback-list">
-        <view wx:for="{{feedbacks}}" wx:key="index" class="feedback-item" bindtap="viewFeedbackDetail" data-index="{{index}}">
+        <view wx:for="{{feedbacks}}" wx:key="feedback_id" class="feedback-item" bindtap="viewFeedbackDetail" data-id="{{item.feedback_id}}">
           <view class="feedback-header">
             <view class="feedback-user">
-              <text class="feedback-avatar">{{item.userInitial}}</text>
+              <text class="feedback-avatar">{{item.user_initial}}</text>
               <text class="feedback-username">{{item.username}}</text>
             </view>
-            <text class="feedback-status {{item.status === '待回复' ? 'status-pending' : 'status-replied'}}">{{item.status}}</text>
+            <text class="feedback-status {{item.status === 'pending' ? 'status-pending' : 'status-replied'}}">{{item.status_label}}</text>
           </view>
           <view class="feedback-body">
             <text class="feedback-title">{{item.title}}</text>
-            <text class="feedback-content">{{item.content}}</text>
+            <text class="feedback-content">{{item.content_preview}}</text>
           </view>
           <view class="feedback-footer">
-            <text class="feedback-time">{{item.time}}</text>
-            <text class="feedback-type">{{item.type}}</text>
+            <text class="feedback-time">{{item.display_time}}</text>
+            <text class="feedback-type">{{item.category_label}}</text>
           </view>
         </view>
         <view wx:if="{{feedbacks.length === 0}}" class="empty-state">

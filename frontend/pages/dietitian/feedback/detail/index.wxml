@@ -1,0 +1,55 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+  <block wx:elif="{{detail}}">
+    <view class="card meta-card">
+      <view class="row">
+        <text class="label">状态</text>
+        <text class="status-tag {{detail.status === 'pending' ? 'pending' : 'done'}}">{{detail.status_label}}</text>
+      </view>
+      <view class="row">
+        <text class="label">分类</text>
+        <text class="value">{{detail.category_label}}</text>
+      </view>
+      <view class="row">
+        <text class="label">用户</text>
+        <text class="value">{{detail.username}}</text>
+      </view>
+      <view class="row" wx:if="{{detail.related_plan_id}}">
+        <text class="label">关联计划</text>
+        <text class="value">{{detail.plan_title || detail.related_plan_id}}</text>
+      </view>
+      <view class="row">
+        <text class="label">提交时间</text>
+        <text class="value">{{detail.created_display}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">{{detail.title}}</view>
+      <view class="original">{{detail.content}}</view>
+    </view>
+
+    <view class="section-label">对话记录</view>
+    <view wx:for="{{detail.replies}}" wx:key="reply_id" class="msg {{item.isMine ? 'msg-mine' : 'msg-user'}}">
+      <view class="msg-head">
+        <text class="msg-name">{{item.sender_name}}</text>
+        <text class="msg-role">{{item.sender_type === 'dietitian' ? '规划师' : (item.sender_type === 'user' ? '用户' : '平台')}}</text>
+        <text class="msg-time">{{item.display_time}}</text>
+      </view>
+      <view class="msg-body">{{item.body}}</view>
+    </view>
+    <view wx:if="{{!detail.replies.length}}" class="empty-replies">暂无回复，请在下方输入首条回复</view>
+
+    <view class="reply-bar" wx:if="{{detail.status !== 'closed'}}">
+      <textarea
+        class="reply-input"
+        placeholder="输入回复内容…"
+        value="{{replyText}}"
+        bindinput="onReplyInput"
+        maxlength="2000"
+        auto-height
+      />
+      <button class="reply-btn" loading="{{sending}}" bindtap="submitReply">发送回复</button>
+    </view>
+  </block>
+</view>

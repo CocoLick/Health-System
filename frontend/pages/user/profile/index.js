@@ -5,16 +5,10 @@ Page({
     userInfo: {},
     menuItems: [
       { icon: '🥬', text: '食材管理', path: '/pages/ingredients/index' },
-      { icon: '💬', text: '意见反馈', action: 'showFeedback' },
+      { icon: '💬', text: '意见反馈', path: '/pages/user/feedback/index' },
       { icon: '📋', text: '健康记录', action: 'viewHealthHistory' },
       { icon: '⚙️', text: '设置', action: 'showSettings' }
     ],
-    feedbackTypes: [
-      { id: 'diet_plan', name: '膳食计划' },
-      { id: 'system', name: '系统功能' },
-      { id: 'service', name: '规划服务' },
-      { id: 'other', name: '其他' }
-    ]
   },
 
   onLoad() {
@@ -77,14 +71,6 @@ Page({
     if (path) {
       wx.navigateTo({ url: path });
     }
-  },
-
-  showFeedback() {
-    wx.showModal({
-      title: '意见反馈',
-      content: '功能开发中，敬请期待',
-      showCancel: false
-    });
   },
 
   viewHealthHistory() {
