@@ -120,13 +120,22 @@ Page({
     if (ui && token && this.data.healthMainTab === 'education') {
       this.loadEducationReaderList();
     }
-    if (scrollEval) {
-      setTimeout(() => {
-        wx.pageScrollTo({
-          selector: '#eval-section',
-          duration: 300
-        });
-      }, 500);
+    // 从膳食页跳转并滚动到营养评估：若当前停在「健康教育」tab，#eval-section 未渲染，pageScrollTo 会失败（控制台常见 Error: timeout）
+    if (scrollEval && ui && token) {
+      const doScroll = () => {
+        setTimeout(() => {
+          wx.pageScrollTo({
+            selector: '#eval-section',
+            duration: 300,
+            fail: function() {}
+          });
+        }, 400);
+      };
+      if (this.data.healthMainTab !== 'data') {
+        this.setData({ healthMainTab: 'data' }, doScroll);
+      } else {
+        doScroll();
+      }
     }
   },
 

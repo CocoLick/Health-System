@@ -1,6 +1,8 @@
 // utils/api.js
 
 const baseUrl = 'http://localhost:8000';
+// 与 app.json networkTimeout.request 一致；wx.request 未传 timeout 时基础库仍多为 60s 默认
+const DEFAULT_REQUEST_TIMEOUT_MS = 180000;
 
 // 获取token
 function getToken() {
@@ -33,12 +35,15 @@ function request(options) {
     ) {
       data = JSON.stringify(data);
     }
-    wx.request({
+    const wxRequestOptions = {
       url: `${baseUrl}${options.url}`,
       method: options.method || 'GET',
       data,
       header: headers,
-      timeout: typeof options.timeout === 'number' ? options.timeout : 60000,
+      timeout:
+        typeof options.timeout === 'number' && options.timeout > 0
+          ? options.timeout
+          : DEFAULT_REQUEST_TIMEOUT_MS,
       success: (res) => {
         // 兼容 RESTful 常见返回码：201(created), 204(no content) 等
         if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -50,7 +55,8 @@ function request(options) {
       fail: (err) => {
         reject(err);
       }
-    });
+    };
+    wx.request(wxRequestOptions);
   });
 }
 
