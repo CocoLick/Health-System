@@ -39,7 +39,7 @@
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#fff",
+    "navigationBarBackgroundColor": "#F3F1ED",
     "navigationBarTitleText": "营养膳食规划",
     "navigationBarTextStyle": "black"
   },
@@ -47,9 +47,9 @@
     "request": 180000
   },
   "tabBar": {
-    "color": "#6c757d",
-    "selectedColor": "#4caf50",
-    "backgroundColor": "#ffffff",
+    "color": "#8A847A",
+    "selectedColor": "#2D6A4F",
+    "backgroundColor": "#FFF9F2",
     "borderStyle": "black",
     "list": [
       {

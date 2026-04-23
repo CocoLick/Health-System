@@ -1,6 +1,6 @@
 .user-panel {
   min-height: 100vh;
-  background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
+  background: transparent;
   padding-bottom: 40rpx;
 }
 
@@ -8,9 +8,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 22rpx 20rpx 22rpx 12rpx;
-  background: white;
-  border-bottom: 1rpx solid #f0f0f0;
+  padding: 24rpx 20rpx 16rpx 12rpx;
 }
 
 .header-side {
@@ -36,11 +34,12 @@
   gap: 10rpx;
   padding: 8rpx 22rpx 8rpx 14rpx;
   border-radius: 999rpx;
-  background: rgba(61, 58, 54, 0.06);
+  background: rgba(255, 252, 248, 0.92);
+  border: 1rpx solid var(--c-border);
 }
 
 .back-btn-hover {
-  background: rgba(61, 58, 54, 0.11);
+  background: rgba(45, 106, 79, 0.08);
 }
 
 .back-chevron {
@@ -50,14 +49,14 @@
   font-size: 44rpx;
   line-height: 44rpx;
   font-weight: 300;
-  color: #3d3a36;
+  color: var(--c-text);
 }
 
 .back-text {
   flex-shrink: 0;
   font-size: 28rpx;
   line-height: 44rpx;
-  color: #5c5348;
+  color: var(--c-text-2);
   font-weight: 500;
 }
 
@@ -66,7 +65,7 @@
   text-align: center;
   font-size: 32rpx;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--c-text);
   min-width: 0;
 }
 
@@ -76,16 +75,17 @@
   gap: 24rpx;
   padding: 30rpx;
   margin: 20rpx;
-  background: white;
+  background: var(--c-surface);
   border-radius: 16rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--c-border);
+  box-shadow: var(--shadow-card);
 }
 
 .user-avatar-large {
   width: 100rpx;
   height: 100rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  background: var(--c-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,13 +103,14 @@
 
 .user-name {
   font-size: 36rpx;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-weight: 700;
+  color: var(--c-text);
 }
 
 .user-meta {
   font-size: 24rpx;
-  color: #6c757d;
+  color: var(--c-text-2);
+  line-height: 1.5;
 }
 
 .service-cards {
@@ -120,34 +121,35 @@
 }
 
 .service-card {
-  background: white;
+  background: var(--c-surface);
   border-radius: 16rpx;
   padding: 30rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-  border-left: 8rpx solid #dee2e6;
-  transition: all 0.3s ease;
+  border: 1rpx solid var(--c-border);
+  box-shadow: var(--shadow-card);
+  border-left: 8rpx solid #ccc3b5;
+  transition: transform 0.18s var(--ease-natural), box-shadow 0.18s var(--ease-natural);
 }
 
 .service-card.card-ok {
-  border-left-color: #4caf50;
+  border-left-color: var(--c-primary);
 }
 
 .service-card.card-warning {
-  border-left-color: #ff9800;
+  border-left-color: #b56d42;
 }
 
 .service-card:active {
-  transform: translateY(4rpx);
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  transform: translateY(2rpx);
+  box-shadow: var(--shadow-press);
 }
 
 .service-card.card-static:active {
   transform: none;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-card);
 }
 
 .service-card.card-edu {
-  border-left-color: #c4a882;
+  border-left-color: #8d5b39;
 }
 
 .card-header {
@@ -165,13 +167,13 @@
   flex: 1;
   font-size: 32rpx;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--c-text);
 }
 
 .card-status {
   font-size: 24rpx;
   padding: 8rpx 16rpx;
-  border-radius: 12rpx;
+  border-radius: 999rpx;
   font-weight: 500;
   white-space: nowrap;
   line-height: 1.2;
@@ -179,20 +181,21 @@
 }
 
 .card-status.status-ok {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(45, 106, 79, 0.12);
+  color: var(--c-primary);
 }
 
 .card-status.status-warning {
-  background: #fff3cd;
-  color: #856404;
+  background: rgba(192, 123, 79, 0.16);
+  color: #8d4d27;
 }
 
 .card-body {
   margin-bottom: 16rpx;
   padding: 20rpx;
-  background: #f8f9fa;
+  background: rgba(255, 251, 245, 0.9);
   border-radius: 12rpx;
+  border: 1rpx solid rgba(40, 38, 34, 0.08);
 }
 
 .profile-placeholder {
@@ -201,7 +204,7 @@
 
 .profile-placeholder-text {
   font-size: 26rpx;
-  color: #868e96;
+  color: var(--c-text-2);
   line-height: 1.55;
 }
 
@@ -229,14 +232,14 @@
 
 .health-label {
   font-size: 24rpx;
-  color: #868e96;
+  color: var(--c-text-3);
   line-height: 1.4;
   margin-bottom: 6rpx;
 }
 
 .health-value {
   font-size: 28rpx;
-  color: #212529;
+  color: var(--c-text);
   line-height: 1.5;
   word-break: break-word;
 }
@@ -244,12 +247,12 @@
 .change-summary {
   margin-top: 14rpx;
   padding-top: 16rpx;
-  border-top: 1rpx dashed #d6d6d6;
+  border-top: 1rpx dashed rgba(40, 38, 34, 0.18);
 }
 
 .change-title {
   font-size: 25rpx;
-  color: #4d3d2e;
+  color: #3f372f;
   font-weight: 600;
   margin-bottom: 8rpx;
 }
@@ -263,12 +266,12 @@
 
 .change-label {
   font-size: 23rpx;
-  color: #7a7268;
+  color: var(--c-text-2);
 }
 
 .change-value {
   font-size: 24rpx;
-  color: #2f2a24;
+  color: var(--c-text);
   font-weight: 500;
 }
 
@@ -280,12 +283,12 @@
 
 .evaluation-time {
   font-size: 26rpx;
-  color: #1a1a1a;
+  color: var(--c-text);
 }
 
 .evaluation-hint {
   font-size: 24rpx;
-  color: #ff9800;
+  color: #a75f30;
 }
 
 .plan-info {
@@ -296,32 +299,32 @@
 
 .plan-title {
   font-size: 26rpx;
-  color: #1a1a1a;
+  color: var(--c-text);
 }
 
 .plan-status {
   font-size: 24rpx;
-  color: #4caf50;
-  background: #d4edda;
+  color: var(--c-primary);
+  background: rgba(45, 106, 79, 0.12);
   padding: 4rpx 12rpx;
-  border-radius: 8rpx;
+  border-radius: 999rpx;
 }
 
 .card-footer {
   padding-top: 16rpx;
-  border-top: 1rpx solid #f0f0f0;
+  border-top: 1rpx solid rgba(40, 38, 34, 0.08);
 }
 
 .card-action {
   font-size: 26rpx;
-  color: #2196f3;
+  color: var(--c-primary);
   font-weight: 500;
 }
 
 .section-title {
   font-size: 32rpx;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-weight: 700;
+  color: var(--c-text);
   margin-bottom: 20rpx;
   display: block;
 }
@@ -331,10 +334,11 @@
 }
 
 .history-list {
-  background: white;
+  background: var(--c-surface);
   border-radius: 16rpx;
   padding: 20rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid var(--c-border);
+  box-shadow: var(--shadow-card);
 }
 
 .history-item {
@@ -342,7 +346,7 @@
   align-items: flex-start;
   gap: 16rpx;
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
+  border-bottom: 1rpx solid rgba(40, 38, 34, 0.08);
 }
 
 .history-item:last-child {
@@ -363,17 +367,17 @@
 
 .history-title {
   font-size: 28rpx;
-  color: #1a1a1a;
+  color: var(--c-text);
 }
 
 .history-time {
   font-size: 24rpx;
-  color: #adb5bd;
+  color: var(--c-text-3);
 }
 
 .empty-text {
   text-align: center;
   font-size: 28rpx;
-  color: #adb5bd;
+  color: var(--c-text-3);
   padding: 40rpx 0;
 }

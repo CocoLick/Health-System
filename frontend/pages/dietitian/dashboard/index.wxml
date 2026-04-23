@@ -139,29 +139,33 @@
           <view class="request-list">
             <view wx:for="{{filteredRequests}}" wx:key="index" class="request-item" bindtap="viewRequestDetail" data-index="{{index}}">
               <view class="request-header">
-                <view class="request-user">
-                  <view class="request-avatar">{{item.user_id ? item.user_id.substring(0, 1) : '?'}}</view>
-                  <text class="request-user-id">{{item.user_id}}</text>
+                <view class="request-main">
+                  <view class="request-user">
+                    <view class="request-avatar">{{item.user_id ? item.user_id.substring(0, 1) : '?'}}</view>
+                    <view class="request-user-texts">
+                      <text class="request-user-id">{{item.user_id}}</text>
+                      <text class="request-time">{{item.createTimeText}}</text>
+                    </view>
+                  </view>
                 </view>
-                <view class="request-status {{item.status}}">{{item.statusText}}</view>
               </view>
+              <view class="request-status request-status-corner {{item.status}}">{{item.statusText}}</view>
               <view class="request-body">
-                <view class="request-row">
-                  <text class="request-label">服务类型：</text>
-                  <text class="request-value">{{item.serviceTypeText}}</text>
+                <view class="request-meta-row">
+                  <text class="request-meta-tag">{{item.serviceTypeText}}</text>
+                  <text class="request-meta-tag request-meta-goal">{{item.dietGoalText}}</text>
                 </view>
                 <view class="request-row">
-                  <text class="request-label">饮食目标：</text>
-                  <text class="request-value">{{item.dietGoalText}}</text>
-                </view>
-                <view class="request-row">
-                  <text class="request-label">申请时间：</text>
-                  <text class="request-value">{{item.createTimeText}}</text>
+                  <text class="request-label">申请内容</text>
+                  <text class="request-value">{{item.serviceTypeText}} · {{item.dietGoalText}}</text>
                 </view>
               </view>
               <view class="request-actions" catchtap="stopPropagation" wx:if="{{item.status === 'pending'}}">
                 <view class="action-btn approve" bindtap="approveRequest" data-requestid="{{item.request_id}}">通过</view>
                 <view class="action-btn reject" bindtap="rejectRequest" data-requestid="{{item.request_id}}">拒绝</view>
+              </view>
+              <view class="request-footer" wx:if="{{item.status !== 'pending'}}">
+                <text class="request-action-text">查看详情</text>
               </view>
             </view>
             <view wx:if="{{filteredRequests.length === 0}}" class="empty-state">
@@ -191,14 +195,17 @@
               <text class="he-title">{{item.title}}</text>
               <text class="he-badge status-{{item.content_status}}">{{item.content_status === 'published' ? '已发布' : '草稿'}}</text>
             </view>
-            <text class="he-summary" wx:if="{{item.summary}}">{{item.summary}}</text>
-            <view class="he-item-meta">
-              <text class="he-tag">{{item.visibility === 'assigned' ? '指派' : '公开'}}</text>
-              <text class="he-time">{{item.updated_at}}</text>
+            <view class="he-item-subline">
+              <text class="he-time">更新于 {{item.updated_at}}</text>
+              <text class="he-tag">{{item.visibility === 'assigned' ? '仅指派用户可见' : '公开可见'}}</text>
             </view>
+            <text class="he-summary" wx:if="{{item.summary}}">{{item.summary}}</text>
             <view class="he-targets" wx:if="{{item.targetNamesText}}">
-              <text class="he-targets-label">对象：</text>
+              <text class="he-targets-label">推送对象</text>
               <text class="he-targets-text">{{item.targetNamesText}}</text>
+            </view>
+            <view class="he-item-foot">
+              <text class="he-item-action">查看并编辑</text>
             </view>
           </view>
           <view wx:if="{{heFilteredList.length === 0}}" class="empty-state">
@@ -218,15 +225,20 @@
             <view wx:for="{{users}}" wx:key="index" class="user-item" bindtap="enterUserPanel" data-userid="{{item.userId}}">
               <view class="user-avatar-small">{{item.usernameInitial}}</view>
               <view class="user-info-small">
-                <text class="user-name">{{item.username}}</text>
+                <view class="user-item-head">
+                  <text class="user-name">{{item.username}}</text>
+                  <view class="user-enter-cta">
+                    <text class="user-enter-text">进入服务</text>
+                    <text class="user-enter-arrow">›</text>
+                  </view>
+                </view>
                 <view class="user-status">
-                  <text class="status-tag {{item.hasProfile ? 'status-ok' : 'status-warning'}}">{{item.hasProfile ? '档案✅' : '档案❌'}}</text>
-                  <text class="status-tag {{item.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{item.hasEvaluation ? '评估✅' : '评估❌'}}</text>
-                  <text class="status-tag {{item.hasPlan ? 'status-ok' : 'status-warning'}}">{{item.hasPlan ? '计划✅' : '计划❌'}}</text>
+                  <text class="status-tag {{item.hasProfile ? 'status-ok' : 'status-warning'}}">{{item.hasProfile ? '档案 已完善' : '档案 待完善'}}</text>
+                  <text class="status-tag {{item.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{item.hasEvaluation ? '评估 已完成' : '评估 待完成'}}</text>
+                  <text class="status-tag {{item.hasPlan ? 'status-ok' : 'status-warning'}}">{{item.hasPlan ? '计划 已生成' : '计划 待生成'}}</text>
                 </view>
                 <text class="user-last-service">最后服务：{{item.lastServiceTime}}</text>
               </view>
-              <text class="arrow">></text>
             </view>
             <view wx:if="{{users.length === 0}}" class="empty-state">
               <text class="empty-icon">👥</text>
@@ -305,19 +317,24 @@
       <view class="feedback-list">
         <view wx:for="{{feedbacks}}" wx:key="feedback_id" class="feedback-item" bindtap="viewFeedbackDetail" data-id="{{item.feedback_id}}">
           <view class="feedback-header">
-            <view class="feedback-user">
-              <text class="feedback-avatar">{{item.user_initial}}</text>
-              <text class="feedback-username">{{item.username}}</text>
+            <view class="feedback-title-wrap">
+              <text class="feedback-title">{{item.title}}</text>
+              <view class="feedback-user">
+                <text class="feedback-avatar">{{item.user_initial}}</text>
+                <text class="feedback-username">{{item.username}}</text>
+              </view>
             </view>
             <text class="feedback-status {{item.status === 'pending' ? 'status-pending' : 'status-replied'}}">{{item.status_label}}</text>
           </view>
+          <view class="feedback-meta">
+            <text class="feedback-type">{{item.category_label}}</text>
+            <text class="feedback-time">{{item.display_time}}</text>
+          </view>
           <view class="feedback-body">
-            <text class="feedback-title">{{item.title}}</text>
             <text class="feedback-content">{{item.content_preview}}</text>
           </view>
           <view class="feedback-footer">
-            <text class="feedback-time">{{item.display_time}}</text>
-            <text class="feedback-type">{{item.category_label}}</text>
+            <text class="feedback-action">查看详情并回复</text>
           </view>
         </view>
         <view wx:if="{{feedbacks.length === 0}}" class="empty-state">
@@ -362,7 +379,7 @@
             <text class="menu-arrow">→</text>
           </view>
           <view class="menu-item" bindtap="changePassword">
-            <text class="menu-icon">�</text>
+            <text class="menu-icon">🔒</text>
             <text class="menu-text">修改密码</text>
             <text class="menu-arrow">→</text>
           </view>
@@ -376,7 +393,7 @@
             <text class="menu-arrow">→</text>
           </view>
           <view class="menu-item" bindtap="viewPlanStats">
-            <text class="menu-icon">�</text>
+            <text class="menu-icon">📈</text>
             <text class="menu-text">计划统计</text>
             <text class="menu-arrow">→</text>
           </view>
