@@ -200,6 +200,22 @@ const healthData = {
   getUserHealthData: function(userId) {
     return get(`/api/health-data/user/${userId}`);
   },
+  // 获取当前用户健康历史快照
+  getHistory: function() {
+    return get('/api/health-data/history');
+  },
+  // 获取规划师视角的用户健康历史快照
+  getUserHistory: function(userId) {
+    return get(`/api/health-data/user/${userId}/history`);
+  },
+  // 获取当前用户身体变化摘要
+  getChangeSummary: function() {
+    return get('/api/health-data/change-summary');
+  },
+  // 获取规划师视角的用户身体变化摘要
+  getUserChangeSummary: function(userId) {
+    return get(`/api/health-data/user/${userId}/change-summary`);
+  },
   // 更新健康数据
   update: function(id, data) {
     return put(`/api/health-data/${id}`, data);

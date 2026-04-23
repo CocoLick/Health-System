@@ -169,6 +169,66 @@ func (h *HealthDataHandler) GetUserHealthDataByDietitian(c *gin.Context) {
 	})
 }
 
+// GetHealthDataHistory 获取当前用户健康数据历史
+func (h *HealthDataHandler) GetHealthDataHistory(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "用户未登录"})
+		return
+	}
+	rows, err := h.healthDataService.GetHealthDataHistory(userID, 60)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "获取成功", Data: rows})
+}
+
+// GetUserHealthDataHistoryByDietitian 规划师获取指定用户健康数据历史
+func (h *HealthDataHandler) GetUserHealthDataHistoryByDietitian(c *gin.Context) {
+	userID := c.Param("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "用户ID不能为空"})
+		return
+	}
+	rows, err := h.healthDataService.GetHealthDataHistory(userID, 60)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "获取成功", Data: rows})
+}
+
+// GetHealthDataChangeSummary 获取当前用户身体变化摘要
+func (h *HealthDataHandler) GetHealthDataChangeSummary(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "用户未登录"})
+		return
+	}
+	summary, err := h.healthDataService.GetHealthDataChangeSummary(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "暂无健康数据"})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "获取成功", Data: summary})
+}
+
+// GetUserHealthDataChangeSummaryByDietitian 规划师获取指定用户身体变化摘要
+func (h *HealthDataHandler) GetUserHealthDataChangeSummaryByDietitian(c *gin.Context) {
+	userID := c.Param("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "用户ID不能为空"})
+		return
+	}
+	summary, err := h.healthDataService.GetHealthDataChangeSummary(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "暂无健康数据"})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "获取成功", Data: summary})
+}
+
 // UpdateHealthData 更新健康数据
 // @Summary 更新健康数据
 // @Description 更新用户健康数据
@@ -242,7 +302,11 @@ func RegisterHealthDataRoutes(router *gin.RouterGroup) {
 		healthDataGroup.POST("", handler.SubmitHealthData)
 		healthDataGroup.GET("", handler.GetHealthDataList)
 		healthDataGroup.GET("/latest", handler.GetLatestHealthData)
+		healthDataGroup.GET("/history", handler.GetHealthDataHistory)
+		healthDataGroup.GET("/change-summary", handler.GetHealthDataChangeSummary)
 		healthDataGroup.GET("/user/:user_id", handler.GetUserHealthDataByDietitian)
+		healthDataGroup.GET("/user/:user_id/history", handler.GetUserHealthDataHistoryByDietitian)
+		healthDataGroup.GET("/user/:user_id/change-summary", handler.GetUserHealthDataChangeSummaryByDietitian)
 		healthDataGroup.PUT("/:data_id", handler.UpdateHealthData)
 		healthDataGroup.DELETE("/:data_id", handler.DeleteHealthData)
 	}

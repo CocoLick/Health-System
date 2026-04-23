@@ -61,6 +61,26 @@
           </view>
           <view class="health-cell health-cell-empty"></view>
         </view>
+        <view class="change-summary" wx:if="{{changeSummary}}">
+          <view class="change-title">近阶段身体变化</view>
+          <view class="evaluation-hint" wx:if="{{changeSummary.insufficientSample}}">{{changeSummary.insufficientHint}}</view>
+          <view class="change-row">
+            <text class="change-label">体重变化</text>
+            <text class="change-value">{{changeSummary.weightDeltaText}}</text>
+          </view>
+          <view class="change-row">
+            <text class="change-label">BMI变化</text>
+            <text class="change-value">{{changeSummary.bmiDeltaText}}</text>
+          </view>
+          <view class="change-row">
+            <text class="change-label">血糖变化</text>
+            <text class="change-value">{{changeSummary.bloodSugarDeltaText}}</text>
+          </view>
+          <view class="change-row">
+            <text class="change-label">活动水平变化</text>
+            <text class="change-value">{{changeSummary.activityChangeText || '无明显变化'}}</text>
+          </view>
+        </view>
       </view>
       <view class="card-body profile-placeholder" wx:if="{{!userInfo.hasProfile}}">
         <text class="profile-placeholder-text">用户尚未在端内完善健康档案；规划师可结合服务申请信息与上方摘要参考使用。</text>

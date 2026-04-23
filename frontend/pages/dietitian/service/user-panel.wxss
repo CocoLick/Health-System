@@ -241,6 +241,37 @@
   word-break: break-word;
 }
 
+.change-summary {
+  margin-top: 14rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx dashed #d6d6d6;
+}
+
+.change-title {
+  font-size: 25rpx;
+  color: #4d3d2e;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.change-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6rpx 0;
+}
+
+.change-label {
+  font-size: 23rpx;
+  color: #7a7268;
+}
+
+.change-value {
+  font-size: 24rpx;
+  color: #2f2a24;
+  font-weight: 500;
+}
+
 .evaluation-info {
   display: flex;
   flex-direction: column;

@@ -85,6 +85,7 @@ func autoMigrate() error {
 	return DB.AutoMigrate(
 		&models.User{},
 		&models.HealthData{},
+		&models.HealthDataHistory{},
 		&models.Ingredient{},
 		&models.NutritionRecord{},
 		&models.NutritionRecordItem{},

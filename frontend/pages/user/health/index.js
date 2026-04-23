@@ -38,6 +38,28 @@ function evaluationExpired(ev) {
   return end < today;
 }
 
+function activityLevelText(level) {
+  const map = {
+    sedentary: '久坐',
+    lightly_active: '轻度',
+    moderately_active: '中度',
+    very_active: '高强度'
+  };
+  return map[level] || '—';
+}
+
+function displayGender(g) {
+  if (g === 'male' || g === '男') return '男';
+  if (g === 'female' || g === '女') return '女';
+  return '';
+}
+
+function backendGender(g) {
+  if (g === '男' || g === 'male') return 'male';
+  if (g === '女' || g === 'female') return 'female';
+  return '';
+}
+
 Page({
   data: {
     hasHealthData: false,
@@ -279,7 +301,7 @@ Page({
         this.setData({
           healthData: {
             data_id: data.data_id || '',
-            gender: data.gender === 'male' ? '男' : '女',
+            gender: displayGender(data.gender) || '男',
             age: data.age || 30,
             height: data.height || '',
             weight: data.weight || '',
@@ -338,24 +360,25 @@ Page({
   },
 
   loadHistory() {
-    api.healthData.getList().then(res => {
-      if (res.code === 200 && res.data) {
-        const historyList = res.data.slice(0, 5).map(item => ({
-          id: item.data_id,
-          date: item.created_at ? item.created_at.split('T')[0] : '',
-          height: item.height,
-          weight: item.weight
+    api.healthData.getHistory().then(res => {
+      if (res.code === 200 && Array.isArray(res.data)) {
+        const historyList = res.data.slice(0, 8).map(item => ({
+          id: item.history_id || item.data_id,
+          date: item.snapshot_at ? String(item.snapshot_at).slice(0, 10) : (item.created_at ? String(item.created_at).slice(0, 10) : ''),
+          height: item.height || 0,
+          weight: item.weight || 0,
+          bloodSugar: item.blood_sugar || 0,
+          activityLevelText: activityLevelText(item.activity_level)
         }));
         this.setData({ historyList });
         wx.setStorageSync('healthHistory', historyList);
       } else {
-        console.log('暂无历史记录');
         this.setData({ historyList: [] });
       }
     }).catch(err => {
       console.log('获取历史记录失败', err);
       const history = wx.getStorageSync('healthHistory') || [];
-      this.setData({ historyList: history.slice(0, 5) });
+      this.setData({ historyList: history.slice(0, 8) });
     });
   },
 
@@ -493,7 +516,7 @@ Page({
     // 构建完整的请求数据，包含所有字段
     const requestData = {
       ...this.data.healthData,
-      gender: gender === '男' ? 'male' : 'female',
+      gender: backendGender(gender),
       age: parseInt(age),
       activity_level: activityLevel,
       nutrition_goal: nutritionGoal
@@ -548,6 +571,7 @@ Page({
     // 构建完整的请求数据，包含所有字段
     const requestData = {
       ...this.data.healthData,
+      gender: backendGender(this.data.healthData.gender),
       height: parseFloat(height),
       weight: parseFloat(weight),
       heart_rate: parseInt(heartRate) || 0,

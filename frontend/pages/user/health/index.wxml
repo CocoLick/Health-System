@@ -148,6 +148,8 @@
             <view class="history-data">
               <text>身高{{item.height}}cm</text>
               <text>体重{{item.weight}}kg</text>
+              <text>血糖{{item.bloodSugar || '--'}}mmol/L</text>
+              <text>活动{{item.activityLevelText}}</text>
             </view>
           </view>
         </view>

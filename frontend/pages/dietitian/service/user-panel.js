@@ -79,6 +79,32 @@ function formatEvalTime(iso) {
   return `${y}-${m}-${day} ${h}:${min}`;
 }
 
+function signedText(v, unit) {
+  const n = Number(v || 0);
+  if (!isFinite(n) || n === 0) {
+    return `0${unit}`;
+  }
+  return `${n > 0 ? '+' : ''}${n}${unit}`;
+}
+
+function activityChangeText(fromLevel, toLevel, changed) {
+  const fromText = activityText(fromLevel);
+  const toText = activityText(toLevel);
+  if (!changed) {
+    return '无明显变化';
+  }
+  if (fromText !== '—' && toText !== '—') {
+    return `${fromText} → ${toText}`;
+  }
+  if (fromText === '—' && toText !== '—') {
+    return `当前：${toText}`;
+  }
+  if (fromText !== '—' && toText === '—') {
+    return `由${fromText}调整`;
+  }
+  return '无明显变化';
+}
+
 Page({
   data: {
     userId: '',
@@ -109,6 +135,7 @@ Page({
       }
     },
     serviceHistory: [],
+    changeSummary: null,
     _skipEvalSummaryOnFirstShow: true
   },
 
@@ -132,6 +159,7 @@ Page({
       return;
     }
     this.loadEvaluationSummary(uid);
+    this.loadChangeSummary(uid);
   },
 
   loadUserInfo(userId) {
@@ -194,6 +222,7 @@ Page({
       .then(() => this.loadDietPlanInfo(userId))
       .then(() => this.loadServiceContext(userId))
       .then(() => this.loadEvaluationSummary(userId))
+      .then(() => this.loadChangeSummary(userId))
       .then(() => {
         wx.hideLoading();
       })
@@ -301,6 +330,35 @@ Page({
             planStatus: '❌ 无计划'
           }
         });
+      });
+  },
+
+  loadChangeSummary(userId) {
+    return api.healthData.getUserChangeSummary(userId)
+      .then((res) => {
+        if (res.code !== 200 || !res.data) {
+          this.setData({ changeSummary: null });
+          return;
+        }
+        const delta = res.data.delta || {};
+        this.setData({
+          changeSummary: {
+            weightDeltaText: signedText(delta.weight, 'kg'),
+            bmiDeltaText: signedText(delta.bmi, ''),
+            bloodSugarDeltaText: signedText(delta.blood_sugar, 'mmol/L'),
+            activityChanged: !!delta.activity_changed,
+            activityFrom: delta.activity_from || '—',
+            activityTo: delta.activity_to || '—',
+            activityFromText: activityText(delta.activity_from),
+            activityToText: activityText(delta.activity_to),
+            activityChangeText: activityChangeText(delta.activity_from, delta.activity_to, !!delta.activity_changed),
+            insufficientSample: !!res.data.insufficient_sample,
+            insufficientHint: res.data.insufficient_hint || '样本不足（至少2次记录）'
+          }
+        });
+      })
+      .catch(() => {
+        this.setData({ changeSummary: null });
       });
   },
 
