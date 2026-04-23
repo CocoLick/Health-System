@@ -171,3 +171,99 @@
   font-size: 28rpx;
   color: #999;
 }
+
+/* redesign */
+.container {
+  --u-green: #07c160;
+  --u-title: #1a1a1a;
+  --u-text: #3a3a3a;
+  --u-sub: #8e8e93;
+  --u-surface: #fff;
+  --u-soft: #f9fafb;
+  --u-radius: 20rpx;
+  --u-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.05);
+  background: transparent;
+}
+
+.search-bar,
+.filter-tabs,
+.dietitian-card {
+  background: var(--u-surface);
+  border: none;
+  border-radius: var(--u-radius);
+  box-shadow: var(--u-shadow);
+}
+
+.search-bar {
+  margin: 20rpx 24rpx 12rpx;
+  padding: 18rpx;
+}
+
+.search-input-wrap {
+  background: var(--u-soft);
+  border-radius: 16rpx;
+}
+
+.search-input {
+  color: var(--u-text);
+}
+
+.filter-tabs {
+  margin: 0 24rpx 12rpx;
+  gap: 10rpx;
+  padding: 10rpx;
+}
+
+.filter-tab {
+  background: var(--u-soft);
+  color: var(--u-sub);
+  border-radius: 999rpx;
+}
+
+.filter-tab.active {
+  background: rgba(7, 193, 96, 0.14);
+  color: #06693a;
+}
+
+.dietitian-list {
+  padding: 0 24rpx;
+}
+
+.dietitian-card {
+  margin-bottom: 12rpx;
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.dietitian-card:active {
+  transform: scale(0.98);
+  background: #f5f5f5;
+}
+
+.avatar {
+  background: var(--u-green);
+}
+
+.name {
+  color: var(--u-title);
+}
+
+.title,
+.service-count {
+  color: var(--u-sub);
+}
+
+.specialty-tag {
+  background: rgba(7, 193, 96, 0.12);
+  color: #0a5b34;
+  border-radius: 999rpx;
+}
+
+.rating-value {
+  color: var(--u-title);
+}
+
+.select-btn {
+  background: rgba(7, 193, 96, 0.14);
+  color: #06693a;
+  border-radius: 14rpx;
+}

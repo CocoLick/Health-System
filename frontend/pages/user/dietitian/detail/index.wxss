@@ -203,3 +203,102 @@
   border-radius: 44rpx;
   border: none;
 }
+
+/* redesign */
+.container {
+  --u-green: #07c160;
+  --u-title: #1a1a1a;
+  --u-text: #3a3a3a;
+  --u-sub: #8e8e93;
+  --u-surface: #fff;
+  --u-soft: #f9fafb;
+  --u-radius: 20rpx;
+  --u-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.05);
+  background: transparent;
+}
+
+.header,
+.section,
+.bottom-action {
+  background: var(--u-surface);
+  border: none;
+  box-shadow: var(--u-shadow);
+}
+
+.header {
+  margin: 20rpx 24rpx 14rpx;
+  border-radius: var(--u-radius);
+  color: var(--u-title);
+  padding: 24rpx;
+}
+
+.avatar {
+  background: var(--u-green);
+}
+
+.name,
+.section-title,
+.reviewer {
+  color: var(--u-title);
+  font-weight: 700;
+}
+
+.title,
+.experience,
+.review-content,
+.case-desc {
+  color: var(--u-sub);
+}
+
+.stats {
+  background: var(--u-soft);
+  border-radius: 16rpx;
+}
+
+.stat-value {
+  color: var(--u-title);
+}
+
+.stat-label {
+  color: var(--u-sub);
+}
+
+.stat-divider {
+  background: rgba(142, 142, 147, 0.4);
+}
+
+.section {
+  border-radius: var(--u-radius);
+}
+
+.tag {
+  background: rgba(7, 193, 96, 0.12);
+  color: #0a5b34;
+  border-radius: 999rpx;
+}
+
+.case-item {
+  background: var(--u-soft);
+  border-radius: 16rpx;
+}
+
+.case-title {
+  color: var(--u-text);
+}
+
+.review-item {
+  border-bottom: none;
+  background: var(--u-soft);
+  border-radius: 14rpx;
+  padding: 14rpx;
+  margin-bottom: 10rpx;
+}
+
+.review-item:last-child {
+  margin-bottom: 0;
+}
+
+.btn-request {
+  background: var(--u-green);
+  border-radius: 16rpx;
+}

@@ -38,7 +38,10 @@ Page({
     selectedMealName: '',
     selectedMealCalories: 0,
     selectedMealNutrition: { protein: 0, carbohydrate: 0, fat: 0 },
-    selectedMealFoods: []
+    selectedMealFoods: [],
+    // 今日饮食记录详情弹窗
+    showRecordDetailModal: false,
+    selectedRecordDetail: null
   },
 
   onLoad(options) {
@@ -414,13 +417,31 @@ Page({
     const record = this.data.records[index];
     if (!record) return;
 
-    const mealTypeText = this.getMealTypeText(record.meal_type);
-    const foods = record.items ? record.items.map(f => f.food_name).join('、') : '';
+    const detail = {
+      mealTypeText: this.getMealTypeText(record.meal_type),
+      timeText: record.formattedTime || this.formatTime(record.created_at),
+      calories: record.total_calories || 0,
+      protein: record.total_protein || 0,
+      carbohydrate: record.total_carbohydrate || 0,
+      fat: record.total_fat || 0,
+      foods: (record.items || []).map((f) => ({
+        name: f.food_name || f.name || '未知食物',
+        amount: f.amount || 0,
+        unit: f.unit || 'g',
+        calories: f.calories || 0
+      }))
+    };
 
-    wx.showModal({
-      title: mealTypeText + ' - ' + (record.created_at || ''),
-      content: `食物：${foods}\n热量：${record.total_calories || 0}kcal\n蛋白质：${record.total_protein || 0}g\n碳水：${record.total_carbohydrate || 0}g\n脂肪：${record.total_fat || 0}g`,
-      showCancel: false
+    this.setData({
+      showRecordDetailModal: true,
+      selectedRecordDetail: detail
+    });
+  },
+
+  closeRecordDetail() {
+    this.setData({
+      showRecordDetailModal: false,
+      selectedRecordDetail: null
     });
   },
 

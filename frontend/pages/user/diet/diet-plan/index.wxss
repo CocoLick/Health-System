@@ -908,3 +908,653 @@
   color: #666;
   text-align: center;
 }
+
+/* --------------------------------
+   Diet-plan chain redesign
+--------------------------------- */
+.container {
+  --dp-green: #07c160;
+  --dp-title: #1a1a1a;
+  --dp-text: #3a3a3a;
+  --dp-sub: #8e8e93;
+  --dp-surface: #fff;
+  --dp-soft: #f9fafb;
+  --dp-radius: 20rpx;
+  --dp-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.05);
+  background: transparent;
+}
+
+.header,
+.plan-overview,
+.meals-list,
+.analysis-card,
+.application-card,
+.entry-card,
+.tips,
+.request-card,
+.plan-card,
+.history-list {
+  background: var(--dp-surface);
+  border: none;
+  border-radius: var(--dp-radius);
+  box-shadow: var(--dp-shadow);
+}
+
+.header {
+  margin: 20rpx 24rpx 14rpx;
+  padding: 28rpx 24rpx;
+  color: var(--dp-title);
+}
+
+.header-title {
+  color: var(--dp-title);
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.header-subtitle {
+  color: var(--dp-sub);
+}
+
+.content,
+.application-module,
+.history-section {
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+}
+
+.entry-cards {
+  gap: 12rpx;
+}
+
+.entry-card {
+  text-align: left;
+  padding: 22rpx;
+}
+
+.ai-card,
+.dietitian-card,
+.plan-card.pending {
+  border: none;
+}
+
+.entry-title,
+.section-title,
+.plan-title,
+.application-title {
+  color: var(--dp-title);
+  font-weight: 700;
+}
+
+.entry-desc,
+.tip-item,
+.label,
+.service-count,
+.plan-date,
+.plan-period,
+.selector-label,
+.meal-time,
+.history-date,
+.request-info .value,
+.request-info .label {
+  color: var(--dp-sub);
+}
+
+.plan-source,
+.plan-goal,
+.plan-desc,
+.value,
+.title,
+.specialty {
+  color: var(--dp-text);
+}
+
+.plan-generation-source,
+.ai-progress-hint {
+  border: none;
+  background: rgba(7, 193, 96, 0.12);
+  color: #076b3d;
+}
+
+.nutrition-summary,
+.request-info,
+.dietitian-info,
+.date-selector,
+.picker-view,
+.history-item,
+.no-plan {
+  background: var(--dp-soft);
+  border: none;
+  box-shadow: none;
+}
+
+.nutr-value {
+  color: var(--dp-title);
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.nutr-label {
+  color: var(--dp-sub);
+}
+
+.date-value {
+  color: var(--dp-title);
+}
+
+.meal-item {
+  border: none;
+  border-radius: 16rpx;
+  margin: 8rpx;
+  padding: 18rpx 20rpx;
+  background: var(--dp-soft);
+}
+
+.meal-item.executed {
+  background: rgba(7, 193, 96, 0.1);
+}
+
+.meal-type {
+  color: var(--dp-title);
+  font-weight: 600;
+}
+
+.meal-foods,
+.meal-foods text {
+  color: var(--dp-text);
+}
+
+.meal-calories {
+  color: var(--dp-title);
+  font-weight: 700;
+}
+
+.meal-check {
+  border: none;
+  background: #e9ecef;
+}
+
+.meal-check.checked {
+  background: var(--dp-green);
+}
+
+.analysis-label,
+.legend-text,
+.tip-title,
+.status-text,
+.status-icon {
+  color: var(--dp-title);
+}
+
+.chart-bar.protein,
+.chart-bar.carbohydrate,
+.chart-bar.fat,
+.legend-color.protein,
+.legend-color.carbohydrate,
+.legend-color.fat {
+  background-color: var(--dp-green);
+}
+
+.application-header {
+  border-bottom: none;
+}
+
+.application-status,
+.request-status {
+  border-radius: 999rpx;
+}
+
+.application-status.pending,
+.request-status.pending {
+  background: rgba(142, 142, 147, 0.14);
+  color: #636366;
+}
+
+.application-status.approved,
+.application-status.completed {
+  background: rgba(7, 193, 96, 0.14);
+  color: #06693a;
+}
+
+.application-status.rejected,
+.application-status.cancelled {
+  background: rgba(244, 67, 54, 0.12);
+  color: #9e3838;
+}
+
+.plan-actions,
+.request-actions,
+.application-actions {
+  gap: 10rpx;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 16rpx;
+  background: var(--dp-soft);
+  color: var(--dp-text);
+  min-width: calc(50% - 5rpx);
+  padding: 18rpx;
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+  background: #f1f3f5;
+}
+
+.action-btn.optimize,
+.action-btn.reapply,
+.action-btn.eval-link,
+.action-btn.feedback-plan,
+.action-btn.compare,
+.action-btn.abandon,
+.request-actions .action-btn.cancel {
+  border: none;
+  background: var(--dp-soft);
+  color: var(--dp-text);
+}
+
+.action-btn:first-child {
+  border: none;
+  background: var(--dp-green);
+  color: #fff;
+}
+
+/* -------------------------------
+   Published-plan detail redesign
+-------------------------------- */
+.container {
+  background: #f8fafb;
+  line-height: 1.6;
+}
+
+.plan-detail-view {
+  padding: 14px 22px 176px;
+}
+
+.plan-detail-view .detail-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease-in-out;
+}
+
+.plan-detail-view .detail-card:active {
+  transform: scale(0.98);
+  background: #f5f5f5;
+}
+
+.plan-detail-view .dashboard-card {
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.plan-detail-view .dashboard-main {
+  min-width: 0;
+}
+
+.plan-detail-view .plan-source {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 2px;
+}
+
+.plan-detail-view .plan-title {
+  font-size: 19px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.plan-detail-view .plan-generation-source {
+  display: inline-block;
+  margin: 0 0 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(7, 193, 96, 0.12);
+  color: #06693a;
+  font-size: 10px;
+}
+
+.plan-detail-view .plan-meta-line {
+  font-size: 11px;
+  color: #4b5563;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.plan-detail-view .meta-dot {
+  color: #9ca3af;
+  margin: 0 6px;
+}
+
+.plan-detail-view .metrics-wrap {
+  margin-bottom: 8px;
+}
+
+.plan-detail-view .metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.plan-detail-view .metric-card {
+  padding: 8px;
+  min-height: 68px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.plan-detail-view .metric-main {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 1px;
+}
+
+.plan-detail-view .metric-value {
+  display: inline;
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 800;
+  color: #111827;
+  font-family: "DIN Alternate", "Inter", "PingFang SC", sans-serif;
+}
+
+.plan-detail-view .metric-unit {
+  display: inline;
+  font-size: 9px;
+  color: #9ca3af;
+}
+
+.plan-detail-view .metric-label {
+  display: block;
+  font-size: 9px;
+  color: #4b5563;
+}
+
+.plan-detail-view .detail-picker {
+  margin-bottom: 12px;
+  padding: 0;
+  background: transparent;
+}
+
+.plan-detail-view .selector-label {
+  display: block;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.plan-detail-view .picker-view {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(156, 163, 175, 0.35);
+}
+
+.plan-detail-view .date-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.plan-detail-view .picker-arrow {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.plan-detail-view .section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 12px 0 6px;
+}
+
+.plan-detail-view .timeline-list {
+  padding: 0 2px;
+}
+
+.plan-detail-view .timeline-item {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  padding: 10px 0;
+  border-bottom: 1rpx solid rgba(26, 26, 26, 0.08);
+}
+
+.plan-detail-view .timeline-item:last-child {
+  border-bottom: none;
+}
+
+.plan-detail-view .timeline-item.executed {
+  background: transparent;
+}
+
+.plan-detail-view .timeline-left {
+  width: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.plan-detail-view .meal-time {
+  width: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.plan-detail-view .timeline-line {
+  width: 1px;
+  flex: 1;
+  background: rgba(156, 163, 175, 0.45);
+}
+
+.plan-detail-view .timeline-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.plan-detail-view .meal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.plan-detail-view .meal-type {
+  margin-bottom: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.plan-detail-view .meal-calories {
+  width: auto;
+  margin-right: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.plan-detail-view .meal-foods {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #6b7280;
+  letter-spacing: 0.6px;
+}
+
+.plan-detail-view .meal-foods text {
+  font-size: 12px;
+  color: #6b7280;
+  letter-spacing: 0.6px;
+}
+
+.plan-detail-view .meal-check {
+  margin-top: 8rpx;
+  width: 14px;
+  height: 14px;
+  border: none;
+  background: #e5e7eb;
+}
+
+.plan-detail-view .meal-check.checked {
+  background: rgba(16, 185, 129, 0.65);
+  color: #fff;
+}
+
+.plan-detail-view .no-plan {
+  margin: 0;
+  border-radius: 12rpx;
+  background: #f9fafb;
+}
+
+.plan-detail-view .analysis-card {
+  padding: 18px;
+  margin-bottom: 12px;
+}
+
+.plan-detail-view .bar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.plan-detail-view .bar-group:last-child {
+  margin-bottom: 0;
+}
+
+.plan-detail-view .bar-title {
+  width: 52px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.plan-detail-view .bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999rpx;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.plan-detail-view .bar-fill {
+  height: 100%;
+  border-radius: 999rpx;
+}
+
+.plan-detail-view .bar-protein {
+  background: rgba(16, 185, 129, 1);
+}
+
+.plan-detail-view .bar-carbohydrate {
+  background: rgba(16, 185, 129, 0.6);
+}
+
+.plan-detail-view .bar-fat {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+.plan-detail-view .bar-percent {
+  width: 44px;
+  text-align: right;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.plan-detail-view .action-grid {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+  background: #f9f9f9;
+  box-shadow: none;
+  border-radius: 24px;
+}
+
+.plan-detail-view .action-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  transition: transform 0.15s ease-out;
+}
+
+.plan-detail-view .action-item:active {
+  transform: scale(0.95);
+}
+
+.plan-detail-view .action-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 0 auto 3px;
+  border: 1.5px solid #4b5563;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.plan-detail-view .icon-opt {
+  border-radius: 50%;
+}
+
+.plan-detail-view .icon-compare {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgba(75, 85, 99, 0.22);
+}
+
+.plan-detail-view .icon-eval {
+  border-radius: 4px;
+}
+
+.plan-detail-view .icon-feedback {
+  border-radius: 10px 10px 10px 2px;
+}
+
+.plan-detail-view .icon-stop {
+  border-radius: 50%;
+  box-shadow: inset 0 -7px 0 0 rgba(75, 85, 99, 0.3);
+}
+
+.plan-detail-view .action-text {
+  display: block;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.plan-detail-view .action-danger .action-text {
+  color: #9f4a4a;
+}
+
+.plan-detail-view .action-danger .action-icon {
+  color: #9f4a4a;
+}
+
+.plan-detail-view .sticky-action {
+  position: fixed;
+  left: 24px;
+  right: 24px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 30;
+}
+
+.plan-detail-view .primary-btn {
+  height: 54px;
+  line-height: 54px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #07c160 0%, #14a85a 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}

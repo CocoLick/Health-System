@@ -1,100 +1,125 @@
 <view class="container">
-  <view class="header">
-    <view class="user-greeting">
-      <view class="greeting-text">早上好</view>
-      <view class="user-name">{{userInfo.username || '用户'}}</view>
-    </view>
+  <view class="home-header card">
+    <view class="header-greeting">{{greetingText}}</view>
+    <view class="header-user">{{displayName}}</view>
     <view class="header-date">{{today}}</view>
   </view>
 
-  <view class="content">
-    <view class="stats-cards">
-      <view class="stat-card" bindtap="goToNutrition">
-        <view class="stat-icon">🔥</view>
-        <view class="stat-info">
-          <view class="stat-value">{{todayIntake.calories}}</view>
-          <view class="stat-label">今日热量(kcal)</view>
+  <view class="metrics-section card">
+    <view class="section-title">今日摄入概览</view>
+    <view class="ring-grid">
+      <view class="ring-item" bindtap="goToNutrition">
+        <view class="ring-wrap" style="background: conic-gradient(#07c160 {{metricProgress.calories}}%, #e5e7eb 0);">
+          <view class="ring-inner">
+            <text class="ring-value">{{todayIntake.calories}}</text>
+            <text class="ring-unit">kcal</text>
+          </view>
         </view>
+        <view class="ring-label">热量</view>
+        <view class="ring-remaining">剩余 {{remaining.calories}} kcal</view>
       </view>
-      <view class="stat-card" bindtap="goToHealth">
-        <view class="stat-icon">💪</view>
-        <view class="stat-info">
-          <view class="stat-value">{{todayIntake.protein}}g</view>
-          <view class="stat-label">蛋白质摄入</view>
+      <view class="ring-item" bindtap="goToHealth">
+        <view class="ring-wrap" style="background: conic-gradient(#07c160 {{metricProgress.protein}}%, #e5e7eb 0);">
+          <view class="ring-inner">
+            <text class="ring-value">{{todayIntake.protein}}</text>
+            <text class="ring-unit">g</text>
+          </view>
         </view>
+        <view class="ring-label">蛋白质</view>
+        <view class="ring-remaining">剩余 {{remaining.protein}} g</view>
       </view>
     </view>
 
-    <view class="section">
-      <view class="section-header">
-        <view class="section-title">今日膳食计划</view>
-        <view class="section-more" bindtap="goToDietPlan">更多 ›</view>
-      </view>
-
-      <view class="plan-card" wx:if="{{currentPlan}}" bindtap="viewPlanDetail">
-        <view class="plan-header">
-          <view class="plan-source">
-            <text wx:if="{{currentPlan.source === 'ai'}}">🤖</text>
-            <text wx:else>👨‍⚕️</text>
-            <text>{{currentPlan.source === 'ai' ? '智能推荐' : '规划师定制'}}</text>
-          </view>
-          <view class="plan-status">进行中</view>
+    <view class="micro-bars">
+      <view class="micro-item">
+        <view class="micro-row">
+          <text class="micro-label">脂肪</text>
+          <text class="micro-value">{{todayIntake.fat}} / {{targets.fat}}g</text>
         </view>
-        <view class="plan-title">{{currentPlan.title}}</view>
-        <view class="plan-summary">
-          <text>热量：{{currentPlan.calories}}kcal</text>
-          <text>蛋白质：{{currentPlan.protein}}g</text>
-        </view>
-        <view class="plan-meals">
-          <view class="meal-preview" wx:for="{{currentPlan.meals}}" wx:key="type">
-            <text class="meal-type">{{item.type}}</text>
-            <text class="meal-calories">{{item.calories}}kcal</text>
-          </view>
+        <view class="micro-track">
+          <view class="micro-fill" style="width: {{metricProgress.fat}}%;"></view>
         </view>
       </view>
-
-      <view class="plan-empty" wx:else>
-        <view class="empty-icon">📋</view>
-        <view class="empty-text">暂无膳食计划</view>
-        <view class="empty-actions">
-          <view class="action-btn primary" bindtap="requestAiPlan">智能推荐</view>
-          <view class="action-btn" bindtap="goToSelectDietitian">选择规划师</view>
+      <view class="micro-item">
+        <view class="micro-row">
+          <text class="micro-label">碳水</text>
+          <text class="micro-value">{{todayIntake.carbohydrate}} / {{targets.carbohydrate}}g</text>
         </view>
-      </view>
-    </view>
-
-    <view class="section">
-      <view class="section-header">
-        <view class="section-title">健康提醒</view>
-      </view>
-      <view class="tips-list">
-        <view class="tip-item" wx:for="{{healthTips}}" wx:key="title">
-          <view class="tip-icon">{{item.icon}}</view>
-          <view class="tip-content">
-            <view class="tip-title">{{item.title}}</view>
-            <view class="tip-desc">{{item.desc}}</view>
-          </view>
+        <view class="micro-track">
+          <view class="micro-fill" style="width: {{metricProgress.carbohydrate}}%;"></view>
         </view>
-      </view>
-    </view>
-
-    <view class="quick-nav">
-      <view class="nav-item" bindtap="goToNutrition">
-        <view class="nav-icon">📊</view>
-        <view class="nav-text">营养</view>
-      </view>
-      <view class="nav-item" bindtap="goToDietPlan">
-        <view class="nav-icon">📅</view>
-        <view class="nav-text">膳食</view>
-      </view>
-      <view class="nav-item" bindtap="goToHealth">
-        <view class="nav-icon">🏥</view>
-        <view class="nav-text">健康</view>
-      </view>
-      <view class="nav-item" bindtap="goToProfile">
-        <view class="nav-icon">👤</view>
-        <view class="nav-text">我的</view>
       </view>
     </view>
   </view>
+
+  <view class="section">
+    <view class="section-header">
+      <view class="section-title">今日膳食计划</view>
+      <view class="section-more" bindtap="goToDietPlan">更多 ></view>
+    </view>
+
+    <view class="plan-card card" wx:if="{{currentPlan}}" bindtap="viewPlanDetail">
+      <view class="plan-head">
+        <text class="plan-source">{{currentPlan.source === 'ai' ? '智能推荐' : '规划师定制'}}</text>
+        <text class="plan-status">进行中</text>
+      </view>
+      <view class="plan-title">{{currentPlan.title}}</view>
+      <view class="plan-subline">热量 {{currentPlan.calories}}kcal · 蛋白质 {{currentPlan.protein}}g</view>
+      <view class="meal-preview-list">
+        <view class="meal-preview-item" wx:for="{{currentPlan.meals}}" wx:key="type">
+          <text class="meal-name">{{item.type}}</text>
+          <text class="meal-kcal">{{item.calories}}kcal</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="plan-empty card" wx:else>
+      <view class="empty-title">暂无膳食计划</view>
+      <view class="empty-actions">
+        <view class="action-btn primary" bindtap="requestAiPlan">智能推荐</view>
+        <view class="action-btn" bindtap="goToSelectDietitian">选择规划师</view>
+      </view>
+      <scroll-view class="recipe-scroll" scroll-x show-scrollbar="{{false}}">
+        <view class="recipe-list">
+          <view class="recipe-card" wx:for="{{recommendedRecipes}}" wx:key="id">
+            <text class="recipe-tag">{{item.tag}}</text>
+            <text class="recipe-title">{{item.title}}</text>
+            <text class="recipe-kcal">{{item.kcal}} kcal</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-header">
+      <view class="section-title">健康提醒</view>
+    </view>
+    <view class="tips-list card">
+      <view class="tip-item">
+        <view class="tip-main">
+          <text class="tip-title">多喝水</text>
+          <text class="tip-desc">今日 {{waterIntake}} / {{waterTarget}} ml</text>
+          <view class="micro-track">
+            <view class="micro-fill" style="width: {{waterProgress}}%;"></view>
+          </view>
+        </view>
+        <view class="tip-action" bindtap="addWaterIntake">
+          +250ml
+          <view class="water-drop {{showWaterDrop ? 'show' : ''}}"></view>
+        </view>
+      </view>
+
+      <view class="tip-item">
+        <view class="tip-main">
+          <text class="tip-title">适量运动</text>
+          <text class="tip-desc">完成今日 30 分钟运动打卡</text>
+        </view>
+        <view class="check-action {{exerciseDone ? 'checked' : ''}}" bindtap="toggleExerciseDone">
+          <text>{{exerciseDone ? '已完成' : '待完成'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
 </view>

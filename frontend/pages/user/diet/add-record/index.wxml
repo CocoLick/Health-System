@@ -1,10 +1,10 @@
 <view class="container">
-  <view class="header">
+  <view class="header card">
     <view class="header-title">添加饮食记录</view>
     <view class="header-subtitle">记录您的饮食，追踪营养摄入</view>
   </view>
 
-  <view class="form-section">
+  <view class="form-section card">
     <view class="form-item">
       <view class="form-label">餐次</view>
       <view class="meal-type-selector">
@@ -61,7 +61,7 @@
     </view>
 
     <!-- 添加食物表单 -->
-    <view class="add-food-form" wx:if="{{showAddForm}}">
+    <view class="add-food-form card" wx:if="{{showAddForm}}">
       <view class="form-item">
         <view class="form-label">食物名称</view>
         <input class="form-input" placeholder="请输入食物名称" value="{{newFood.name}}" bindinput="bindFoodNameInput" />
@@ -121,24 +121,24 @@
     </view>
 
     <!-- 总营养预览 -->
-    <view class="total-nutrition" wx:if="{{foods.length > 0}}">
+    <view class="total-nutrition card" wx:if="{{foods.length > 0}}">
       <view class="nutrition-title">总营养成分</view>
-      <view class="nutrition-grid">
-        <view class="nutrition-item">
-          <view class="nutrition-label">热量</view>
-          <view class="nutrition-value">{{totalNutrition.calories}} kcal</view>
-        </view>
+      <view class="nutrition-hero">
+        <view class="nutrition-hero-label">总热量</view>
+        <view class="nutrition-hero-value">{{totalNutrition.calories}}<text class="nutrition-unit">kcal</text></view>
+      </view>
+      <view class="nutrition-grid nutrition-grid-sub">
         <view class="nutrition-item">
           <view class="nutrition-label">蛋白质</view>
-          <view class="nutrition-value">{{totalNutrition.protein}} g</view>
+          <view class="nutrition-value">{{totalNutrition.protein}}<text class="nutrition-unit">g</text></view>
         </view>
         <view class="nutrition-item">
           <view class="nutrition-label">碳水</view>
-          <view class="nutrition-value">{{totalNutrition.carbohydrate}} g</view>
+          <view class="nutrition-value">{{totalNutrition.carbohydrate}}<text class="nutrition-unit">g</text></view>
         </view>
         <view class="nutrition-item">
           <view class="nutrition-label">脂肪</view>
-          <view class="nutrition-value">{{totalNutrition.fat}} g</view>
+          <view class="nutrition-value">{{totalNutrition.fat}}<text class="nutrition-unit">g</text></view>
         </view>
       </view>
     </view>

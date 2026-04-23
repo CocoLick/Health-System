@@ -179,3 +179,77 @@
   border-radius: 44rpx;
   border: none;
 }
+
+/* redesign */
+.container {
+  --u-green: #07c160;
+  --u-title: #1a1a1a;
+  --u-text: #3a3a3a;
+  --u-sub: #8e8e93;
+  --u-surface: #fff;
+  --u-soft: #f9fafb;
+  --u-radius: 20rpx;
+  --u-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.05);
+  background: transparent;
+}
+
+.dietitian-card,
+.section {
+  background: var(--u-surface);
+  border: none;
+  border-radius: var(--u-radius);
+  box-shadow: var(--u-shadow);
+}
+
+.dietitian-card {
+  color: var(--u-title);
+}
+
+.avatar {
+  background: var(--u-green);
+}
+
+.name,
+.section-title {
+  color: var(--u-title);
+  font-weight: 700;
+}
+
+.desc,
+.form-label {
+  color: var(--u-sub);
+}
+
+.type-item,
+.goal-item,
+.form-input,
+.demand-input {
+  background: var(--u-soft);
+  border: none;
+  border-radius: 16rpx;
+}
+
+.type-item.active,
+.goal-item.active {
+  background: rgba(7, 193, 96, 0.14);
+  border: none;
+}
+
+.type-item.active .type-name,
+.goal-item.active {
+  color: #06693a;
+}
+
+.type-name,
+.goal-item {
+  color: var(--u-text);
+}
+
+.submit-section {
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.btn-submit {
+  background: var(--u-green);
+  border-radius: 16rpx;
+}

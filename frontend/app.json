@@ -47,9 +47,9 @@
     "request": 180000
   },
   "tabBar": {
-    "color": "#8A847A",
-    "selectedColor": "#2D6A4F",
-    "backgroundColor": "#FFF9F2",
+    "color": "#8E8E93",
+    "selectedColor": "#07C160",
+    "backgroundColor": "#F7F8FA",
     "borderStyle": "black",
     "list": [
       {

@@ -1,5 +1,5 @@
 <view class="container">
-  <view class="header">
+  <view class="header card">
     <view class="header-title">营养分析</view>
     <view class="header-subtitle">记录饮食，分析营养</view>
   </view>
@@ -12,52 +12,71 @@
 
   <view class="content">
     <view class="tab-content" wx:if="{{activeTab === 'record'}}">
-      <view class="today-summary">
+      <view class="today-summary card">
         <view class="summary-header">
-        <text class="summary-title">今日营养摄入</text>
-        <text class="summary-date">{{today}}</text>
-      </view>
-      <view class="nutrition-grid">
-          <view class="nutr-card">
-            <view class="nutr-value" style="color: #ff9800;">{{todayIntake.calories}}</view>
-            <view class="nutr-label">千卡</view>
+          <text class="summary-title">今日摄入总览</text>
+          <text class="summary-date">{{today}}</text>
+        </view>
+
+        <view class="hero-nutr card">
+          <view class="hero-main">
+            <text class="hero-label">热量</text>
+            <view class="hero-value-row">
+              <text class="hero-value">{{todayIntake.calories}}</text>
+              <text class="hero-unit">kcal</text>
+            </view>
+            <text class="hero-target">目标 {{targetIntake.calories}} kcal</text>
             <view class="nutr-progress">
               <view class="progress-bar">
                 <view class="progress-fill" style="width: {{todayIntake.calories / targetIntake.calories * 100}}%"></view>
               </view>
             </view>
           </view>
-          <view class="nutr-card">
-            <view class="nutr-value" style="color: #4caf50;">{{todayIntake.protein}}g</view>
+          <text class="hero-trend {{todayIntake.calories > targetIntake.calories ? 'up' : 'down'}}">
+            {{todayIntake.calories > targetIntake.calories ? '↑' : '↓'}}
+          </text>
+        </view>
+
+        <view class="nutrition-grid">
+          <view class="nutr-card card">
+            <view class="nutr-value">{{todayIntake.protein}}<text class="nutr-unit">g</text></view>
             <view class="nutr-label">蛋白质</view>
+            <view class="nutr-trend {{todayIntake.protein > targetIntake.protein ? 'up' : 'down'}}">{{todayIntake.protein > targetIntake.protein ? '↑' : '↓'}}</view>
             <view class="nutr-progress">
               <view class="progress-bar protein">
                 <view class="progress-fill" style="width: {{todayIntake.protein / targetIntake.protein * 100}}%"></view>
               </view>
             </view>
           </view>
-          <view class="nutr-card">
-            <view class="nutr-value" style="color: #2196f3;">{{todayIntake.carbohydrate}}g</view>
+          <view class="nutr-card card">
+            <view class="nutr-value">{{todayIntake.carbohydrate}}<text class="nutr-unit">g</text></view>
             <view class="nutr-label">碳水</view>
+            <view class="nutr-trend {{todayIntake.carbohydrate > targetIntake.carbohydrate ? 'up' : 'down'}}">{{todayIntake.carbohydrate > targetIntake.carbohydrate ? '↑' : '↓'}}</view>
             <view class="nutr-progress">
               <view class="progress-bar carbohydrate">
                 <view class="progress-fill" style="width: {{todayIntake.carbohydrate / targetIntake.carbohydrate * 100}}%"></view>
               </view>
             </view>
           </view>
-          <view class="nutr-card">
-            <view class="nutr-value" style="color: #9c27b0;">{{todayIntake.fat}}g</view>
+          <view class="nutr-card card">
+            <view class="nutr-value">{{todayIntake.fat}}<text class="nutr-unit">g</text></view>
             <view class="nutr-label">脂肪</view>
+            <view class="nutr-trend {{todayIntake.fat > targetIntake.fat ? 'up' : 'down'}}">{{todayIntake.fat > targetIntake.fat ? '↑' : '↓'}}</view>
             <view class="nutr-progress">
               <view class="progress-bar fat">
                 <view class="progress-fill" style="width: {{todayIntake.fat / targetIntake.fat * 100}}%"></view>
               </view>
             </view>
           </view>
+          <view class="nutr-card card nutr-card-bmr">
+            <view class="nutr-value">{{bmr || '--'}}<text class="nutr-unit">kcal</text></view>
+            <view class="nutr-label">基础代谢</view>
+            <view class="nutr-trend neutral">参考值</view>
+          </view>
         </view>
       </view>
 
-      <view class="add-record-btn" catchtap="addRecord">
+      <view class="add-record-btn card" catchtap="addRecord">
         <text class="add-icon">+</text>
         <text class="add-text">添加饮食记录</text>
       </view>
@@ -84,7 +103,7 @@
     </view>
 
     <view class="tab-content" wx:if="{{activeTab === 'analysis'}}">
-      <view class="analysis-card">
+      <view class="analysis-card card">
         <view class="card-title">营养摄入对比</view>
         <view class="comparison-list">
           <view class="comparison-item">
@@ -118,7 +137,7 @@
         </view>
       </view>
 
-      <view class="suggestions-section">
+      <view class="suggestions-section card">
         <view class="section-title">饮食建议</view>
         <view class="suggestion-list">
           <view class="suggestion-item" wx:for="{{suggestions}}" wx:key="title">
@@ -133,7 +152,7 @@
     </view>
 
     <view class="tab-content" wx:if="{{activeTab === 'history'}}">
-      <view class="history-header">
+      <view class="history-header card">
         <view class="date-selector-section">
           <view class="section-label">选择日期查看记录</view>
           <picker mode="date" value="{{selectedDate}}" bindchange="changeDate">
@@ -146,7 +165,7 @@
         </view>
       </view>
 
-      <view class="selected-date-records">
+      <view class="selected-date-records card">
         <view class="section-title">当日饮食记录</view>
         <view class="records-for-date" wx:if="{{selectedDateRecords.length > 0}}">
           <view class="date-summary">
@@ -175,7 +194,6 @@
                 <view class="meal-foods">{{item.foods.length}}种食物</view>
               </view>
               <view class="meal-calories">{{item.calories}}kcal</view>
-              <view class="meal-arrow">▶</view>
             </view>
           </view>
         </view>
@@ -187,44 +205,51 @@
 
       <!-- 食物详情弹窗 -->
       <view class="food-details-modal" wx:if="{{showFoodDetailsModal}}">
-        <view class="modal-content">
-          <view class="modal-header">
-            <text class="modal-title">{{selectedMealName}}</text>
-            <text class="modal-close" bindtap="closeFoodDetails">×</text>
-          </view>
-          <view class="modal-body">
-            <view class="modal-nutrition">
-              <view class="modal-nutrition-item">
-                <text class="modal-nutrition-label">热量</text>
-                <text class="modal-nutrition-value">{{selectedMealCalories}}kcal</text>
-              </view>
-              <view class="modal-nutrition-item">
-                <text class="modal-nutrition-label">蛋白质</text>
-                <text class="modal-nutrition-value">{{selectedMealNutrition.protein || 0}}g</text>
-              </view>
-              <view class="modal-nutrition-item">
-                <text class="modal-nutrition-label">碳水</text>
-                <text class="modal-nutrition-value">{{selectedMealNutrition.carbohydrate || 0}}g</text>
-              </view>
-              <view class="modal-nutrition-item">
-                <text class="modal-nutrition-label">脂肪</text>
-                <text class="modal-nutrition-value">{{selectedMealNutrition.fat || 0}}g</text>
-              </view>
+        <view class="record-detail-content card">
+          <view class="record-detail-header">
+            <view>
+              <text class="record-detail-title">{{selectedMealName}}</text>
+              <text class="record-detail-time">{{selectedDateText}}</text>
             </view>
-            <view class="food-list">
-              <view class="food-item" wx:for="{{selectedMealFoods}}" wx:key="index">
-                <view class="food-name">{{item.food_name}}</view>
-                <view class="food-info">
-                  <text class="food-amount">{{item.amount}}{{item.unit}}</text>
-                  <text class="food-calories">{{item.calories}}kcal</text>
-                </view>
-              </view>
+            <text class="record-detail-close" bindtap="closeFoodDetails">×</text>
+          </view>
+
+          <view class="record-detail-hero">
+            <text class="record-detail-hero-label">本餐热量</text>
+            <text class="record-detail-hero-value">
+              {{selectedMealCalories}}<text class="record-detail-unit">kcal</text>
+            </text>
+          </view>
+
+          <view class="record-detail-macros">
+            <view class="record-detail-macro-item">
+              <text class="record-detail-macro-label">蛋白质</text>
+              <text class="record-detail-macro-value">{{selectedMealNutrition.protein || 0}}<text class="record-detail-unit">g</text></text>
+            </view>
+            <view class="record-detail-macro-item">
+              <text class="record-detail-macro-label">碳水</text>
+              <text class="record-detail-macro-value">{{selectedMealNutrition.carbohydrate || 0}}<text class="record-detail-unit">g</text></text>
+            </view>
+            <view class="record-detail-macro-item">
+              <text class="record-detail-macro-label">脂肪</text>
+              <text class="record-detail-macro-value">{{selectedMealNutrition.fat || 0}}<text class="record-detail-unit">g</text></text>
+            </view>
+          </view>
+
+          <view class="record-detail-foods">
+            <text class="record-detail-foods-title">食物明细</text>
+            <view class="record-detail-food-item" wx:for="{{selectedMealFoods}}" wx:key="index">
+              <text class="record-detail-food-name">{{item.food_name}}</text>
+              <view class="record-detail-food-meta">
+                <text class="record-detail-food-amount">{{item.amount}}{{item.unit}}</text>
+                <text class="record-detail-food-calories">{{item.calories}}kcal</text>
+            </view>
             </view>
           </view>
         </view>
       </view>
 
-      <view class="nutrition-trend">
+      <view class="nutrition-trend card">
         <view class="trend-header">
           <view class="section-title">营养摄入趋势</view>
           <view class="trend-time-selector">
@@ -252,9 +277,56 @@
         </view>
       </view>
 
-      <view class="export-btn" bindtap="exportData">
+      <view class="export-btn card" bindtap="exportData">
         <text class="export-icon">📤</text>
         <text class="export-text">导出数据</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日饮食记录详情弹窗 -->
+  <view class="record-detail-modal" wx:if="{{showRecordDetailModal}}">
+    <view class="record-detail-mask" bindtap="closeRecordDetail"></view>
+    <view class="record-detail-content card" wx:if="{{selectedRecordDetail}}">
+      <view class="record-detail-header">
+        <view>
+          <text class="record-detail-title">{{selectedRecordDetail.mealTypeText}}</text>
+          <text class="record-detail-time">{{selectedRecordDetail.timeText}}</text>
+        </view>
+        <text class="record-detail-close" bindtap="closeRecordDetail">×</text>
+      </view>
+
+      <view class="record-detail-hero">
+        <text class="record-detail-hero-label">本餐热量</text>
+        <text class="record-detail-hero-value">
+          {{selectedRecordDetail.calories}}<text class="record-detail-unit">kcal</text>
+        </text>
+      </view>
+
+      <view class="record-detail-macros">
+        <view class="record-detail-macro-item">
+          <text class="record-detail-macro-label">蛋白质</text>
+          <text class="record-detail-macro-value">{{selectedRecordDetail.protein}}<text class="record-detail-unit">g</text></text>
+        </view>
+        <view class="record-detail-macro-item">
+          <text class="record-detail-macro-label">碳水</text>
+          <text class="record-detail-macro-value">{{selectedRecordDetail.carbohydrate}}<text class="record-detail-unit">g</text></text>
+        </view>
+        <view class="record-detail-macro-item">
+          <text class="record-detail-macro-label">脂肪</text>
+          <text class="record-detail-macro-value">{{selectedRecordDetail.fat}}<text class="record-detail-unit">g</text></text>
+        </view>
+      </view>
+
+      <view class="record-detail-foods">
+        <text class="record-detail-foods-title">食物明细</text>
+        <view class="record-detail-food-item" wx:for="{{selectedRecordDetail.foods}}" wx:key="index">
+          <text class="record-detail-food-name">{{item.name}}</text>
+          <view class="record-detail-food-meta">
+            <text class="record-detail-food-amount">{{item.amount}}{{item.unit}}</text>
+            <text class="record-detail-food-calories">{{item.calories}}kcal</text>
+          </view>
+        </view>
       </view>
     </view>
   </view>

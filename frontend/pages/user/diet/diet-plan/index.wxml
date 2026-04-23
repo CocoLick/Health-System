@@ -1,122 +1,148 @@
 <view class="container">
   <!-- 有膳食计划时，显示详情页面内容 -->
-  <view wx:if="{{planStatus === 4}}">
-    <view class="header">
-      <view class="header-left"></view>
-      <view class="header-title">膳食计划详情</view>
-      <view class="header-right"></view>
-    </view>
-
-    <view class="plan-overview">
-      <view class="plan-header">
+  <view wx:if="{{planStatus === 4}}" class="plan-detail-view">
+    <view class="dashboard-card detail-card">
+      <view class="dashboard-main">
         <view class="plan-source">
-          <text wx:if="{{currentPlan.source === 'ai'}}">🤖</text>
-          <text wx:else>👨‍⚕️</text>
-          <text>{{currentPlan.source === 'ai' ? '系统智能推荐' : '规划师定制'}}</text>
+          <text wx:if="{{currentPlan.source === 'ai'}}">系统智能推荐</text>
+          <text wx:else>规划师定制</text>
         </view>
-        <view class="plan-dietitian" wx:if="{{currentPlan.source !== 'ai'}}">
-          {{currentPlan.dietitianName}}
+        <view class="plan-title">{{currentPlan.title}}</view>
+        <view class="plan-generation-source" wx:if="{{currentPlan.source === 'ai' && currentPlan.generationSourceText}}">
+          {{currentPlan.generationSourceText}}
         </view>
-      </view>
-      <view class="plan-title">{{currentPlan.title}}</view>
-      <view class="plan-generation-source" wx:if="{{currentPlan.source === 'ai' && currentPlan.generationSourceText}}">
-        {{currentPlan.generationSourceText}}
-      </view>
-      <view class="plan-goal">饮食目标：{{currentPlan.goalText || currentPlan.goal}}</view>
-      <view class="plan-date">创建时间：{{currentPlan.createTime}}</view>
-      <view class="plan-period">计划周期：7天</view>
-      
-      <view class="date-selector">
-        <view class="selector-label">选择日期</view>
-        <picker mode="date" value="{{selectedDate}}" bindchange="changeDate">
-          <view class="picker-view">
-            <text class="date-icon">📅</text>
-            <text class="date-value">{{selectedDateText}}</text>
-            <text class="picker-arrow">▼</text>
-          </view>
-        </picker>
-      </view>
-
-      <view class="nutrition-summary">
-        <view class="nutr-item">
-          <view class="nutr-value">{{currentPlan.calories}}</view>
-          <view class="nutr-label">千卡</view>
-        </view>
-        <view class="nutr-item">
-          <view class="nutr-value">{{currentPlan.protein}}g</view>
-          <view class="nutr-label">蛋白质</view>
-        </view>
-        <view class="nutr-item">
-          <view class="nutr-value">{{currentPlan.carbohydrate}}g</view>
-          <view class="nutr-label">碳水</view>
-        </view>
-        <view class="nutr-item">
-          <view class="nutr-value">{{currentPlan.fat}}g</view>
-          <view class="nutr-label">脂肪</view>
+        <view class="plan-meta-line">
+          <text>目标：{{currentPlan.goalText || currentPlan.goal || '未设置'}}</text>
+          <text class="meta-dot">·</text>
+          <text>周期：7天</text>
+          <text class="meta-dot">·</text>
+          <text wx:if="{{currentPlan.source !== 'ai'}}">规划师：{{currentPlan.dietitianName}}</text>
+          <text wx:else>来源：智能生成</text>
         </view>
       </view>
     </view>
 
-    <view class="meals-section">
-      <view class="section-title">每日膳食安排</view>
-      <view class="meals-list">
-        <view wx:if="{{currentPlan.hasPlanForDate !== false && currentPlan.meals.length > 0}}">
-          <view class="meal-item {{meal.executed ? 'executed' : ''}}" wx:for="{{currentPlan.meals}}" wx:key="type" bindtap="executeMeal" data-meal-index="{{index}}">
-            <view class="meal-time">{{item.time}}</view>
-            <view class="meal-info">
-              <view class="meal-type">{{item.type}}</view>
-              <view class="meal-foods">
-                <text wx:for="{{item.foods}}" wx:for-item="food" wx:key="name">{{food.name}} {{food.amount}}；</text>
-              </view>
-            </view>
-            <view class="meal-calories">{{item.calories}}kcal</view>
-            <view class="meal-check {{meal.executed ? 'checked' : ''}}">
-              <text wx:if="{{meal.executed}}">✓</text>
-            </view>
+    <view class="metrics-wrap">
+      <view class="metrics-grid">
+        <view class="metric-card detail-card">
+          <view class="metric-main">
+            <text class="metric-value">{{currentPlan.calories}}</text>
+            <text class="metric-unit">kcal</text>
           </view>
+          <text class="metric-label">总热量</text>
         </view>
-        <view wx:else class="no-plan">
-          <view class="no-plan-icon">📅</view>
-          <view class="no-plan-text">当日无饮食计划</view>
+        <view class="metric-card detail-card">
+          <view class="metric-main">
+            <text class="metric-value">{{currentPlan.protein}}</text>
+            <text class="metric-unit">g</text>
+          </view>
+          <text class="metric-label">蛋白质</text>
         </view>
-      </view>
-    </view>
-
-    <view class="nutrition-analysis">
-      <view class="section-title">营养分析</view>
-      <view class="analysis-card">
-        <view class="analysis-item">
-          <view class="analysis-label">热量分配</view>
-          <view class="analysis-chart">
-            <view class="chart-bar protein" style="height: {{proteinPercentage}}%"></view>
-            <view class="chart-bar carbohydrate" style="height: {{carbohydratePercentage}}%"></view>
-            <view class="chart-bar fat" style="height: {{fatPercentage}}%"></view>
+        <view class="metric-card detail-card">
+          <view class="metric-main">
+            <text class="metric-value">{{currentPlan.carbohydrate}}</text>
+            <text class="metric-unit">g</text>
           </view>
-          <view class="chart-legend">
-            <view class="legend-item">
-              <view class="legend-color protein"></view>
-              <view class="legend-text">蛋白质</view>
-            </view>
-            <view class="legend-item">
-              <view class="legend-color carbohydrate"></view>
-              <view class="legend-text">碳水</view>
-            </view>
-            <view class="legend-item">
-              <view class="legend-color fat"></view>
-              <view class="legend-text">脂肪</view>
-            </view>
+          <text class="metric-label">碳水</text>
+        </view>
+        <view class="metric-card detail-card">
+          <view class="metric-main">
+            <text class="metric-value">{{currentPlan.fat}}</text>
+            <text class="metric-unit">g</text>
           </view>
+          <text class="metric-label">脂肪</text>
         </view>
       </view>
     </view>
 
-    <view class="plan-actions">
-      <view class="action-btn" bindtap="recordDiet">记录饮食</view>
-      <view class="action-btn optimize" bindtap="applyOptimization">申请优化</view>
-      <view class="action-btn compare" bindtap="viewDetailedComparison">查看对比</view>
-      <view class="action-btn eval-link" bindtap="goToNutritionEvaluation">查看营养评估</view>
-      <view class="action-btn feedback-plan" bindtap="goFeedbackPlan">反馈本计划</view>
-      <view class="action-btn abandon" bindtap="terminateService">解除服务</view>
+    <view class="date-selector detail-picker">
+      <text class="selector-label">查看日期</text>
+      <picker mode="date" value="{{selectedDate}}" bindchange="changeDate">
+        <view class="picker-view">
+          <text class="date-value">{{selectedDateText}}</text>
+          <text class="picker-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="section-title">每日膳食安排</view>
+    <view class="timeline-list">
+      <view wx:if="{{currentPlan.hasPlanForDate !== false && currentPlan.meals.length > 0}}">
+        <view class="timeline-item {{item.executed ? 'executed' : ''}}" wx:for="{{currentPlan.meals}}" wx:key="type" bindtap="executeMeal" data-meal-index="{{index}}">
+          <view class="timeline-left">
+            <text class="meal-time">{{item.time}}</text>
+            <view class="timeline-line"></view>
+          </view>
+          <view class="timeline-right">
+            <view class="meal-head">
+              <text class="meal-type">{{item.type}}</text>
+              <text class="meal-calories">{{item.calories}}kcal</text>
+            </view>
+            <view class="meal-foods">
+              <text wx:for="{{item.foods}}" wx:for-item="food" wx:key="name">{{food.name}} {{food.amount}}；</text>
+            </view>
+          </view>
+          <view class="meal-check {{item.executed ? 'checked' : ''}}">
+            <text wx:if="{{item.executed}}">✓</text>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="no-plan">
+        <view class="no-plan-icon">📅</view>
+        <view class="no-plan-text">当日无饮食计划</view>
+      </view>
+    </view>
+
+    <view class="section-title">营养分析</view>
+    <view class="analysis-card detail-card">
+      <view class="bar-group">
+        <text class="bar-title">蛋白质</text>
+        <view class="bar-track">
+          <view class="bar-fill bar-protein" style="width: {{proteinPercentage}}%"></view>
+        </view>
+        <text class="bar-percent">{{proteinPercentage}}%</text>
+      </view>
+      <view class="bar-group">
+        <text class="bar-title">碳水</text>
+        <view class="bar-track">
+          <view class="bar-fill bar-carbohydrate" style="width: {{carbohydratePercentage}}%"></view>
+        </view>
+        <text class="bar-percent">{{carbohydratePercentage}}%</text>
+      </view>
+      <view class="bar-group">
+        <text class="bar-title">脂肪</text>
+        <view class="bar-track">
+          <view class="bar-fill bar-fat" style="width: {{fatPercentage}}%"></view>
+        </view>
+        <text class="bar-percent">{{fatPercentage}}%</text>
+      </view>
+    </view>
+
+    <view class="action-grid detail-card">
+      <view class="action-item" bindtap="applyOptimization">
+        <view class="action-icon icon-opt"></view>
+        <text class="action-text">申请优化</text>
+      </view>
+      <view class="action-item" bindtap="viewDetailedComparison">
+        <view class="action-icon icon-compare"></view>
+        <text class="action-text">查看对比</text>
+      </view>
+      <view class="action-item" bindtap="goToNutritionEvaluation">
+        <view class="action-icon icon-eval"></view>
+        <text class="action-text">营养评估</text>
+      </view>
+      <view class="action-item" bindtap="goFeedbackPlan">
+        <view class="action-icon icon-feedback"></view>
+        <text class="action-text">反馈计划</text>
+      </view>
+      <view class="action-item action-danger" bindtap="terminateService">
+        <view class="action-icon icon-stop"></view>
+        <text class="action-text">解除服务</text>
+      </view>
+    </view>
+
+    <view class="sticky-action">
+      <button class="primary-btn" bindtap="recordDiet">记录饮食</button>
     </view>
   </view>
 

@@ -132,3 +132,86 @@
   border-radius: 40rpx;
   border: none;
 }
+
+/* redesign */
+.container {
+  --u-green: #07c160;
+  --u-title: #1a1a1a;
+  --u-text: #3a3a3a;
+  --u-sub: #8e8e93;
+  --u-surface: #fff;
+  --u-soft: #f9fafb;
+  --u-radius: 20rpx;
+  --u-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.05);
+  background: transparent;
+  padding-top: 0;
+}
+
+.header,
+.detail-section {
+  background: var(--u-surface);
+  border: none;
+  border-radius: var(--u-radius);
+  box-shadow: var(--u-shadow);
+}
+
+.header {
+  margin: 20rpx 24rpx 12rpx;
+  position: static;
+  height: auto;
+  padding: 20rpx;
+}
+
+.title,
+.section-title {
+  color: var(--u-title);
+  font-weight: 700;
+}
+
+.request-detail {
+  padding: 0 24rpx 24rpx;
+}
+
+.detail-section {
+  padding: 24rpx;
+}
+
+.section-title {
+  border-bottom: none;
+  margin-bottom: 16rpx;
+  padding-bottom: 0;
+}
+
+.label {
+  color: var(--u-sub);
+}
+
+.value {
+  color: var(--u-text);
+}
+
+.value.status {
+  border-radius: 999rpx;
+}
+
+.value.status.pending {
+  background: rgba(142, 142, 147, 0.14);
+  color: #636366;
+}
+
+.value.status.approved {
+  background: rgba(7, 193, 96, 0.14);
+  color: #06693a;
+}
+
+.value.status.rejected,
+.value.status.cancelled {
+  background: rgba(244, 67, 54, 0.12);
+  color: #9e3838;
+}
+
+.cancel-btn {
+  background: var(--u-soft);
+  color: var(--u-text);
+  border-radius: 16rpx;
+}

@@ -175,8 +175,11 @@ Page({
           duration: 800
         });
         setTimeout(() => {
-          wx.reLaunch({
-            url: '/pages/user/diet/diet-plan/detail/index'
+          wx.switchTab({
+            url: '/pages/user/diet/diet-plan/index',
+            fail: () => {
+              wx.reLaunch({ url: '/pages/user/diet/diet-plan/index' });
+            }
           });
         }, 650);
       })

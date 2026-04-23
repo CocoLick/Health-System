@@ -13,6 +13,11 @@
   </view>
 
   <block wx:else>
+    <view class="health-page-head">
+      <text class="health-page-title">健康中心</text>
+      <text class="health-page-subtitle">管理健康数据，查看营养评估与健康教育</text>
+    </view>
+
     <view class="health-main-tabs">
       <view
         class="h-main-tab {{healthMainTab === 'data' ? 'active' : ''}}"
@@ -26,29 +31,29 @@
       >健康教育</view>
     </view>
 
-    <view wx:if="{{healthMainTab === 'data'}}">
+    <view wx:if="{{healthMainTab === 'data'}}" class="health-data-panel">
       <view class="section">
         <view class="section-header">
           <view class="section-title">基本信息</view>
           <view class="section-action" bindtap="editBasicInfo">编辑</view>
         </view>
-        <view class="info-grid">
+        <view class="info-grid info-grid-card">
           <view class="info-row">
-            <view class="info-item">
+            <view class="info-item info-item-card">
               <view class="info-label">性别</view>
               <view class="info-value">{{healthData.gender || '未设置'}}</view>
             </view>
-            <view class="info-item">
+            <view class="info-item info-item-card">
               <view class="info-label">年龄</view>
               <view class="info-value">{{healthData.age || '未设置'}}岁</view>
             </view>
           </view>
           <view class="info-row">
-            <view class="info-item">
+            <view class="info-item info-item-card">
               <view class="info-label">活动水平</view>
               <view class="info-value">{{healthData.activityLevel === 'sedentary' ? '久坐' : healthData.activityLevel === 'lightly_active' ? '轻度' : healthData.activityLevel === 'moderately_active' ? '中度' : '高强度'}}</view>
             </view>
-            <view class="info-item">
+            <view class="info-item info-item-card">
               <view class="info-label">营养目标</view>
               <view class="info-value">{{healthData.nutritionGoal === 'lose_weight' ? '减重' : healthData.nutritionGoal === 'maintain' ? '维持' : '健康增重'}}</view>
             </view>
@@ -61,46 +66,40 @@
           <view class="section-title">健康指标</view>
           <view class="section-action" bindtap="editHealthMetrics">编辑</view>
         </view>
-        <view class="health-card">
+        <view class="health-card health-metrics-grid">
           <view class="health-item">
-            <view class="health-icon">📏</view>
+            <view class="health-icon">身高</view>
             <view class="health-info">
-              <view class="health-label">身高</view>
               <view class="health-value">{{healthData.height || '--'}} <text class="unit">cm</text></view>
             </view>
           </view>
           <view class="health-item">
-            <view class="health-icon">⚖️</view>
+            <view class="health-icon">体重</view>
             <view class="health-info">
-              <view class="health-label">体重</view>
               <view class="health-value">{{healthData.weight || '--'}} <text class="unit">kg</text></view>
             </view>
           </view>
           <view class="health-item">
-            <view class="health-icon">💓</view>
+            <view class="health-icon">心率</view>
             <view class="health-info">
-              <view class="health-label">心率</view>
               <view class="health-value">{{healthData.heartRate || '--'}} <text class="unit">次/分</text></view>
             </view>
           </view>
           <view class="health-item">
-            <view class="health-icon">🩸</view>
+            <view class="health-icon">血压</view>
             <view class="health-info">
-              <view class="health-label">血压</view>
               <view class="health-value">{{healthData.bloodPressure || '--'}} <text class="unit">mmHg</text></view>
             </view>
           </view>
           <view class="health-item">
-            <view class="health-icon">🩺</view>
+            <view class="health-icon">血糖</view>
             <view class="health-info">
-              <view class="health-label">血糖</view>
               <view class="health-value">{{healthData.bloodSugar || '--'}} <text class="unit">mmol/L</text></view>
             </view>
           </view>
           <view class="health-item allergy-item">
-            <view class="health-icon">⚠️</view>
+            <view class="health-icon">过敏病史</view>
             <view class="health-info">
-              <view class="health-label">过敏病史</view>
               <view class="health-value allergy-value">{{healthData.allergyHistory || '无'}}</view>
             </view>
           </view>
@@ -118,16 +117,16 @@
             <view class="evaluation-time">{{evaluation.evalTime}}</view>
           </view>
           <view class="evaluation-content">
-            <view class="evaluation-item">
-              <text class="evaluation-label">BMI指数：</text>
-              <text class="evaluation-value">{{evaluation.bmi}}</text>
+            <view class="evaluation-item evaluation-bmi-item">
+              <text class="evaluation-label">BMI 指数</text>
+              <text class="evaluation-value evaluation-bmi-value">{{evaluation.bmi}}</text>
             </view>
             <view class="evaluation-item">
-              <text class="evaluation-label">营养状态：</text>
+              <text class="evaluation-label">营养状态</text>
               <text class="evaluation-value">{{evaluation.nutritionStatus}}</text>
             </view>
             <view class="evaluation-item">
-              <text class="evaluation-label">评估结论：</text>
+              <text class="evaluation-label">评估结论</text>
               <text class="evaluation-value">{{evaluation.suggestion}}</text>
             </view>
           </view>
@@ -144,12 +143,14 @@
         </view>
         <view class="history-list" wx:if="{{historyList.length > 0}}">
           <view class="history-item" wx:for="{{historyList}}" wx:key="id">
-            <view class="history-date">{{item.date}}</view>
-            <view class="history-data">
-              <text>身高{{item.height}}cm</text>
-              <text>体重{{item.weight}}kg</text>
-              <text>血糖{{item.bloodSugar || '--'}}mmol/L</text>
-              <text>活动{{item.activityLevelText}}</text>
+            <view class="history-primary">
+              <view class="history-date">{{item.date}}</view>
+              <view class="history-tags">
+                <text class="history-tag">身高 {{item.height}}cm</text>
+                <text class="history-tag">体重 {{item.weight}}kg</text>
+                <text class="history-tag">血糖 {{item.bloodSugar || '--'}}mmol/L</text>
+                <text class="history-tag">活动 {{item.activityLevelText}}</text>
+              </view>
             </view>
           </view>
         </view>
