@@ -43,6 +43,9 @@
     "navigationBarTitleText": "营养膳食规划",
     "navigationBarTextStyle": "black"
   },
+  "networkTimeout": {
+    "request": 180000
+  },
   "tabBar": {
     "color": "#6c757d",
     "selectedColor": "#4caf50",

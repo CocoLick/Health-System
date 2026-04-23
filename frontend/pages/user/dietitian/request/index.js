@@ -2,6 +2,7 @@ const api = require('../../../../utils/api');
 
 Page({
   data: {
+    mode: 'dietitian',
     dietitianId: '',
     dietitianName: '',
     serviceType: 'diet_plan',
@@ -15,10 +16,18 @@ Page({
   },
 
   onLoad(options) {
+    const mode = options.mode === 'ai' ? 'ai' : 'dietitian';
     if (options.dietitianId) {
       this.setData({
         dietitianId: options.dietitianId,
         dietitianName: options.dietitianName || '规划师'
+      });
+      return;
+    }
+    if (mode === 'ai') {
+      this.setData({
+        mode: 'ai',
+        dietitianName: '系统智能助手'
       });
     }
   },
@@ -50,6 +59,11 @@ Page({
   },
 
   submitRequest() {
+    if (this.data.mode === 'ai') {
+      this.submitAIRequest();
+      return;
+    }
+
     // 验证其他目标是否填写
     if (this.data.dietGoal === 'other' && !this.data.formData.otherGoal) {
       wx.showToast({ title: '请输入您的饮食目标', icon: 'none' });
@@ -124,6 +138,127 @@ Page({
       });
   },
 
+  submitAIRequest() {
+    if (this.data.dietGoal === 'other' && !this.data.formData.otherGoal) {
+      wx.showToast({ title: '请输入您的饮食目标', icon: 'none' });
+      return;
+    }
+
+    const healthProfile = [
+      this.data.formData.disease ? `疾病情况：${this.data.formData.disease}` : '',
+      this.data.formData.allergy ? `过敏食物：${this.data.formData.allergy}` : ''
+    ].filter(Boolean).join('；');
+
+    const additionalRequirements = this.data.formData.demand || '';
+    const goalText = this.getGoalText(this.data.dietGoal, this.data.formData.otherGoal);
+
+    wx.showLoading({ title: '生成中...', mask: true });
+    api.dietPlan.generateAIPlan({
+      plan_title: `智能推荐膳食计划（${goalText}）`,
+      cycle_days: 7,
+      diet_goal: this.data.dietGoal,
+      other_goal: this.data.formData.otherGoal || '',
+      health_profile: healthProfile || '无额外补充',
+      additional_requirements: additionalRequirements
+    })
+      .then((res) => {
+        wx.hideLoading();
+        if (res.code !== 200 || !res.data) {
+          wx.showToast({ title: (res && res.message) || '生成失败', icon: 'none' });
+          return;
+        }
+        const plan = this.buildCurrentPlanFromDetail(res.data);
+        wx.setStorageSync('currentDietPlan', plan);
+        wx.showToast({
+          title: '生成成功，正在跳转...',
+          icon: 'success',
+          duration: 800
+        });
+        setTimeout(() => {
+          wx.reLaunch({
+            url: '/pages/user/diet/diet-plan/detail/index'
+          });
+        }, 650);
+      })
+      .catch((err) => {
+        wx.hideLoading();
+        const msg = (err && err.data && err.data.message) || err.errMsg || '网络错误，请稍后重试';
+        wx.showToast({ title: msg, icon: 'none', duration: 3000 });
+      });
+  },
+
+  buildCurrentPlanFromDetail(detailData) {
+    const day0 = detailData.plan_days && detailData.plan_days.length > 0 ? detailData.plan_days[0] : null;
+    const rawGoal = detailData.goal != null ? detailData.goal : (detailData.diet_goal || '');
+    const goal = String(rawGoal || '').trim();
+    return {
+      id: detailData.id,
+      user_id: detailData.user_id,
+      dietitian_id: detailData.dietitian_id,
+      title: detailData.title,
+      source: detailData.source || 'ai',
+      dietitianName: detailData.dietitian_name || '系统智能',
+      status: detailData.status,
+      generationSource: detailData.generation_source || '',
+      goal,
+      goalText: this.getGoalText(goal, detailData.other_goal || this.data.formData.otherGoal),
+      startDate: day0 ? (day0.date || day0.plan_date || '') : '',
+      calories: day0 ? day0.calories : 0,
+      protein: day0 ? day0.protein : 0,
+      carbohydrate: day0 ? day0.carbohydrate : 0,
+      fat: day0 ? day0.fat : 0,
+      createTime: detailData.create_time || detailData.published_at || new Date().toLocaleString(),
+      meals: day0 && day0.meals ? day0.meals.map(meal => ({
+        type: meal.type,
+        time: meal.time,
+        calories: meal.calories,
+        foods: meal.foods ? meal.foods.map(food => ({
+          name: food.name,
+          amount: food.amount,
+          calories: food.calories
+        })) : []
+      })) : [],
+      plan_days: detailData.plan_days ? detailData.plan_days.map(day => ({
+        id: day.id,
+        plan_id: day.plan_id,
+        day_index: day.day_index,
+        date: day.date,
+        plan_date: day.plan_date,
+        calories: day.calories,
+        protein: day.protein,
+        carbohydrate: day.carbohydrate,
+        fat: day.fat,
+        meals: day.meals ? day.meals.map(meal => ({
+          id: meal.id,
+          day_id: meal.day_id,
+          type: meal.type,
+          time: meal.time,
+          calories: meal.calories,
+          foods: meal.foods ? meal.foods.map(food => ({
+            id: food.id,
+            meal_id: food.meal_id,
+            name: food.name,
+            amount: food.amount,
+            calories: food.calories
+          })) : []
+        })) : []
+      })) : []
+    };
+  },
+
+  getGoalText(goal, otherGoal) {
+    if (goal === 'other') return otherGoal || '其他';
+    const map = {
+      weight_loss: '减脂',
+      weight_gain: '增重',
+      diabetes_control: '控糖',
+      health_maintain: '养生',
+      sports_nutrition: '运动营养',
+      pregnancy: '孕期营养'
+    };
+    return map[goal] || '智能匹配';
+  },
+
   doSubmit() {
     const requestData = {
       dietitian_id: this.data.dietitianId,
@@ -138,31 +273,17 @@ Page({
     // 显示加载动画
     wx.showLoading({ title: '提交中...' });
 
-    // 调用API提交服务请求
-    wx.request({
-      url: 'http://localhost:8000/api/service-request/',
-      method: 'POST',
-      header: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + wx.getStorageSync('token')
-      },
-      data: requestData,
-      success: (res) => {
-        console.log('API响应:', res);
+    api.serviceRequest.submit(requestData)
+      .then((res) => {
         wx.hideLoading();
-        if (res.statusCode === 200 && res.data.code === 200) {
-          console.log('提交成功，准备跳转');
-          console.log('API响应数据:', res.data.data);
-          // 尝试多种字段名获取服务请求ID
-          const requestId = res.data.data.request_id || res.data.data.RequestID || res.data.data.requestId;
-          console.log('服务请求ID:', requestId);
+        if (res.code === 200 && res.data) {
+          const requestId = res.data.request_id || res.data.RequestID || res.data.requestId;
           if (!requestId) {
-            // 如果获取不到请求ID，跳转到膳食计划页面
             wx.showModal({
               title: '提交成功',
               content: '您的服务请求已提交，请等待规划师响应',
               showCancel: false,
-              success: (modalRes) => {
+              success: () => {
                 wx.redirectTo({
                   url: '/pages/user/diet/diet-plan/index'
                 });
@@ -174,29 +295,20 @@ Page({
             title: '提交成功',
             content: '您的服务请求已提交，请等待规划师响应',
             showCancel: false,
-            success: (modalRes) => {
-              console.log('模态框回调:', modalRes);
+            success: () => {
               wx.redirectTo({
-                url: '/pages/user/dietitian/request-detail/index?id=' + requestId,
-                success: (redirectRes) => {
-                  console.log('跳转成功:', redirectRes);
-                },
-                fail: (redirectErr) => {
-                  console.log('跳转失败:', redirectErr);
-                }
+                url: '/pages/user/dietitian/request-detail/index?id=' + requestId
               });
             }
           });
-        } else {
-          console.log('提交失败:', res);
-          wx.showToast({ title: '提交失败: ' + (res.data.message || '未知错误'), icon: 'none' });
+          return;
         }
-      },
-      fail: (err) => {
-        console.log('网络错误:', err);
+        wx.showToast({ title: '提交失败: ' + ((res && res.message) || '未知错误'), icon: 'none' });
+      })
+      .catch((err) => {
         wx.hideLoading();
-        wx.showToast({ title: '网络错误，请稍后重试', icon: 'none' });
-      }
-    });
+        const msg = (err && err.data && err.data.message) || err.errMsg || '网络错误，请稍后重试';
+        wx.showToast({ title: msg, icon: 'none' });
+      });
   }
 });

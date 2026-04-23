@@ -39,6 +39,7 @@ func NewDietPlanHandler(dietPlanService *services.DietPlanService) *DietPlanHand
 func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 	dietPlanGroup := router.Group("/diet-plans")
 	{
+		dietPlanGroup.POST("/ai/generate", h.GenerateAIDietPlan)
 		dietPlanGroup.POST("", h.CreateDietPlan)
 		dietPlanGroup.GET("/user", h.GetUserDietPlans)
 		dietPlanGroup.GET("/:id", h.GetDietPlanDetail)
@@ -48,6 +49,28 @@ func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 		dietPlanGroup.PUT("/:id/optimization", h.RequestOptimization)
 		dietPlanGroup.PUT("/:id/publish", h.PublishDietPlan)
 	}
+}
+
+// GenerateAIDietPlan 智能推荐生成膳食计划
+func (h *DietPlanHandler) GenerateAIDietPlan(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
+		return
+	}
+
+	var req schemas.AIDietPlanGenerateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "请求参数错误"})
+		return
+	}
+
+	plan, _, err := h.dietPlanService.GenerateAIDietPlan(userID.(string), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "生成成功", Data: plan})
 }
 
 // CreateDietPlan 创建膳食计划
@@ -118,7 +141,7 @@ func (h *DietPlanHandler) CreateDietPlan(c *gin.Context) {
 func (h *DietPlanHandler) GetUserDietPlans(c *gin.Context) {
 	// 尝试从查询参数获取用户ID（规划师使用）
 	targetUserID := c.Query("user_id")
-	
+
 	// 如果没有指定用户ID，则使用当前登录用户的ID
 	if targetUserID == "" {
 		userID, exists := c.Get("userID")
@@ -159,7 +182,7 @@ func (h *DietPlanHandler) GetDietPlanDetail(c *gin.Context) {
 
 	// 尝试从查询参数获取用户ID（规划师使用）
 	targetUserID := c.Query("user_id")
-	
+
 	// 如果没有指定用户ID，则使用当前登录用户的ID
 	if targetUserID == "" {
 		userID, exists := c.Get("userID")

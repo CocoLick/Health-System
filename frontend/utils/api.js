@@ -38,6 +38,7 @@ function request(options) {
       method: options.method || 'GET',
       data,
       header: headers,
+      timeout: typeof options.timeout === 'number' ? options.timeout : 60000,
       success: (res) => {
         // 兼容 RESTful 常见返回码：201(created), 204(no content) 等
         if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -387,6 +388,16 @@ const nutrition = {
 
 // 膳食计划相关API
 const dietPlan = {
+  // 智能推荐：调用后端大模型生成并发布膳食计划
+  generateAIPlan: function(data = {}) {
+    return request({
+      url: '/api/diet-plans/ai/generate',
+      method: 'POST',
+      data,
+      // 大模型生成可能超过小程序默认 60s，单独放宽。
+      timeout: 180000
+    });
+  },
   // 创建膳食计划
   create: function(data) {
     return post('/api/diet-plans', data);

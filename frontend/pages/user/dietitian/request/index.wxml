@@ -5,11 +5,11 @@
     </view>
     <view class="info">
       <view class="name">{{dietitianName}}</view>
-      <view class="desc">将为您制定个性化膳食计划</view>
+      <view class="desc">{{mode === 'ai' ? '根据您的信息自动生成个性化膳食计划' : '将为您制定个性化膳食计划'}}</view>
     </view>
   </view>
 
-  <view class="section">
+  <view class="section" wx:if="{{mode !== 'ai'}}">
     <view class="section-title">选择服务类型</view>
     <view class="service-types">
       <view class="type-item {{serviceType === 'diet_plan' ? 'active' : ''}}" bindtap="selectServiceType" data-type="diet_plan">
@@ -63,6 +63,6 @@
   </view>
 
   <view class="submit-section">
-    <button class="btn-submit" bindtap="submitRequest">提交服务请求</button>
+    <button class="btn-submit" bindtap="submitRequest">{{mode === 'ai' ? '生成智能膳食计划' : '提交服务请求'}}</button>
   </view>
 </view>

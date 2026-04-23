@@ -13,7 +13,9 @@ Page({
     selectedDateText: '',
     proteinPercentage: 0,
     carbohydratePercentage: 0,
-    fatPercentage: 0
+    fatPercentage: 0,
+    aiGenerating: false,
+    aiProgressText: ''
   },
 
   onLoad() {
@@ -74,6 +76,7 @@ Page({
   loadData() {
     this.clearStaleDietPlanCache();
     const selectedDietitian = wx.getStorageSync('selectedDietitian');
+    const cachedPlan = wx.getStorageSync('currentDietPlan');
     let pendingRequest = wx.getStorageSync('pendingServiceRequest');
     // 只保留状态为pending的请求
     if (pendingRequest && pendingRequest.status !== 'pending') {
@@ -122,6 +125,8 @@ Page({
                       // 规划师计划但后端没返回名字时，避免误显示“系统智能”
                       dietitianName: detailData.dietitian_name || detailData.dietitian_id || '规划师',
                       status: detailData.status,
+                      generationSource: detailData.generation_source || ((cachedPlan && cachedPlan.id === detailData.id) ? cachedPlan.generationSource : ''),
+                      generationSourceText: this.getGenerationSourceText(detailData.generation_source || ((cachedPlan && cachedPlan.id === detailData.id) ? cachedPlan.generationSource : ''), detailData.source),
                       // 后端详情/列表均使用 json 字段名 goal（饮食目标快照）
                       goal: planGoalRaw,
                       goalText: this.getDietGoalText(planGoalRaw, detailData.other_goal),
@@ -354,379 +359,51 @@ Page({
   },
 
   requestAiRecommendation() {
-    const healthData = wx.getStorageSync('cachedHealthData');
-    if (!healthData || !healthData.height || !healthData.weight) {
-      wx.showModal({
-        title: '提示',
-        content: '请先完善健康数据，以便生成更精准的推荐方案',
-        showCancel: true,
-        confirmText: '去完善',
-        success: (res) => {
-          if (res.confirm) {
-            wx.switchTab({ url: '/pages/user/health/index' });
-          }
-        }
-      });
-      return;
+    wx.navigateTo({
+      url: '/pages/user/dietitian/request/index?mode=ai'
+    })
+  },
+
+  startAIGenerateProgress() {
+    const tips = [
+      '正在分析健康数据...',
+      '正在生成7天膳食方案...',
+      '正在计算每日营养配比...',
+      '正在优化餐次与食材组合...',
+      '正在整理最终计划，请稍候...'
+    ];
+    let idx = 0;
+    this.setData({
+      aiGenerating: true,
+      aiProgressText: tips[0]
+    });
+    wx.showLoading({ title: tips[0], mask: true });
+    if (this._aiProgressTimer) {
+      clearInterval(this._aiProgressTimer);
+      this._aiProgressTimer = null;
     }
+    this._aiProgressTimer = setInterval(() => {
+      idx = (idx + 1) % tips.length;
+      const t = tips[idx];
+      this.setData({ aiProgressText: t });
+      wx.showLoading({ title: t, mask: true });
+    }, 3000);
+  },
 
-    wx.showLoading({ title: '生成推荐方案中...' });
-
-    // 若已有当前计划，先删除，避免生成多份“已发布计划”导致放弃后又出现旧计划
-    const existingPlan = this.data.currentPlan;
-    const removeExistingPlanIfNeeded = () => {
-      if (existingPlan && existingPlan.id) {
-        return api.dietPlan.remove(existingPlan.id).catch(() => undefined);
-      }
-      return Promise.resolve();
-    };
-
-    // 生成7天的膳食计划数据
-    const planDays = [];
-    const today = new Date();
-    
-    // 7天的早餐选项
-    const breakfastOptions = [
-      {
-        foods: [
-          { name: '全麦面包', amount: '2片', calories: 140 },
-          { name: '鸡蛋', amount: '1个', calories: 70 },
-          { name: '牛奶', amount: '200ml', calories: 120 },
-          { name: '蔬菜', amount: '100g', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '燕麦粥', amount: '1碗', calories: 150 },
-          { name: '鸡蛋', amount: '1个', calories: 70 },
-          { name: '酸奶', amount: '100g', calories: 100 },
-          { name: '香蕉', amount: '1根', calories: 80 }
-        ]
-      },
-      {
-        foods: [
-          { name: '小米粥', amount: '1碗', calories: 120 },
-          { name: '包子', amount: '1个', calories: 150 },
-          { name: '鸡蛋', amount: '1个', calories: 70 },
-          { name: '蔬菜', amount: '100g', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '全麦馒头', amount: '1个', calories: 100 },
-          { name: '鸡蛋', amount: '1个', calories: 70 },
-          { name: '豆浆', amount: '200ml', calories: 80 },
-          { name: '苹果', amount: '1个', calories: 100 }
-        ]
-      },
-      {
-        foods: [
-          { name: '玉米', amount: '1根', calories: 120 },
-          { name: '鸡蛋', amount: '1个', calories: 70 },
-          { name: '牛奶', amount: '200ml', calories: 120 },
-          { name: '蔬菜', amount: '100g', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '红薯', amount: '1个', calories: 150 },
-          { name: '鸡蛋', amount: '1个', calories: 70 },
-          { name: '酸奶', amount: '100g', calories: 100 },
-          { name: '草莓', amount: '100g', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '全麦面包', amount: '2片', calories: 140 },
-          { name: '鸡蛋', amount: '1个', calories: 70 },
-          { name: '豆浆', amount: '200ml', calories: 80 },
-          { name: '橙子', amount: '1个', calories: 70 }
-        ]
-      }
-    ];
-    
-    // 7天的午餐选项
-    const lunchOptions = [
-      {
-        foods: [
-          { name: '糙米饭', amount: '1碗', calories: 200 },
-          { name: '鸡胸肉', amount: '100g', calories: 130 },
-          { name: '西兰花', amount: '150g', calories: 55 },
-          { name: '番茄', amount: '1个', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '荞麦面', amount: '1碗', calories: 220 },
-          { name: '鱼肉', amount: '100g', calories: 100 },
-          { name: '菠菜', amount: '150g', calories: 45 },
-          { name: '豆腐', amount: '50g', calories: 40 }
-        ]
-      },
-      {
-        foods: [
-          { name: '米饭', amount: '1碗', calories: 180 },
-          { name: '牛肉', amount: '100g', calories: 150 },
-          { name: '胡萝卜', amount: '100g', calories: 40 },
-          { name: '黄瓜', amount: '100g', calories: 15 }
-        ]
-      },
-      {
-        foods: [
-          { name: '全麦面包', amount: '2片', calories: 140 },
-          { name: '鸡胸肉', amount: '100g', calories: 130 },
-          { name: '生菜', amount: '100g', calories: 15 },
-          { name: '番茄', amount: '1个', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '糙米饭', amount: '1碗', calories: 200 },
-          { name: '虾肉', amount: '100g', calories: 90 },
-          { name: '西兰花', amount: '150g', calories: 55 },
-          { name: '豆腐', amount: '50g', calories: 40 }
-        ]
-      },
-      {
-        foods: [
-          { name: '荞麦面', amount: '1碗', calories: 220 },
-          { name: '瘦猪肉', amount: '100g', calories: 143 },
-          { name: '菠菜', amount: '150g', calories: 45 },
-          { name: '番茄', amount: '1个', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '米饭', amount: '1碗', calories: 180 },
-          { name: '鱼肉', amount: '100g', calories: 100 },
-          { name: '胡萝卜', amount: '100g', calories: 40 },
-          { name: '西兰花', amount: '150g', calories: 55 }
-        ]
-      }
-    ];
-    
-    // 7天的晚餐选项
-    const dinnerOptions = [
-      {
-        foods: [
-          { name: '红薯', amount: '1个', calories: 150 },
-          { name: '鱼肉', amount: '100g', calories: 90 },
-          { name: '菠菜', amount: '150g', calories: 45 },
-          { name: '豆腐', amount: '50g', calories: 40 }
-        ]
-      },
-      {
-        foods: [
-          { name: '玉米', amount: '1根', calories: 120 },
-          { name: '鸡胸肉', amount: '100g', calories: 130 },
-          { name: '生菜', amount: '100g', calories: 15 },
-          { name: '番茄', amount: '1个', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '糙米饭', amount: '半碗', calories: 100 },
-          { name: '牛肉', amount: '100g', calories: 150 },
-          { name: '胡萝卜', amount: '100g', calories: 40 },
-          { name: '黄瓜', amount: '100g', calories: 15 }
-        ]
-      },
-      {
-        foods: [
-          { name: '全麦馒头', amount: '1个', calories: 100 },
-          { name: '鱼肉', amount: '100g', calories: 100 },
-          { name: '菠菜', amount: '150g', calories: 45 },
-          { name: '豆腐', amount: '50g', calories: 40 }
-        ]
-      },
-      {
-        foods: [
-          { name: '红薯', amount: '1个', calories: 150 },
-          { name: '虾肉', amount: '100g', calories: 90 },
-          { name: '西兰花', amount: '150g', calories: 55 },
-          { name: '番茄', amount: '1个', calories: 30 }
-        ]
-      },
-      {
-        foods: [
-          { name: '玉米', amount: '1根', calories: 120 },
-          { name: '瘦猪肉', amount: '100g', calories: 143 },
-          { name: '生菜', amount: '100g', calories: 15 },
-          { name: '黄瓜', amount: '100g', calories: 15 }
-        ]
-      },
-      {
-        foods: [
-          { name: '糙米饭', amount: '半碗', calories: 100 },
-          { name: '鸡胸肉', amount: '100g', calories: 130 },
-          { name: '胡萝卜', amount: '100g', calories: 40 },
-          { name: '菠菜', amount: '150g', calories: 45 }
-        ]
-      }
-    ];
-    
-    // 7天的加餐选项
-    const snackOptions = [
-      {
-        foods: [
-          { name: '水果', amount: '1份', calories: 80 },
-          { name: '坚果', amount: '10g', calories: 70 }
-        ]
-      },
-      {
-        foods: [
-          { name: '酸奶', amount: '100g', calories: 100 },
-          { name: '水果', amount: '1份', calories: 50 }
-        ]
-      },
-      {
-        foods: [
-          { name: '坚果', amount: '10g', calories: 70 },
-          { name: '水果', amount: '1份', calories: 80 }
-        ]
-      },
-      {
-        foods: [
-          { name: '酸奶', amount: '100g', calories: 100 },
-          { name: '坚果', amount: '10g', calories: 70 }
-        ]
-      },
-      {
-        foods: [
-          { name: '水果', amount: '1份', calories: 80 },
-          { name: '酸奶', amount: '100g', calories: 100 }
-        ]
-      },
-      {
-        foods: [
-          { name: '坚果', amount: '10g', calories: 70 },
-          { name: '酸奶', amount: '100g', calories: 100 }
-        ]
-      },
-      {
-        foods: [
-          { name: '水果', amount: '1份', calories: 80 },
-          { name: '坚果', amount: '10g', calories: 70 }
-        ]
-      }
-    ];
-    
-    // 生成7天的计划
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const planDate = date.toISOString().split('T')[0];
-      
-      // 计算每天的营养数据（保持基本一致，略有变化）
-      const calories = 1800 + Math.floor(Math.random() * 100) - 50;
-      const protein = parseFloat((75 + Math.floor(Math.random() * 10) - 5).toFixed(1));
-      const carbohydrate = parseFloat((220 + Math.floor(Math.random() * 20) - 10).toFixed(1));
-      const fat = parseFloat((50 + Math.floor(Math.random() * 10) - 5).toFixed(1));
-      
-      // 为每天选择不同的餐食
-      const breakfast = {
-        type: '早餐',
-        time: '07:30',
-        calories: 400,
-        foods: breakfastOptions[i].foods
-      };
-      
-      const lunch = {
-        type: '午餐',
-        time: '12:00',
-        calories: 650,
-        foods: lunchOptions[i].foods
-      };
-      
-      const dinner = {
-        type: '晚餐',
-        time: '18:30',
-        calories: 500,
-        foods: dinnerOptions[i].foods
-      };
-      
-      const snack = {
-        type: '加餐',
-        time: '15:00',
-        calories: 150,
-        foods: snackOptions[i].foods
-      };
-      
-      planDays.push({
-        day_index: i + 1,
-        plan_date: planDate,
-        calories: calories,
-        protein: protein,
-        carbohydrate: carbohydrate,
-        fat: fat,
-        meals: [breakfast, lunch, dinner, snack]
-      });
+  stopAIGenerateProgress() {
+    if (this._aiProgressTimer) {
+      clearInterval(this._aiProgressTimer);
+      this._aiProgressTimer = null;
     }
+    this.setData({
+      aiGenerating: false,
+      aiProgressText: ''
+    });
+    wx.hideLoading();
+  },
 
-    // 调用API创建智能推荐膳食计划
-    removeExistingPlanIfNeeded()
-      .then(() => api.dietPlan.create({
-        dietitian_id: 'D20260325001',
-        plan_title: '智能推荐膳食计划',
-        source: 'ai',
-        diet_goal: '智能匹配',
-        cycle_days: 7,
-        plan_days: planDays
-      }))
-      .then(res => {
-        if (res.code !== 200 || !res.data || !res.data.id) {
-          throw new Error('create_diet_plan_failed');
-        }
-        const planId = res.data.id;
-        // 创建接口可能不返回完整 plan_days/meals，二次拉详情更稳
-        return api.dietPlan.getDetail(planId);
-      })
-      .then(detailRes => {
-        wx.hideLoading();
-        if (detailRes.code !== 200 || !detailRes.data) {
-          throw new Error('get_diet_plan_detail_failed');
-        }
-        const detailData = detailRes.data;
-        const day0 = detailData.plan_days && detailData.plan_days.length > 0 ? detailData.plan_days[0] : null;
-        const planGoalRaw = this.normalizePlanGoalRaw(detailData);
-
-        const plan = {
-          id: detailData.id,
-          user_id: detailData.user_id,
-          dietitian_id: detailData.dietitian_id,
-          title: detailData.title,
-          source: detailData.source,
-          dietitianName: detailData.dietitian_name || '系统智能',
-          status: detailData.status,
-          goal: planGoalRaw,
-          goalText: this.getDietGoalText(planGoalRaw, detailData.other_goal),
-          calories: day0 ? day0.calories : 0,
-          protein: day0 ? day0.protein : 0,
-          carbohydrate: day0 ? day0.carbohydrate : 0,
-          fat: day0 ? day0.fat : 0,
-          createTime: detailData.published_at || new Date().toLocaleString(),
-          meals: day0 && day0.meals ? day0.meals.map(meal => ({
-            type: meal.type,
-            time: meal.time,
-            calories: meal.calories,
-            foods: meal.foods ? meal.foods.map(food => ({
-              name: food.name,
-              amount: food.amount,
-              calories: food.calories
-            })) : []
-          })) : []
-        };
-
-        wx.setStorageSync('currentDietPlan', plan);
-        this.setData({ currentPlan: plan });
-        this.determineStatus();
-        this.initDate();
-        // 期望在当前 tab 页面直接展示详情，不再跳转旧的详情页
-      })
-      .catch(() => {
-        wx.hideLoading();
-        wx.showToast({ title: '网络错误，请重试', icon: 'none' });
-      });
+  onUnload() {
+    this.stopAIGenerateProgress();
   },
 
   viewPendingRequestDetail() {
@@ -845,6 +522,15 @@ Page({
       'pregnancy': '孕期营养'
     };
     return goalMap[g] || g;
+  },
+
+  // 获取智能推荐来源标签
+  getGenerationSourceText(generationSource, source) {
+    const src = generationSource ? String(generationSource).trim() : '';
+    if (src === 'llm') return '来源：大模型生成';
+    if (src === 'fallback') return '来源：兜底模板生成';
+    if ((source || '').trim() === 'ai') return '来源：智能生成';
+    return '';
   },
 
   // 获取状态文本

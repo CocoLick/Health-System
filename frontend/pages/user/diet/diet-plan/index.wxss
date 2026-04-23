@@ -87,6 +87,26 @@
   line-height: 1.8;
 }
 
+.ai-progress-hint {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  background: #fff6e5;
+  border: 1rpx solid #ffe0a3;
+  display: flex;
+  align-items: center;
+}
+
+.ai-progress-dot {
+  font-size: 24rpx;
+  margin-right: 10rpx;
+}
+
+.ai-progress-text {
+  font-size: 24rpx;
+  color: #8a6d3b;
+}
+
 .dietitian-card-layout {
   background: #fff;
   border-radius: 16rpx;
@@ -314,6 +334,17 @@
   font-size: 26rpx;
   color: #4caf50;
   margin-bottom: 24rpx;
+}
+
+.plan-generation-source {
+  display: inline-block;
+  font-size: 22rpx;
+  color: #8a6d3b;
+  background: #fff6e5;
+  border: 1rpx solid #ffe0a3;
+  border-radius: 999rpx;
+  padding: 6rpx 16rpx;
+  margin-bottom: 16rpx;
 }
 
 .nutrition-summary {

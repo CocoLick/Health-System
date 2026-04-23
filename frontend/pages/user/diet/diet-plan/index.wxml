@@ -19,6 +19,9 @@
         </view>
       </view>
       <view class="plan-title">{{currentPlan.title}}</view>
+      <view class="plan-generation-source" wx:if="{{currentPlan.source === 'ai' && currentPlan.generationSourceText}}">
+        {{currentPlan.generationSourceText}}
+      </view>
       <view class="plan-goal">饮食目标：{{currentPlan.goalText || currentPlan.goal}}</view>
       <view class="plan-date">创建时间：{{currentPlan.createTime}}</view>
       <view class="plan-period">计划周期：7天</view>
@@ -174,6 +177,10 @@
           <text class="tip-title">温馨提示</text>
           <text class="tip-item">• 系统智能推荐：根据您的健康数据自动生成</text>
           <text class="tip-item">• 规划师定制：专业营养师根据您的情况制定</text>
+        </view>
+        <view class="ai-progress-hint" wx:if="{{aiGenerating}}">
+          <text class="ai-progress-dot">⏳</text>
+          <text class="ai-progress-text">{{aiProgressText}}</text>
         </view>
       </view>
 
