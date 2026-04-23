@@ -47,6 +47,7 @@
         </view>
       </picker>
     </view>
+    <button class="ai-draft-btn" bindtap="openAIDraftModal">智能生成初稿</button>
   </view>
 
   <!-- 计划编辑 -->
@@ -156,6 +157,50 @@
           <text>≈ {{foodAmount * gramPerUnit}}克</text>
         </view>
         <button class="action-btn confirm-btn" bindtap="confirmFoodAmount">确认</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 智能初稿生成模态框 -->
+  <view class="modal {{showAIDraftModal ? 'show' : ''}}" catchtap="closeAIDraftModal">
+    <view class="modal-content ai-draft-modal" catchtap="stopPropagation">
+      <view class="modal-header">
+        <view class="modal-title">智能生成初稿</view>
+        <view class="modal-close" bindtap="closeAIDraftModal">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <view class="form-label">膳食目标</view>
+          <view class="goal-options">
+            <view class="goal-tag {{aiForm.dietGoal === 'weight_loss' ? 'active' : ''}}" bindtap="selectAIDietGoal" data-goal="weight_loss">减脂</view>
+            <view class="goal-tag {{aiForm.dietGoal === 'muscle_gain' ? 'active' : ''}}" bindtap="selectAIDietGoal" data-goal="muscle_gain">增肌</view>
+            <view class="goal-tag {{aiForm.dietGoal === 'maintenance' ? 'active' : ''}}" bindtap="selectAIDietGoal" data-goal="maintenance">维持健康</view>
+            <view class="goal-tag {{aiForm.dietGoal === 'other' ? 'active' : ''}}" bindtap="selectAIDietGoal" data-goal="other">其他</view>
+          </view>
+          <input wx:if="{{aiForm.dietGoal === 'other'}}" class="form-input" placeholder="请输入具体目标" value="{{aiForm.otherGoal}}" bindinput="bindAIField" data-field="otherGoal"/>
+        </view>
+        <view class="form-item">
+          <view class="form-label">活动水平</view>
+          <picker class="form-picker" mode="selector" range="{{['久坐','轻度活动','中度活动','高度活动']}}" value="{{aiForm.activityLevel === 'sedentary' ? 0 : aiForm.activityLevel === 'lightly_active' ? 1 : aiForm.activityLevel === 'very_active' ? 3 : 2}}" bindchange="bindAIActivityChange">
+            <view class="picker-view">
+              {{aiForm.activityLevel === 'sedentary' ? '久坐' : aiForm.activityLevel === 'lightly_active' ? '轻度活动' : aiForm.activityLevel === 'very_active' ? '高度活动' : '中度活动'}}
+              <text class="picker-arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="form-item">
+          <view class="form-label">疾病情况</view>
+          <textarea class="form-textarea" placeholder="如：高血压、糖尿病等" value="{{aiForm.disease}}" bindinput="bindAIField" data-field="disease"/>
+        </view>
+        <view class="form-item">
+          <view class="form-label">过敏食物</view>
+          <textarea class="form-textarea" placeholder="如：海鲜、花生等" value="{{aiForm.allergy}}" bindinput="bindAIField" data-field="allergy"/>
+        </view>
+        <view class="form-item">
+          <view class="form-label">其他需求</view>
+          <textarea class="form-textarea" placeholder="如：口味偏好、忌口、预算等" value="{{aiForm.demand}}" bindinput="bindAIField" data-field="demand"/>
+        </view>
+        <button class="ai-generate-btn" loading="{{aiGeneratingDraft}}" disabled="{{aiGeneratingDraft}}" bindtap="generateAIDraft">生成初稿</button>
       </view>
     </view>
   </view>

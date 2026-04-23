@@ -388,6 +388,15 @@ const nutrition = {
 
 // 膳食计划相关API
 const dietPlan = {
+  // 规划师：智能生成初稿（不落库）
+  generateAIDraft: function(data = {}) {
+    return request({
+      url: '/api/diet-plans/ai/generate-draft',
+      method: 'POST',
+      data,
+      timeout: 180000
+    });
+  },
   // 智能推荐：调用后端大模型生成并发布膳食计划
   generateAIPlan: function(data = {}) {
     return request({

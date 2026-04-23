@@ -43,6 +43,21 @@ type aiPlanFood struct {
 	Fat      float64 `json:"fat"`
 }
 
+// UnmarshalJSON 兼容不同模型的字段命名，避免因键名差异导致营养素被解析为 0。
+func (f *aiPlanFood) UnmarshalJSON(data []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	f.Name = readStringAlias(raw, "name", "food_name", "food")
+	f.Amount = readStringAlias(raw, "amount", "portion", "serving", "serving_size")
+	f.Calories = int(math.Round(readFloatAlias(raw, "calories", "kcal", "energy", "energy_kcal")))
+	f.Protein = readFloatAlias(raw, "protein", "protein_g", "proteins")
+	f.Carb = readFloatAlias(raw, "carbohydrate", "carb", "carbs", "carbohydrates", "carbohydrate_g")
+	f.Fat = readFloatAlias(raw, "fat", "fat_g", "lipid", "lipids")
+	return nil
+}
+
 type chatCompletionsRequest struct {
 	Model       string              `json:"model"`
 	Messages    []map[string]string `json:"messages"`
@@ -57,10 +72,9 @@ type chatCompletionsResponse struct {
 	} `json:"choices"`
 }
 
-// GenerateAIDietPlan 调用大模型生成膳食计划并直接发布
-func (s *DietPlanService) GenerateAIDietPlan(userID string, req schemas.AIDietPlanGenerateRequest) (schemas.DietPlanDetail, string, error) {
-	if strings.TrimSpace(userID) == "" {
-		return schemas.DietPlanDetail{}, "", errors.New("用户ID不能为空")
+func (s *DietPlanService) buildAIDraft(targetUserID string, req schemas.AIDietPlanGenerateRequest) (schemas.AIDietPlanDraftResponse, error) {
+	if strings.TrimSpace(targetUserID) == "" {
+		return schemas.AIDietPlanDraftResponse{}, errors.New("用户ID不能为空")
 	}
 
 	cycleDays := req.CycleDays
@@ -71,30 +85,29 @@ func (s *DietPlanService) GenerateAIDietPlan(userID string, req schemas.AIDietPl
 		cycleDays = 30
 	}
 
-	target := s.estimateNutritionTarget(userID, req.ActivityLevel)
+	target := s.estimateNutritionTarget(targetUserID, req.ActivityLevel)
 	goal := strings.TrimSpace(req.DietGoal)
 	if goal == "other" {
 		goal = strings.TrimSpace(req.OtherGoal)
 	}
 	if goal == "" {
-		goal = s.resolveUserGoalSnapshot(userID)
+		goal = s.resolveUserGoalSnapshot(targetUserID)
 	}
 	if goal == "" {
 		goal = "智能匹配"
 	}
 
 	generationSource := "llm"
-	aiResp, err := s.callDietPlanLLM(userID, cycleDays, goal, target, req.HealthProfile, req.AdditionalRequirements)
+	aiResp, err := s.callDietPlanLLM(targetUserID, cycleDays, goal, target, req.HealthProfile, req.AdditionalRequirements)
 	if err != nil {
-		// LLM 不可用时自动降级，避免前端直接 500。
-		log.Printf("GenerateAIDietPlan: llm call failed, fallback enabled: %v", err)
+		log.Printf("buildAIDraft: llm call failed, fallback enabled: %v", err)
 		aiResp = s.buildFallbackAIOutput(cycleDays)
 		generationSource = "fallback"
 	}
 
 	planDays := s.toCreatePlanDays(aiResp, cycleDays, target)
 	if len(planDays) == 0 {
-		return schemas.DietPlanDetail{}, "", errors.New("智能推荐结果为空")
+		return schemas.AIDietPlanDraftResponse{}, errors.New("智能推荐结果为空")
 	}
 
 	planTitle := strings.TrimSpace(req.PlanTitle)
@@ -102,14 +115,36 @@ func (s *DietPlanService) GenerateAIDietPlan(userID string, req schemas.AIDietPl
 		planTitle = "智能推荐膳食计划"
 	}
 
+	return schemas.AIDietPlanDraftResponse{
+		UserID:           targetUserID,
+		PlanTitle:        planTitle,
+		CycleDays:        cycleDays,
+		DietGoal:         goal,
+		GenerationSource: generationSource,
+		PlanDays:         planDays,
+	}, nil
+}
+
+// GenerateAIDietPlanDraft 规划师端：仅生成初稿，不落库
+func (s *DietPlanService) GenerateAIDietPlanDraft(targetUserID string, req schemas.AIDietPlanGenerateRequest) (schemas.AIDietPlanDraftResponse, error) {
+	return s.buildAIDraft(targetUserID, req)
+}
+
+// GenerateAIDietPlan 调用大模型生成膳食计划并直接发布
+func (s *DietPlanService) GenerateAIDietPlan(userID string, req schemas.AIDietPlanGenerateRequest) (schemas.DietPlanDetail, string, error) {
+	draft, err := s.buildAIDraft(userID, req)
+	if err != nil {
+		return schemas.DietPlanDetail{}, "", err
+	}
+
 	createReq := schemas.DietPlanCreate{
 		UserID:      userID,
 		DietitianID: config.GetEnv("AI_DIETITIAN_ID", "D20260325001"),
-		PlanTitle:   planTitle,
+		PlanTitle:   draft.PlanTitle,
 		Source:      "ai",
-		DietGoal:    goal,
-		CycleDays:   cycleDays,
-		PlanDays:    planDays,
+		DietGoal:    draft.DietGoal,
+		CycleDays:   draft.CycleDays,
+		PlanDays:    draft.PlanDays,
 	}
 
 	created, err := s.CreateDietPlan(createReq)
@@ -125,8 +160,8 @@ func (s *DietPlanService) GenerateAIDietPlan(userID string, req schemas.AIDietPl
 	if err != nil {
 		return schemas.DietPlanDetail{}, "", err
 	}
-	detail.GenerationSource = generationSource
-	return detail, generationSource, nil
+	detail.GenerationSource = draft.GenerationSource
+	return detail, draft.GenerationSource, nil
 }
 
 func (s *DietPlanService) resolveUserGoalSnapshot(userID string) string {
@@ -351,17 +386,30 @@ func (s *DietPlanService) toCreatePlanDays(out aiPlanOutput, cycleDays int, targ
 				if amount == "" {
 					amount = "100g"
 				}
+				p := nonNegativeFloat(food.Protein)
+				c := nonNegativeFloat(food.Carb)
+				fv := nonNegativeFloat(food.Fat)
 				cal := food.Calories
+				// 当模型漏传 calories 时，用三大营养素反推热量。
+				if cal <= 0 && (p > 0 || c > 0 || fv > 0) {
+					cal = int(math.Round(p*4 + c*4 + fv*9))
+				}
 				if cal <= 0 {
 					cal = 80
+				}
+				// 当模型只给了热量但漏传三大营养素时，给一个温和兜底，避免未知食材最终落库为 0。
+				if p <= 0 && c <= 0 && fv <= 0 && cal > 0 {
+					p = round1((float64(cal) * 0.2) / 4)
+					c = round1((float64(cal) * 0.55) / 4)
+					fv = round1((float64(cal) * 0.25) / 9)
 				}
 				foods = append(foods, schemas.FoodCreate{
 					Name:         name,
 					Amount:       amount,
 					Calories:     cal,
-					Protein:      nonNegativeFloat(food.Protein),
-					Carbohydrate: nonNegativeFloat(food.Carb),
-					Fat:          nonNegativeFloat(food.Fat),
+					Protein:      p,
+					Carbohydrate: c,
+					Fat:          fv,
 				})
 			}
 			if len(foods) == 0 {
@@ -392,6 +440,54 @@ func (s *DietPlanService) toCreatePlanDays(out aiPlanOutput, cycleDays int, targ
 		})
 	}
 	return result
+}
+
+func readStringAlias(m map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if v, ok := m[key]; ok {
+			switch t := v.(type) {
+			case string:
+				return strings.TrimSpace(t)
+			case json.Number:
+				return strings.TrimSpace(t.String())
+			}
+		}
+	}
+	return ""
+}
+
+func readFloatAlias(m map[string]interface{}, keys ...string) float64 {
+	for _, key := range keys {
+		v, ok := m[key]
+		if !ok {
+			continue
+		}
+		switch t := v.(type) {
+		case float64:
+			return t
+		case float32:
+			return float64(t)
+		case int:
+			return float64(t)
+		case int64:
+			return float64(t)
+		case json.Number:
+			f, err := t.Float64()
+			if err == nil {
+				return f
+			}
+		case string:
+			s := strings.TrimSpace(t)
+			if s == "" {
+				continue
+			}
+			f, err := strconv.ParseFloat(s, 64)
+			if err == nil {
+				return f
+			}
+		}
+	}
+	return 0
 }
 
 func normalizeMeals(in []aiPlanMeal) []aiPlanMeal {

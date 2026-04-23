@@ -174,6 +174,7 @@ type OptimizationRequest struct {
 
 // AIDietPlanGenerateRequest 智能推荐膳食计划请求
 type AIDietPlanGenerateRequest struct {
+	UserID                 string `json:"user_id"`
 	PlanTitle              string `json:"plan_title"`
 	CycleDays              int    `json:"cycle_days"`
 	ActivityLevel          string `json:"activity_level"`
@@ -181,4 +182,14 @@ type AIDietPlanGenerateRequest struct {
 	OtherGoal              string `json:"other_goal"`
 	HealthProfile          string `json:"health_profile"`
 	AdditionalRequirements string `json:"additional_requirements"`
+}
+
+// AIDietPlanDraftResponse 规划师端智能初稿响应（仅生成不落库）
+type AIDietPlanDraftResponse struct {
+	UserID           string          `json:"user_id"`
+	PlanTitle        string          `json:"plan_title"`
+	CycleDays        int             `json:"cycle_days"`
+	DietGoal         string          `json:"diet_goal"`
+	GenerationSource string          `json:"generation_source"`
+	PlanDays         []PlanDayCreate `json:"plan_days"`
 }

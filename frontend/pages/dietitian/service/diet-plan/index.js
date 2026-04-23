@@ -35,7 +35,18 @@ Page({
     unitOptions: ['g', '个', '碗', '杯', '勺'], // 单位选项
     unitIndex: 0,
     currentIngredient: null,
-    selectedMealIndex: 0
+    selectedMealIndex: 0,
+    showAIDraftModal: false,
+    aiGeneratingDraft: false,
+    aiForm: {
+      serviceType: 'diet_plan',
+      dietGoal: 'weight_loss',
+      otherGoal: '',
+      disease: '',
+      allergy: '',
+      demand: '',
+      activityLevel: 'moderately_active'
+    }
   },
 
   onLoad(options) {
@@ -59,6 +70,170 @@ Page({
     this.loadIngredients();
     this.loadUserInfo(userId);
     this.loadUserDietPlan(userId);
+    this.loadServiceRequestPrefill(userId);
+  },
+
+  loadServiceRequestPrefill(userId) {
+    api.serviceRequest.getDietitianList()
+      .then((res) => {
+        if (res.code !== 200 || !Array.isArray(res.data)) {
+          return;
+        }
+        const req = this.pickLatestRequestForUser(res.data, userId);
+        if (!req) {
+          return;
+        }
+        const health = req.health_data && typeof req.health_data === 'object' ? req.health_data : {};
+        this.setData({
+          aiForm: {
+            ...this.data.aiForm,
+            serviceType: req.service_type || 'diet_plan',
+            dietGoal: req.diet_goal || 'weight_loss',
+            otherGoal: req.other_goal || '',
+            disease: health.disease || '',
+            allergy: health.allergy || '',
+            demand: health.demand || ''
+          }
+        });
+      })
+      .catch(() => {});
+  },
+
+  pickLatestRequestForUser(rows, userId) {
+    const uid = String(userId || '').trim();
+    if (!uid) return null;
+    const mine = (rows || []).filter((x) => String(x.user_id || '').trim() === uid && ['pending', 'approved'].includes(x.status));
+    if (!mine.length) return null;
+    mine.sort((a, b) => {
+      const ta = new Date(a.update_time || a.create_time || 0).getTime();
+      const tb = new Date(b.update_time || b.create_time || 0).getTime();
+      return tb - ta;
+    });
+    return mine[0];
+  },
+
+  openAIDraftModal() {
+    this.setData({
+      showAIDraftModal: true,
+      aiForm: {
+        ...this.data.aiForm
+      }
+    });
+  },
+
+  closeAIDraftModal() {
+    if (this.data.aiGeneratingDraft) return;
+    this.setData({ showAIDraftModal: false });
+  },
+
+  selectAIDietGoal(e) {
+    const goal = e.currentTarget.dataset.goal;
+    this.setData({ 'aiForm.dietGoal': goal });
+  },
+
+  bindAIField(e) {
+    const field = e.currentTarget.dataset.field;
+    this.setData({ [`aiForm.${field}`]: e.detail.value });
+  },
+
+  bindAIActivityChange(e) {
+    const index = Number(e.detail.value);
+    const levels = ['sedentary', 'lightly_active', 'moderately_active', 'very_active'];
+    this.setData({ 'aiForm.activityLevel': levels[index] || 'moderately_active' });
+  },
+
+  buildHealthProfileForAI() {
+    const parts = [];
+    if (this.data.aiForm.disease) parts.push(`疾病情况：${this.data.aiForm.disease}`);
+    if (this.data.aiForm.allergy) parts.push(`过敏食物：${this.data.aiForm.allergy}`);
+    return parts.join('；');
+  },
+
+  generateAIDraft() {
+    const { userId, planInfo, aiForm } = this.data;
+    if (!userId) {
+      wx.showToast({ title: '缺少目标用户', icon: 'none' });
+      return;
+    }
+    if (aiForm.dietGoal === 'other' && !aiForm.otherGoal) {
+      wx.showToast({ title: '请填写其他目标', icon: 'none' });
+      return;
+    }
+    const healthProfile = this.buildHealthProfileForAI();
+    const title = planInfo.title || '智能推荐膳食计划初稿';
+    this.setData({ aiGeneratingDraft: true });
+    wx.showLoading({ title: '生成初稿中...', mask: true });
+    api.dietPlan.generateAIDraft({
+      user_id: userId,
+      plan_title: title,
+      cycle_days: parseInt(planInfo.duration, 10) || 7,
+      activity_level: aiForm.activityLevel || 'moderately_active',
+      diet_goal: aiForm.dietGoal || 'weight_loss',
+      other_goal: aiForm.otherGoal || '',
+      health_profile: healthProfile,
+      additional_requirements: aiForm.demand || ''
+    })
+      .then((res) => {
+        wx.hideLoading();
+        this.setData({ aiGeneratingDraft: false });
+        if (res.code !== 200 || !res.data) {
+          wx.showToast({ title: (res && res.message) || '生成失败', icon: 'none' });
+          return;
+        }
+        const draft = res.data;
+        const duration = draft.cycle_days || (parseInt(planInfo.duration, 10) || 7);
+        const draftDays = (draft.plan_days || []).map((day, idx) => ({
+          dayIndex: day.day_index || idx + 1,
+          date: day.plan_date || this.getDateByDayIndex(idx + 1),
+          meals: (day.meals || []).map((meal) => ({
+            type: meal.type,
+            time: meal.time,
+            calories: meal.calories || 0,
+            protein: meal.protein || 0,
+            carbohydrate: meal.carbohydrate || 0,
+            fat: meal.fat || 0,
+            foods: (meal.foods || []).map((food) => ({
+              name: food.name,
+              amount: food.amount,
+              calories: food.calories || 0,
+              protein: food.protein || 0,
+              carbohydrate: food.carbohydrate || 0,
+              fat: food.fat || 0
+            }))
+          }))
+        }));
+        while (draftDays.length < duration) {
+          const dayIndex = draftDays.length + 1;
+          draftDays.push({
+            dayIndex,
+            date: this.getDateByDayIndex(dayIndex),
+            meals: [
+              { type: '早餐', time: '08:00', calories: 0, foods: [] },
+              { type: '午餐', time: '12:00', calories: 0, foods: [] },
+              { type: '晚餐', time: '18:00', calories: 0, foods: [] },
+              { type: '加餐', time: '15:00', calories: 0, foods: [] }
+            ]
+          });
+        }
+        this.setData({
+          showAIDraftModal: false,
+          planDays: draftDays,
+          currentDay: 1,
+          currentDayMeals: draftDays[0] ? draftDays[0].meals : [],
+          planInfo: {
+            ...this.data.planInfo,
+            title: draft.plan_title || title,
+            duration
+          }
+        });
+        wx.showToast({ title: `初稿已生成（${draft.generation_source || 'ai'}）`, icon: 'success' });
+      })
+      .catch((err) => {
+        wx.hideLoading();
+        this.setData({ aiGeneratingDraft: false });
+        const msg = (err && err.data && err.data.message) || err.errMsg || '网络错误';
+        wx.showToast({ title: msg, icon: 'none' });
+      });
   },
 
   loadUserDietPlan(userId) {
@@ -176,6 +351,7 @@ Page({
             
             this.setData({
               planDays: planDays,
+              'planInfo.startDate': (planDays[0] && planDays[0].date) || this.data.planInfo.startDate,
               currentDayMeals: planDays[0].meals
             });
             
@@ -349,14 +525,30 @@ Page({
 
   bindStartDateChange(e) {
     const startDate = e.detail.value;
+    const planDays = (this.data.planDays || []).map((day, index) => ({
+      ...day,
+      // 仅重算日期，保留原有餐次与食物编辑内容
+      date: this.getDateByStartDate(startDate, index + 1)
+    }));
+    const currentDayIndex = (this.data.currentDay || 1) - 1;
     this.setData({
-      'planInfo.startDate': startDate
+      'planInfo.startDate': startDate,
+      planDays,
+      currentDayMeals: planDays[currentDayIndex] ? planDays[currentDayIndex].meals : []
     });
-    // 重新初始化计划天数，使用新的开始日期
-    this.initPlanDays();
   },
 
 
+
+  getDateByStartDate(startDate, dayIndex) {
+    const base = startDate || new Date().toISOString().split('T')[0];
+    const date = new Date(base);
+    date.setDate(date.getDate() + dayIndex - 1);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
 
   adjustPlanDays(newDuration) {
     const oldPlanDays = this.data.planDays;

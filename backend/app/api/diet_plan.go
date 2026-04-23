@@ -39,6 +39,7 @@ func NewDietPlanHandler(dietPlanService *services.DietPlanService) *DietPlanHand
 func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 	dietPlanGroup := router.Group("/diet-plans")
 	{
+		dietPlanGroup.POST("/ai/generate-draft", h.GenerateAIDietPlanDraft)
 		dietPlanGroup.POST("/ai/generate", h.GenerateAIDietPlan)
 		dietPlanGroup.POST("", h.CreateDietPlan)
 		dietPlanGroup.GET("/user", h.GetUserDietPlans)
@@ -49,6 +50,39 @@ func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 		dietPlanGroup.PUT("/:id/optimization", h.RequestOptimization)
 		dietPlanGroup.PUT("/:id/publish", h.PublishDietPlan)
 	}
+}
+
+// GenerateAIDietPlanDraft 规划师端智能推荐生成初稿（不落库）
+func (h *DietPlanHandler) GenerateAIDietPlanDraft(c *gin.Context) {
+	_, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
+		return
+	}
+	roleType, _ := c.Get("roleType")
+	roleTypeStr, _ := roleType.(string)
+	if roleTypeStr != "dietitian" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅规划师可使用该接口"})
+		return
+	}
+
+	var req schemas.AIDietPlanGenerateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "请求参数错误"})
+		return
+	}
+	targetUserID := req.UserID
+	if targetUserID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "目标用户ID不能为空"})
+		return
+	}
+
+	draft, err := h.dietPlanService.GenerateAIDietPlanDraft(targetUserID, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "生成成功", Data: draft})
 }
 
 // GenerateAIDietPlan 智能推荐生成膳食计划

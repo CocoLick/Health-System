@@ -74,6 +74,7 @@ Page({
   },
 
   onShow() {
+    this.loadServiceUsers();
     this.loadServiceRequests();
     this.loadHealthEducationList();
     this.loadPendingFeedbackCount();
@@ -209,6 +210,7 @@ Page({
                 wx.showToast({ title: '已批准申请', icon: 'success' });
                 this.closeRequestDetail();
                 this.loadServiceRequests();
+                this.loadServiceUsers();
               } else {
                 wx.showToast({ title: '操作失败', icon: 'none' });
               }
@@ -239,6 +241,7 @@ Page({
                 wx.showToast({ title: '已拒绝申请', icon: 'success' });
                 this.closeRequestDetail();
                 this.loadServiceRequests();
+                this.loadServiceUsers();
               } else {
                 wx.showToast({ title: '操作失败', icon: 'none' });
               }
