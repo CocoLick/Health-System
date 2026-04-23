@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/nutrition-system/app/schemas"
@@ -41,6 +42,7 @@ func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 	{
 		dietPlanGroup.POST("/ai/generate-draft", h.GenerateAIDietPlanDraft)
 		dietPlanGroup.POST("/ai/generate", h.GenerateAIDietPlan)
+		dietPlanGroup.POST("/:id/ai/optimize-draft", h.OptimizeAIDietPlanDraft)
 		dietPlanGroup.POST("", h.CreateDietPlan)
 		dietPlanGroup.GET("/user", h.GetUserDietPlans)
 		dietPlanGroup.GET("/:id", h.GetDietPlanDetail)
@@ -83,6 +85,51 @@ func (h *DietPlanHandler) GenerateAIDietPlanDraft(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "生成成功", Data: draft})
+}
+
+// OptimizeAIDietPlanDraft 规划师：基于当前计划 + 身体变化 + 反馈生成优化草案（不落库）
+func (h *DietPlanHandler) OptimizeAIDietPlanDraft(c *gin.Context) {
+	_, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
+		return
+	}
+	roleType, _ := c.Get("roleType")
+	if roleType != "dietitian" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅规划师可使用该接口"})
+		return
+	}
+	did := strings.TrimSpace(c.GetString("userID"))
+	if did == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{Code: 401, Message: "未授权"})
+		return
+	}
+
+	var req schemas.AIDietPlanOptimizeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "请求参数错误"})
+		return
+	}
+	if strings.TrimSpace(req.UserID) == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "目标用户ID不能为空"})
+		return
+	}
+
+	planID := c.Param("id")
+	draft, err := h.dietPlanService.GenerateOptimizeAIDraft(did, planID, req)
+	if err != nil {
+		if errors.Is(err, services.ErrDietPlanNotFound) {
+			c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: err.Error()})
+			return
+		}
+		if errors.Is(err, services.ErrDietPlanForbidden) {
+			c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "ok", Data: draft})
 }
 
 // GenerateAIDietPlan 智能推荐生成膳食计划

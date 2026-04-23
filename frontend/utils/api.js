@@ -413,6 +413,15 @@ const dietPlan = {
       timeout: 180000
     });
   },
+  // 规划师：基于当前计划、身体变化与反馈生成优化草案（不落库）
+  optimizeAIDraft: function(planId, data = {}) {
+    return request({
+      url: `/api/diet-plans/${encodeURIComponent(planId)}/ai/optimize-draft`,
+      method: 'POST',
+      data,
+      timeout: 180000
+    });
+  },
   // 智能推荐：调用后端大模型生成并发布膳食计划
   generateAIPlan: function(data = {}) {
     return request({

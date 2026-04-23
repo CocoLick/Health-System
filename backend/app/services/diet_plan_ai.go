@@ -43,6 +43,11 @@ type aiPlanFood struct {
 	Fat      float64 `json:"fat"`
 }
 
+type aiOptimizeLLMResult struct {
+	OptimizationSummary string      `json:"optimization_summary"`
+	Days                []aiPlanDay `json:"days"`
+}
+
 // UnmarshalJSON 兼容不同模型的字段命名，避免因键名差异导致营养素被解析为 0。
 func (f *aiPlanFood) UnmarshalJSON(data []byte) error {
 	var raw map[string]interface{}
@@ -62,6 +67,7 @@ type chatCompletionsRequest struct {
 	Model       string              `json:"model"`
 	Messages    []map[string]string `json:"messages"`
 	Temperature float64             `json:"temperature,omitempty"`
+	MaxTokens   *int                `json:"max_tokens,omitempty"`
 }
 
 type chatCompletionsResponse struct {
@@ -284,19 +290,40 @@ func (s *DietPlanService) callDietPlanLLM(userID string, cycleDays int, goal str
 }
 
 func (s *DietPlanService) requestLLMContent(baseURL, apiKey, model, prompt string, timeout time.Duration) (string, error) {
+	return s.requestLLMContentOpts(baseURL, apiKey, model, prompt, timeout, 0.5, 0, "", "你是资深临床营养师，请输出严格可解析的JSON，不要包含markdown代码块。")
+}
+
+// requestLLMContentOpts 温度、max_out_tokens、优先模型、系统提示可配；maxOut<=0 不传 max_tokens
+func (s *DietPlanService) requestLLMContentOpts(baseURL, apiKey, model, prompt string, timeout time.Duration, temperature float64, maxOut int, modelOverride, systemPrompt string) (string, error) {
+	if temperature <= 0 {
+		temperature = 0.5
+	}
+	if strings.TrimSpace(systemPrompt) == "" {
+		systemPrompt = "你是资深临床营养师，请输出严格可解析的JSON，不要包含markdown代码块。"
+	}
+	m := strings.TrimSpace(modelOverride)
+	if m == "" {
+		m = model
+	}
+	var maxPtr *int
+	if maxOut > 0 {
+		v := maxOut
+		maxPtr = &v
+	}
 	reqBody := chatCompletionsRequest{
-		Model: model,
+		Model: m,
 		Messages: []map[string]string{
 			{
 				"role":    "system",
-				"content": "你是资深临床营养师，请输出严格可解析的JSON，不要包含markdown代码块。",
+				"content": systemPrompt,
 			},
 			{
 				"role":    "user",
 				"content": prompt,
 			},
 		},
-		Temperature: 0.5,
+		Temperature: temperature,
+		MaxTokens:   maxPtr,
 	}
 	bodyBytes, _ := json.Marshal(reqBody)
 	httpReq, err := http.NewRequest(http.MethodPost, strings.TrimRight(baseURL, "/")+"/chat/completions", bytes.NewReader(bodyBytes))
@@ -341,6 +368,46 @@ func llmTimeoutFromEnv() time.Duration {
 		v = 300
 	}
 	return time.Duration(v) * time.Second
+}
+
+// llmTimeoutOptimizeFromEnv 智能优化输入更长，默认可略放宽首包时间（仍受 HTTP 总超时限制）
+func llmTimeoutOptimizeFromEnv() time.Duration {
+	s := strings.TrimSpace(config.GetEnv("LLM_OPTIMIZE_TIMEOUT_SECONDS", ""))
+	if s == "" {
+		return llmTimeoutFromEnv()
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil || v <= 0 {
+		return llmTimeoutFromEnv()
+	}
+	if v > 300 {
+		v = 300
+	}
+	return time.Duration(v) * time.Second
+}
+
+func intFromEnvDefault(key string, def int) int {
+	s := strings.TrimSpace(config.GetEnv(key, ""))
+	if s == "" {
+		return def
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil {
+		return def
+	}
+	return v
+}
+
+func floatFromEnvDefault(key string, def float64) float64 {
+	s := strings.TrimSpace(config.GetEnv(key, ""))
+	if s == "" {
+		return def
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return def
+	}
+	return v
 }
 
 func isTimeoutErr(err error) bool {
@@ -613,4 +680,293 @@ func (s *DietPlanService) buildFallbackAIOutput(cycleDays int) aiPlanOutput {
 		})
 	}
 	return out
+}
+
+// GenerateOptimizeAIDraft 根据当前计划 + 身体变化 + 用户反馈生成优化草案（不落库，需规划师审阅后保存）
+func (s *DietPlanService) GenerateOptimizeAIDraft(dietitianID, planID string, req schemas.AIDietPlanOptimizeRequest) (schemas.AIDietPlanOptimizeDraftResponse, error) {
+	out := schemas.AIDietPlanOptimizeDraftResponse{ContextUsed: map[string]interface{}{}}
+	userID := strings.TrimSpace(req.UserID)
+	if userID == "" {
+		return out, errors.New("用户ID不能为空")
+	}
+	if _, err := s.getPlanForDietitianContext(planID, userID, dietitianID); err != nil {
+		return out, err
+	}
+
+	detail, err := s.GetDietPlanDetail(planID, userID)
+	if err != nil {
+		return out, err
+	}
+
+	cycleDays := detail.CycleDays
+	if cycleDays <= 0 {
+		cycleDays = len(detail.PlanDays)
+	}
+	if cycleDays <= 0 {
+		cycleDays = 7
+	}
+
+	hs := NewHealthDataService()
+	var changeJSON []byte
+	chg, errChg := hs.GetHealthDataChangeSummary(userID)
+	if errChg == nil {
+		changeJSON, _ = json.Marshal(chg)
+	} else {
+		changeJSON, _ = json.Marshal(map[string]string{"error": errChg.Error()})
+	}
+
+	fbSvc := NewFeedbackService()
+	feedLines, _ := fbSvc.TextLinesForDietPlanOptimize(dietitianID, userID, planID, req.FeedbackIDs)
+
+	var hd models.HealthData
+	_ = config.DB.Where("user_id = ?", userID).Order("updated_at DESC").First(&hd).Error
+	activity := strings.TrimSpace(hd.ActivityLevel)
+	if activity == "" {
+		activity = "moderately_active"
+	}
+	target := s.estimateNutritionTarget(userID, activity)
+
+	// 控制输入体积可明显缩短首包/总耗时；可在 .env 调 LLM_OPTIMIZE_PLAN_JSON_BYTES
+	planJSONBudget := intFromEnvDefault("LLM_OPTIMIZE_PLAN_JSON_BYTES", 8000)
+	compact := compactDietPlanForLLMMax(detail, planJSONBudget)
+	plannerNote := strings.TrimSpace(req.PlannerNote)
+
+	generationSource := "llm"
+	aiRes, lerr := s.callDietPlanOptimizeLLM(cycleDays, target, string(changeJSON), compact, feedLines, plannerNote, hd, detail.DietGoal)
+	if lerr != nil {
+		log.Printf("GenerateOptimizeAIDraft: llm failed, fallback: %v", lerr)
+		aiRes.OptimizationSummary = "智能服务暂不可用，已按均衡营养规则生成建议草案，请结合用户身体数据与反馈人工审阅后调整。"
+		aiRes.Days = s.buildFallbackAIOutput(cycleDays).Days
+		generationSource = "fallback"
+	}
+	summary := strings.TrimSpace(aiRes.OptimizationSummary)
+	if summary == "" {
+		summary = "已根据身体变化、反馈与当前计划生成一版调整草案，请审阅各日配餐与营养素后再保存。"
+	}
+
+	planDays := s.toCreatePlanDaysFromAIOptimize(aiPlanOutput{Days: aiRes.Days}, detail, target, cycleDays)
+	if len(planDays) == 0 {
+		return out, errors.New("智能优化结果为空")
+	}
+
+	goal := strings.TrimSpace(detail.DietGoal)
+	if goal == "" {
+		goal = s.resolveUserGoalSnapshot(userID)
+	}
+	if goal == "" {
+		goal = "智能优化"
+	}
+
+	insuff := false
+	if errChg == nil {
+		if v, ok := chg["insufficient_sample"].(bool); ok {
+			insuff = v
+		}
+	}
+	out = schemas.AIDietPlanOptimizeDraftResponse{
+		PlanID:              planID,
+		UserID:              userID,
+		PlanTitle:           detail.PlanTitle,
+		CycleDays:           cycleDays,
+		DietGoal:            goal,
+		OptimizationSummary: summary,
+		GenerationSource:    generationSource,
+		PlanDays:            planDays,
+		ContextUsed: map[string]interface{}{
+			"change_summary":       string(changeJSON),
+			"feedback_count":     len(feedLines),
+			"planner_note_length":  len([]rune(plannerNote)),
+			"insufficient_sample": insuff,
+		},
+	}
+	return out, nil
+}
+
+func compactDietPlanForLLM(d schemas.DietPlanDetail) string {
+	return compactDietPlanForLLMMax(d, 12000)
+}
+
+func compactDietPlanForLLMMax(d schemas.DietPlanDetail, maxBytes int) string {
+	type cf struct {
+		Name   string `json:"name"`
+		Amount string `json:"amount"`
+	}
+	type cm struct {
+		Type  string `json:"type"`
+		Time  string `json:"time"`
+		Foods []cf   `json:"foods"`
+	}
+	type cd struct {
+		DayIndex int    `json:"day_index"`
+		Date     string `json:"date"`
+		Meals    []cm   `json:"meals"`
+	}
+	compact := make([]cd, 0, len(d.PlanDays))
+	for _, day := range d.PlanDays {
+		meals := make([]cm, 0, len(day.Meals))
+		for _, m := range day.Meals {
+			foods := make([]cf, 0, len(m.Foods))
+			for _, f := range m.Foods {
+				foods = append(foods, cf{Name: strings.TrimSpace(f.Name), Amount: strings.TrimSpace(f.Amount)})
+			}
+			meals = append(meals, cm{Type: strings.TrimSpace(m.Type), Time: strings.TrimSpace(m.Time), Foods: foods})
+		}
+		compact = append(compact, cd{
+			DayIndex: day.DayIndex,
+			Date:     strings.TrimSpace(day.PlanDate),
+			Meals:    meals,
+		})
+	}
+	b, _ := json.Marshal(compact)
+	if maxBytes <= 0 {
+		maxBytes = 12000
+	}
+	if len(b) > maxBytes {
+		return fmt.Sprintf("{\"note\":\"内容过长已截断\",\"title\":%q,\"day_count\":%d}", d.PlanTitle, len(d.PlanDays))
+	}
+	return string(b)
+}
+
+func (s *DietPlanService) callDietPlanOptimizeLLM(
+	cycleDays int,
+	target schemas.NutritionTarget,
+	changeJSON, currentPlanJSON string,
+	feedbackLines []string,
+	plannerNote string,
+	hd models.HealthData,
+	planDietGoal string,
+) (aiOptimizeLLMResult, error) {
+	var zero aiOptimizeLLMResult
+	baseURL := strings.TrimSpace(config.GetEnv("LLM_BASE_URL", ""))
+	apiKey := strings.TrimSpace(config.GetEnv("LLM_API_KEY", ""))
+	model := strings.TrimSpace(config.GetEnv("LLM_MODEL", ""))
+	if baseURL == "" || apiKey == "" || model == "" {
+		return zero, errors.New("LLM配置不完整，请设置 LLM_BASE_URL、LLM_API_KEY、LLM_MODEL")
+	}
+
+	// 输入体积是耗时的主因：主 prompt 与重试均做二次截断，容量可用环境变量调
+	plannerNote = strings.TrimSpace(plannerNote)
+	inPlan := intFromEnvDefault("LLM_OPTIMIZE_IN_PLAN_BYTES", 6000)
+	inChg := intFromEnvDefault("LLM_OPTIMIZE_IN_CHANGE_BYTES", 2000)
+	inFb := intFromEnvDefault("LLM_OPTIMIZE_IN_FEEDBACK_BYTES", 2500)
+	currentPlanJSON = strings.TrimSpace(currentPlanJSON)
+	changeJSON = strings.TrimSpace(changeJSON)
+	if inPlan > 0 && len(currentPlanJSON) > inPlan {
+		currentPlanJSON = truncateForPrompt(currentPlanJSON, inPlan)
+	}
+	if inChg > 0 && len(changeJSON) > inChg {
+		changeJSON = truncateForPrompt(changeJSON, inChg)
+	}
+	inNote := intFromEnvDefault("LLM_OPTIMIZE_IN_PLANNER_NOTE_BYTES", 1200)
+	if inNote > 0 && len(plannerNote) > inNote {
+		plannerNote = truncateForPrompt(plannerNote, inNote)
+	}
+
+	fbText := "（无）"
+	if len(feedbackLines) > 0 {
+		fbText = strings.Join(feedbackLines, "\n")
+	}
+	if inFb > 0 && len(fbText) > inFb {
+		fbText = truncateForPrompt(fbText, inFb)
+	}
+	if plannerNote == "" {
+		plannerNote = "（无）"
+	}
+	goal := strings.TrimSpace(planDietGoal)
+	if goal == "" {
+		goal = "（与当前计划一致）"
+	}
+	// 说明略收紧，减少总 token
+	userPrompt := fmt.Sprintf(
+		"在「当前膳食计划」上结合【身体数据变化】、【用户反馈】、【规划师说明】做调整。只输出**一个** JSON，含 optimization_summary 与 days，勿 markdown。结构：\n"+
+			`{"optimization_summary":"主调整点与注意项","days":[{"day_index":1,"meals":[...]}]}`+"\n"+
+			"约束：共 %d 天，day_index=1..%d；各餐含早午晚，可加餐；每 food 含 name, amount, calories, protein, carbohydrate, fat；日热量接近期望 %.0f kcal。过敏：%s。原目标：%s。\n\n"+
+			"【身体变化】%s\n\n【当前计划】%s\n\n【用户反馈】\n%s\n\n【规划师说明】%s",
+		cycleDays, cycleDays, target.Calories, strings.TrimSpace(hd.AllergyHistory), goal,
+		changeJSON, currentPlanJSON, fbText, plannerNote,
+	)
+	compactPlan := intFromEnvDefault("LLM_OPTIMIZE_COMPACT_PLAN_BYTES", 3200)
+	compactChg := intFromEnvDefault("LLM_OPTIMIZE_COMPACT_CHANGE_BYTES", 1500)
+	compactPrompt := fmt.Sprintf(
+		"仅输出JSON: {\"optimization_summary\":\"...\",\"days\":[]}, %d天, day_index 1..%d, 早午晚+加餐, food 营养素齐全, 日热量~%.0f, 过敏%q。计划:%s 身体:%s。",
+		cycleDays, cycleDays, target.Calories, strings.TrimSpace(hd.AllergyHistory),
+		truncateForPrompt(currentPlanJSON, compactPlan), truncateForPrompt(changeJSON, compactChg),
+	)
+
+	temp := floatFromEnvDefault("LLM_OPTIMIZE_TEMPERATURE", 0.35)
+	maxOut := intFromEnvDefault("LLM_OPTIMIZE_MAX_TOKENS", 0)
+	optModel := strings.TrimSpace(config.GetEnv("LLM_MODEL_OPTIMIZE", ""))
+	sys := strings.TrimSpace(config.GetEnv("LLM_OPTIMIZE_SYSTEM_PROMPT", "你是临床营养师。只输出一个可解析的 JSON 对象，不要 markdown，不要其他文字。"))
+	if sys == "" {
+		sys = "你是临床营养师。只输出一个可解析的 JSON 对象，不要 markdown，不要其他文字。"
+	}
+
+	timeout := llmTimeoutOptimizeFromEnv()
+	call := func(p string, t time.Duration) (string, error) {
+		return s.requestLLMContentOpts(baseURL, apiKey, model, p, t, temp, maxOut, optModel, sys)
+	}
+	content, err := call(userPrompt, timeout)
+	if err != nil {
+		if isTimeoutErr(err) {
+			log.Printf("callDietPlanOptimizeLLM: timeout, retry compact")
+			extra := intFromEnvDefault("LLM_OPTIMIZE_TIMEOUT_RETRY_EXTRA_SECONDS", 30)
+			content, err = call(compactPrompt, timeout+time.Duration(extra)*time.Second)
+		}
+		if err != nil {
+			return zero, err
+		}
+	}
+
+	jsonText := extractJSONObject(content)
+	if jsonText == "" {
+		return zero, errors.New("LLM结果不是有效JSON")
+	}
+	var res aiOptimizeLLMResult
+	if err := json.Unmarshal([]byte(jsonText), &res); err != nil {
+		return zero, err
+	}
+	if len(res.Days) == 0 {
+		return zero, errors.New("LLM未返回days")
+	}
+	return res, nil
+}
+
+func truncateForPrompt(s string, max int) string {
+	s = strings.TrimSpace(s)
+	if max <= 0 || len(s) <= max {
+		return s
+	}
+	if max < 3 {
+		return s[:max]
+	}
+	return s[:max-1] + "…"
+}
+
+func (s *DietPlanService) toCreatePlanDaysFromAIOptimize(out aiPlanOutput, detail schemas.DietPlanDetail, target schemas.NutritionTarget, cycleDays int) []schemas.PlanDayCreate {
+	now := time.Now()
+	dates := make([]string, cycleDays)
+	for i := 0; i < cycleDays; i++ {
+		if i < len(detail.PlanDays) {
+			d := strings.TrimSpace(detail.PlanDays[i].PlanDate)
+			if d != "" {
+				dates[i] = d
+				continue
+			}
+		}
+		if len(detail.PlanDays) > 0 {
+			if t, err := time.Parse("2006-01-02", strings.TrimSpace(detail.PlanDays[0].PlanDate)); err == nil {
+				dates[i] = t.AddDate(0, 0, i).Format("2006-01-02")
+				continue
+			}
+		}
+		dates[i] = now.AddDate(0, 0, i).Format("2006-01-02")
+	}
+
+	created := s.toCreatePlanDays(out, cycleDays, target)
+	for i := range created {
+		if i < len(dates) && strings.TrimSpace(dates[i]) != "" {
+			created[i].PlanDate = dates[i]
+		}
+	}
+	return created
 }

@@ -47,7 +47,10 @@
         </view>
       </picker>
     </view>
-    <button class="ai-draft-btn" bindtap="openAIDraftModal">智能生成初稿</button>
+    <view class="ai-actions">
+      <button class="ai-draft-btn" bindtap="openAIDraftModal">智能生成初稿</button>
+      <button class="ai-optimize-btn" bindtap="openAIOptimizeModal">智能优化建议</button>
+    </view>
   </view>
 
   <!-- 计划编辑 -->
@@ -201,6 +204,81 @@
           <textarea class="form-textarea" placeholder="如：口味偏好、忌口、预算等" value="{{aiForm.demand}}" bindinput="bindAIField" data-field="demand"/>
         </view>
         <button class="ai-generate-btn" loading="{{aiGeneratingDraft}}" disabled="{{aiGeneratingDraft}}" bindtap="generateAIDraft">生成初稿</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 智能优化建议（身体变化 + 反馈 + 说明） -->
+  <view class="modal {{showAIOptimizeModal ? 'show' : ''}}" catchtap="closeAIOptimizeModal">
+    <view class="modal-content ai-draft-modal" catchtap="stopPropagation">
+      <view class="modal-header">
+        <view class="modal-title">智能优化建议</view>
+        <view class="modal-close" bindtap="closeAIOptimizeModal">×</view>
+      </view>
+      <view class="modal-body">
+        <view class="optimize-hint" wx:if="{{optimizeChangeHint}}">{{optimizeChangeHint}}</view>
+        <view class="form-item">
+          <view class="form-label">规划师补充（可选）</view>
+          <textarea class="form-textarea" placeholder="如：希望减少主食、增加蛋白等" value="{{optimizePlannerNote}}" bindinput="bindOptimizePlannerNote"/>
+        </view>
+        <view class="form-item" wx:if="{{optimizeFeedbackList.length}}">
+          <view class="form-label">纳入的用户反馈（可选勾选）</view>
+          <view class="feedback-pick-list">
+            <view
+              class="feedback-pick-item {{item.checked ? 'checked' : ''}}"
+              wx:for="{{optimizeFeedbackList}}"
+              wx:key="feedback_id"
+              bindtap="toggleOptimizeFeedback"
+              data-id="{{item.feedback_id}}"
+            >
+              <text class="feedback-pick-title">{{item.title}}</text>
+              <text class="feedback-pick-preview">{{item.content_preview}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="form-item muted" wx:else>
+          <text>暂无该用户的待选反馈，将使用近期反馈由服务端自动选取。</text>
+        </view>
+        <button class="ai-generate-btn" loading="{{aiOptimizing}}" disabled="{{aiOptimizing}}" bindtap="generateAIOptimizeDraft">生成优化草案</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 智能优化结果：分节分点，可滚动 -->
+  <view
+    class="modal optimize-result-overlay {{showOptimizeResultModal ? 'show' : ''}}"
+    catchtap="dismissOptimizeResult"
+  >
+    <view class="modal-content optimize-result-modal" catchtap="stopPropagation">
+      <view class="optimize-result-top">
+        <view>
+          <view class="optimize-result-h1">智能优化说明</view>
+          <view class="optimize-result-sub">草案已加载到下方「各日计划」，审阅后再保存/发布</view>
+        </view>
+        <view class="modal-close" catchtap="dismissOptimizeResult">×</view>
+      </view>
+      <view class="optimize-result-meta" wx:if="{{optimizeResultSourceLabel}}">
+        <text class="optimize-result-tag">{{optimizeResultSourceLabel}}</text>
+      </view>
+      <scroll-view scroll-y class="optimize-result-scroll" show-scrollbar="{{true}}">
+        <view
+          class="optimize-result-section"
+          wx:for="{{optimizeResultSections}}"
+          wx:for-item="sec"
+          wx:key="key"
+        >
+          <view class="optimize-result-sec-title">{{sec.title}}</view>
+          <view
+            class="optimize-result-line"
+            wx:for="{{sec.items}}"
+            wx:for-item="line"
+            wx:for-index="li"
+            wx:key="li"
+          >· {{line}}</view>
+        </view>
+      </scroll-view>
+      <view class="optimize-result-footer">
+        <button class="optimize-result-btn" type="default" catchtap="dismissOptimizeResult">我知道了</button>
       </view>
     </view>
   </view>

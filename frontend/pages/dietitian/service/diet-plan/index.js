@@ -1,6 +1,99 @@
 // dietitian/service/diet-plan/index.js
 const api = require('../../../../utils/api');
 
+function activityTextHint(level) {
+  const m = {
+    sedentary: '久坐少动',
+    lightly_active: '轻度活动',
+    moderately_active: '中度活动',
+    very_active: '高强度活动'
+  };
+  return m[level] || level || '—';
+}
+
+/** 将 /change-summary 转为弹窗内简短说明（此前仅拼体重，易误以为只有体重会参与优化） */
+function formatOptimizeChangeHint(resData) {
+  if (!resData) {
+    return '';
+  }
+  const d = resData.delta || {};
+  const insuff = resData.insufficient_sample;
+  const parts = [];
+  if (insuff) {
+    parts.push('历史记录较少，差值仅作参考');
+  }
+  if (typeof d.weight === 'number') {
+    const sign = d.weight > 0 ? '+' : '';
+    parts.push(`体重较基线${sign}${d.weight}kg`);
+  }
+  if (typeof d.blood_sugar === 'number') {
+    const sign = d.blood_sugar > 0 ? '+' : '';
+    parts.push(`血糖较基线约${sign}${d.blood_sugar}`);
+  }
+  if (typeof d.bmi === 'number') {
+    const sign = d.bmi > 0 ? '+' : '';
+    parts.push(`BMI 较基线约${sign}${d.bmi}`);
+  }
+  if (d.activity_changed) {
+    const a = activityTextHint(d.activity_from);
+    const b = activityTextHint(d.activity_to);
+    parts.push(`活动水平：${a} → ${b}`);
+  }
+  if (parts.length === 0) {
+    return '已拉取身体变化（与基线比较）';
+  }
+  return `${parts.join('；')}。大模型端使用接口返回的完整 JSON，不限于上列简短提示。`;
+}
+
+/** 将优化概要拆成多段+多条，供自定义弹层分点展示 */
+function parseOptimizationSummaryForView(raw) {
+  const full = raw && String(raw).trim();
+  const usedFallback = !full;
+  const t = usedFallback
+    ? '已根据身体数据与反馈生成一版配餐草案，请审阅各日配餐后保存。'
+    : full.length > 3200
+      ? `${full.slice(0, 3200)}…`
+      : full;
+  const chunks = t.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  if (chunks.length === 0) {
+    return { sections: [{ key: 'a0', title: '说明', items: [t] }], usedFallback };
+  }
+  const sections = [];
+  chunks.forEach((chunk, i) => {
+    const lines = chunk.split('\n').map((s) => s.trim()).filter(Boolean);
+    let title = chunks.length > 1 ? `要点 ${i + 1}` : '优化说明';
+    let items = lines.length ? lines.slice() : [chunk];
+    if (lines.length > 0) {
+      const h = lines[0];
+      if (/^【/.test(h) && /】$/.test(h)) {
+        title = h;
+        items = lines.slice(1);
+        if (items.length === 0) {
+          items = [h];
+        }
+      } else if (h.length <= 40 && /[：:]\s*$/.test(h)) {
+        title = h.replace(/\s*[:：]\s*$/, '');
+        items = lines.slice(1);
+        if (items.length === 0) {
+          items = [h];
+        }
+      } else if (lines.length === 1 && /[。；]/.test(lines[0]) && lines[0].length > 50) {
+        const segs = lines[0]
+          .split('。')
+          .map((s) => s.trim())
+          .filter((s) => s)
+          .map((s) => (/[。！？;；]$/.test(s) ? s : `${s}。`));
+        if (segs.length > 1) {
+          title = '优化说明';
+          items = segs;
+        }
+      }
+    }
+    sections.push({ key: `s${i}`, title, items });
+  });
+  return { sections, usedFallback };
+}
+
 Page({
   data: {
     userId: '',
@@ -46,7 +139,16 @@ Page({
       allergy: '',
       demand: '',
       activityLevel: 'moderately_active'
-    }
+    },
+    showAIOptimizeModal: false,
+    aiOptimizing: false,
+    optimizePlannerNote: '',
+    optimizeChangeHint: '',
+    optimizeFeedbackList: [],
+    showOptimizeResultModal: false,
+    optimizeResultSource: '',
+    optimizeResultSourceLabel: '',
+    optimizeResultSections: []
   },
 
   onLoad(options) {
@@ -124,6 +226,197 @@ Page({
   closeAIDraftModal() {
     if (this.data.aiGeneratingDraft) return;
     this.setData({ showAIDraftModal: false });
+  },
+
+  openAIOptimizeModal() {
+    const { userId, planId } = this.data;
+    if (!planId) {
+      wx.showToast({ title: '请先加载用户膳食计划', icon: 'none' });
+      return;
+    }
+    this.setData({ showAIOptimizeModal: true, optimizePlannerNote: '' });
+    if (userId) {
+      api.healthData.getUserChangeSummary(userId)
+        .then((res) => {
+          if (res.code !== 200 || !res.data) {
+            this.setData({ optimizeChangeHint: '' });
+            return;
+          }
+          this.setData({ optimizeChangeHint: formatOptimizeChangeHint(res.data) });
+        })
+        .catch(() => this.setData({ optimizeChangeHint: '' }));
+    }
+    api.feedback
+      .listDietitian({ status: 'all' })
+      .then((res) => {
+        if (res.code !== 200 || !Array.isArray(res.data)) {
+          this.setData({ optimizeFeedbackList: [] });
+          return;
+        }
+        const uid = String(userId || '').trim();
+        const list = (res.data || [])
+          .filter((x) => String(x.user_id || '').trim() === uid)
+          .slice(0, 12)
+          .map((x) => ({
+            feedback_id: x.feedback_id,
+            title: x.title || '反馈',
+            content_preview: x.content_preview || '',
+            checked: false
+          }));
+        this.setData({ optimizeFeedbackList: list });
+      })
+      .catch(() => this.setData({ optimizeFeedbackList: [] }));
+  },
+
+  closeAIOptimizeModal() {
+    if (this.data.aiOptimizing) return;
+    this.setData({ showAIOptimizeModal: false });
+  },
+
+  /** 关闭「优化结果」层（遮罩 / × / 我知道了），与阅读时间无关，关闭后给轻提示 */
+  dismissOptimizeResult() {
+    if (!this.data.showOptimizeResultModal) {
+      return;
+    }
+    this.setData({
+      showOptimizeResultModal: false,
+      optimizeResultSections: [],
+      optimizeResultSource: '',
+      optimizeResultSourceLabel: ''
+    });
+    setTimeout(() => {
+      wx.showToast({ title: '已填入草案', icon: 'success', duration: 2000 });
+    }, 50);
+  },
+
+  bindOptimizePlannerNote(e) {
+    this.setData({ optimizePlannerNote: e.detail.value || '' });
+  },
+
+  toggleOptimizeFeedback(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    const list = (this.data.optimizeFeedbackList || []).map((x) => ({
+      ...x,
+      checked: x.feedback_id === id ? !x.checked : x.checked
+    }));
+    this.setData({ optimizeFeedbackList: list });
+  },
+
+  generateAIOptimizeDraft() {
+    const { userId, planId, planInfo, optimizePlannerNote, optimizeFeedbackList } = this.data;
+    if (!userId || !planId) {
+      wx.showToast({ title: '缺少用户或计划', icon: 'none' });
+      return;
+    }
+    const feedbackIds = (optimizeFeedbackList || [])
+      .filter((x) => x.checked)
+      .map((x) => x.feedback_id);
+    this.setData({ aiOptimizing: true });
+    wx.showLoading({ title: '智能优化中...', mask: true });
+    api.dietPlan
+      .optimizeAIDraft(planId, {
+        user_id: userId,
+        feedback_ids: feedbackIds,
+        planner_note: optimizePlannerNote || ''
+      })
+      .then((res) => {
+        wx.hideLoading();
+        this.setData({ aiOptimizing: false });
+        const code = res && res.code;
+        const ok = code === 200 || code === '200';
+        // 接口正常体或个别环境下 data 在外层
+        const draft =
+          res &&
+          (res.data != null
+            ? res.data
+            : res.plan_days != null || res.plan_id != null
+              ? res
+              : null);
+        if (!ok || !draft) {
+          wx.showToast({ title: (res && res.message) || '生成失败', icon: 'none' });
+          return;
+        }
+        const duration = draft.cycle_days || (parseInt(planInfo.duration, 10) || 7);
+        let nextDays;
+        try {
+          const draftDays = (draft.plan_days || []).map((day, idx) => {
+            if (!day || typeof day !== 'object') {
+              return {
+                dayIndex: idx + 1,
+                date: this.getDateByDayIndex(idx + 1),
+                meals: []
+              };
+            }
+            return {
+              dayIndex: day.day_index || idx + 1,
+              date: day.plan_date || this.getDateByDayIndex(idx + 1),
+              meals: (day.meals || []).map((meal) => ({
+                type: meal.type,
+                time: meal.time,
+                calories: meal.calories || 0,
+                protein: meal.protein || 0,
+                carbohydrate: meal.carbohydrate || 0,
+                fat: meal.fat || 0,
+                foods: (meal.foods || []).map((food) => ({
+                  name: food.name,
+                  amount: food.amount,
+                  calories: food.calories || 0,
+                  protein: food.protein || 0,
+                  carbohydrate: food.carbohydrate || 0,
+                  fat: food.fat || 0
+                }))
+              }))
+            };
+          });
+          const filled = () => {
+            const arr = draftDays.slice();
+            while (arr.length < duration) {
+              const dayIndex = arr.length + 1;
+              arr.push({
+                dayIndex,
+                date: this.getDateByDayIndex(dayIndex),
+                meals: [
+                  { type: '早餐', time: '08:00', calories: 0, foods: [] },
+                  { type: '午餐', time: '12:00', calories: 0, foods: [] },
+                  { type: '晚餐', time: '18:00', calories: 0, foods: [] },
+                  { type: '加餐', time: '15:00', calories: 0, foods: [] }
+                ]
+              });
+            }
+            return arr;
+          };
+          nextDays = filled();
+        } catch (e) {
+          console.error('generateAIOptimizeDraft map', e);
+          wx.showToast({ title: '配餐数据解析失败', icon: 'none' });
+          return;
+        }
+        const src = (draft.generation_source || 'llm').toLowerCase();
+        const srcLabel = src === 'fallback' ? '本地营养兜底' : '大模型生成';
+        const parsed = parseOptimizationSummaryForView(draft.optimization_summary);
+        this.setData({
+          showAIOptimizeModal: false,
+          showOptimizeResultModal: true,
+          optimizeResultSource: src,
+          optimizeResultSourceLabel: srcLabel,
+          optimizeResultSections: parsed.sections,
+          planDays: nextDays,
+          currentDay: 1,
+          currentDayMeals: nextDays[0] ? nextDays[0].meals : [],
+          planInfo: {
+            ...this.data.planInfo,
+            title: draft.plan_title || this.data.planInfo.title,
+            duration
+          }
+        });
+      })
+      .catch((err) => {
+        wx.hideLoading();
+        this.setData({ aiOptimizing: false });
+        const msg = (err && err.data && err.data.message) || err.errMsg || '网络错误';
+        wx.showToast({ title: msg, icon: 'none' });
+      });
   },
 
   selectAIDietGoal(e) {

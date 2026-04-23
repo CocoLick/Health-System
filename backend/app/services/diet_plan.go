@@ -594,6 +594,27 @@ func (s *DietPlanService) DeleteDietPlan(planID, userID string) error {
 	return tx.Commit().Error
 }
 
+// getPlanForDietitianContext 规划师代操：计划存在、归属该用户、且由该规划师管理
+func (s *DietPlanService) getPlanForDietitianContext(planID, userID, dietitianID string) (models.DietPlan, error) {
+	planID = strings.TrimSpace(planID)
+	userID = strings.TrimSpace(userID)
+	dietitianID = strings.TrimSpace(dietitianID)
+	var p models.DietPlan
+	if err := config.DB.Where("plan_id = ?", planID).First(&p).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return p, ErrDietPlanNotFound
+		}
+		return p, err
+	}
+	if strings.TrimSpace(p.UserID) != userID {
+		return p, ErrDietPlanForbidden
+	}
+	if strings.TrimSpace(p.DietitianID) != dietitianID {
+		return p, ErrDietPlanForbidden
+	}
+	return p, nil
+}
+
 // UpdateExecuteStatus 更新执行状态
 func (s *DietPlanService) UpdateExecuteStatus(planID, userID string, req schemas.ExecutionStatusUpdate) error {
 	// 这里应该从数据库更新，现在返回模拟数据

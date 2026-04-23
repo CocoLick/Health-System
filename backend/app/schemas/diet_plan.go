@@ -193,3 +193,23 @@ type AIDietPlanDraftResponse struct {
 	GenerationSource string          `json:"generation_source"`
 	PlanDays         []PlanDayCreate `json:"plan_days"`
 }
+
+// AIDietPlanOptimizeRequest 规划师：基于当前计划、身体变化与反馈生成优化草案（不落库）
+type AIDietPlanOptimizeRequest struct {
+	UserID        string   `json:"user_id" binding:"required"`
+	FeedbackIDs   []string `json:"feedback_ids"`
+	PlannerNote   string   `json:"planner_note"`
+}
+
+// AIDietPlanOptimizeDraftResponse 智能优化草案（仅生成，需规划师审阅后保存/发布）
+type AIDietPlanOptimizeDraftResponse struct {
+	PlanID              string                 `json:"plan_id"`
+	UserID              string                 `json:"user_id"`
+	PlanTitle           string                 `json:"plan_title"`
+	CycleDays           int                    `json:"cycle_days"`
+	DietGoal            string                 `json:"diet_goal"`
+	OptimizationSummary string                 `json:"optimization_summary"`
+	ContextUsed         map[string]interface{} `json:"context_used"`
+	GenerationSource    string                 `json:"generation_source"`
+	PlanDays            []PlanDayCreate        `json:"plan_days"`
+}

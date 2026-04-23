@@ -541,3 +541,77 @@ func (s *FeedbackService) AddDietitianReply(dietitianID, feedbackID, body string
 	}
 	return s.db.Save(fb).Error
 }
+
+// TextLinesForDietPlanOptimize 为膳食计划智能优化组 prompt；指定 ID 时仅取校验通过的条目，否则取该用户近期相关反馈
+func (s *FeedbackService) TextLinesForDietPlanOptimize(dietitianID, userID, planID string, feedbackIDs []string) ([]string, error) {
+	dietitianID = strings.TrimSpace(dietitianID)
+	userID = strings.TrimSpace(userID)
+	planID = strings.TrimSpace(planID)
+	if dietitianID == "" || userID == "" {
+		return nil, fmt.Errorf("%w", ErrFeedbackValidation)
+	}
+
+	lines := make([]string, 0, 8)
+	if len(feedbackIDs) > 0 {
+		for _, raw := range feedbackIDs {
+			fid := strings.TrimSpace(raw)
+			if fid == "" {
+				continue
+			}
+			fb, err := s.getFeedback(fid)
+			if err != nil {
+				continue
+			}
+			if strings.TrimSpace(fb.UserID) != userID {
+				continue
+			}
+			if err := s.assertDietitianTarget(dietitianID, fb); err != nil {
+				continue
+			}
+			lines = append(lines, s.formatFeedbackForPrompt(fb))
+		}
+		return lines, nil
+	}
+
+	var rows []models.UserFeedback
+	tx := s.db.Where("user_id = ? AND target_dietitian_id = ? AND category != ?", userID, dietitianID, "system")
+	if planID != "" {
+		tx = tx.Order(gorm.Expr("CASE WHEN related_plan_id = ? THEN 0 ELSE 1 END, updated_at DESC", planID))
+	} else {
+		tx = tx.Order("updated_at DESC")
+	}
+	if err := tx.Limit(8).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		lines = append(lines, s.formatFeedbackForPrompt(&rows[i]))
+	}
+	return lines, nil
+}
+
+func (s *FeedbackService) formatFeedbackForPrompt(fb *models.UserFeedback) string {
+	title := strings.TrimSpace(fb.Title)
+	content := strings.TrimSpace(fb.Content)
+	var b strings.Builder
+	b.WriteString("[")
+	b.WriteString(fb.FeedbackID)
+	b.WriteString("]")
+	if title != "" {
+		b.WriteString(" ")
+		b.WriteString(title)
+	}
+	b.WriteString("：")
+	b.WriteString(content)
+
+	var replies []models.FeedbackReply
+	_ = s.db.Where("feedback_id = ? AND sender_type = ?", fb.FeedbackID, "user").Order("created_at ASC").Find(&replies).Error
+	for _, rp := range replies {
+		t := strings.TrimSpace(rp.Body)
+		if t == "" {
+			continue
+		}
+		b.WriteString(" | 用户补充：")
+		b.WriteString(t)
+	}
+	return b.String()
+}
