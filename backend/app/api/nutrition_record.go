@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/nutrition-system/app/schemas"
@@ -19,6 +20,30 @@ func NewNutritionRecordHandler() *NutritionRecordHandler {
 	return &NutritionRecordHandler{
 		nutritionRecordService: services.NewNutritionRecordService(),
 	}
+}
+
+// targetUserIDForRead 返回要查询的目标用户；默认当前登录用户。带 query user_id 时仅规划师可代查被评估用户（与健康数据等接口风格一致）。
+func (h *NutritionRecordHandler) targetUserIDForRead(c *gin.Context) (string, bool) {
+	self := c.GetString("userID")
+	if self == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "用户未登录",
+		})
+		return "", false
+	}
+	other := strings.TrimSpace(c.Query("user_id"))
+	if other == "" {
+		return self, true
+	}
+	if c.GetString("roleType") != "dietitian" {
+		c.JSON(http.StatusForbidden, schemas.Response{
+			Code:    403,
+			Message: "仅规划师可查询其他用户记录",
+		})
+		return "", false
+	}
+	return other, true
 }
 
 // CreateNutritionRecord 创建营养记录
@@ -78,12 +103,8 @@ func (h *NutritionRecordHandler) CreateNutritionRecord(c *gin.Context) {
 // @Failure 400 {object} schemas.Response
 // @Router /api/nutrition/record [get]
 func (h *NutritionRecordHandler) GetNutritionRecords(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		c.JSON(http.StatusUnauthorized, schemas.Response{
-			Code:    401,
-			Message: "用户未登录",
-		})
+	userID, ok := h.targetUserIDForRead(c)
+	if !ok {
 		return
 	}
 
@@ -121,12 +142,8 @@ func (h *NutritionRecordHandler) GetNutritionRecords(c *gin.Context) {
 // @Failure 400 {object} schemas.Response
 // @Router /api/nutrition/record/today [get]
 func (h *NutritionRecordHandler) GetTodayNutritionRecords(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		c.JSON(http.StatusUnauthorized, schemas.Response{
-			Code:    401,
-			Message: "用户未登录",
-		})
+	userID, ok := h.targetUserIDForRead(c)
+	if !ok {
 		return
 	}
 
@@ -220,12 +237,8 @@ func (h *NutritionRecordHandler) DeleteNutritionRecord(c *gin.Context) {
 // @Failure 400 {object} schemas.Response
 // @Router /api/nutrition/record/date [get]
 func (h *NutritionRecordHandler) GetNutritionRecordsByDate(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		c.JSON(http.StatusUnauthorized, schemas.Response{
-			Code:    401,
-			Message: "用户未登录",
-		})
+	userID, ok := h.targetUserIDForRead(c)
+	if !ok {
 		return
 	}
 
@@ -264,12 +277,8 @@ func (h *NutritionRecordHandler) GetNutritionRecordsByDate(c *gin.Context) {
 // @Failure 400 {object} schemas.Response
 // @Router /api/nutrition/record/trend [get]
 func (h *NutritionRecordHandler) GetNutritionTrendData(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		c.JSON(http.StatusUnauthorized, schemas.Response{
-			Code:    401,
-			Message: "用户未登录",
-		})
+	userID, ok := h.targetUserIDForRead(c)
+	if !ok {
 		return
 	}
 

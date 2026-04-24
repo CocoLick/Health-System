@@ -313,6 +313,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  color: #1a1a1a;
+}
+
+.picker-view.picker-placeholder {
+  color: #adb5bd;
+  font-size: 28rpx;
 }
 
 .picker-view::after {
@@ -1112,4 +1118,26 @@
 .btn-confirm,
 .login-btn {
   background: var(--u-green);
+}
+
+.auth-guard {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+}
+
+.auth-title {
+  font-size: 32rpx;
+  color: #666;
+}
+
+.auth-login-btn {
+  padding: 18rpx 56rpx;
+  border-radius: 999rpx;
+  background: #4caf50;
+  color: #fff;
+  font-size: 28rpx;
 }

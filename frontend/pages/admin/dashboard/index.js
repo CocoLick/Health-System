@@ -215,7 +215,7 @@ Page({
   loadDietitians() {
     api.admin.getAllDietitians()
       .then(res => {
-        if (res.code === 200) {
+        if (res.code === 200 || res.code === '200') {
           const list = res.data || [];
           const dietitians = list.map(item => ({
             ...item,
@@ -439,26 +439,23 @@ Page({
     const newStatus = dietitian.status === '启用' ? '禁用' : '启用';
 
     api.admin.updateDietitianStatus(dietitian.dietitian_id, newStatus)
-      .then(res => {
-        if (res.code === 200) {
-          dietitian.status = newStatus;
-          this.setData({
-            dietitians: dietitians
-          });
+      .then((res) => {
+        if (res.code === 200 || res.code === '200') {
+          this.loadDietitians();
           wx.showToast({
             title: newStatus === '启用' ? '已启用' : '已禁用',
             icon: 'success'
           });
+        } else {
+          wx.showToast({ title: res.message || '操作失败', icon: 'none' });
         }
       })
       .catch(() => {
         dietitian.status = newStatus;
-        this.setData({
-          dietitians: dietitians
-        });
+        this.setData({ dietitians: dietitians });
         wx.showToast({
-          title: newStatus === '启用' ? '已启用' : '已禁用',
-          icon: 'success'
+          title: newStatus === '启用' ? '已启用（本地）' : '已禁用（本地）',
+          icon: 'none'
         });
       });
   },

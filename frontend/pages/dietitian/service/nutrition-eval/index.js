@@ -37,6 +37,121 @@ function computeBMI(heightCm, weightKg) {
   return (Math.round(v * 10) / 10).toFixed(1);
 }
 
+function todayYmd() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
+}
+
+function addDaysYmd(ymd, n) {
+  const p = String(ymd || '').split('-');
+  if (p.length !== 3) {
+    return ymd;
+  }
+  const d = new Date(
+    parseInt(p[0], 10),
+    parseInt(p[1], 10) - 1,
+    parseInt(p[2], 10) + n
+  );
+  if (isNaN(d.getTime())) {
+    return ymd;
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
+}
+
+function defaultDietStartYmd() {
+  return addDaysYmd(todayYmd(), -6);
+}
+
+function buildDateListFromStart(startYmd, numDays) {
+  const n = Math.min(Math.max(1, parseInt(String(numDays), 10) || 1), 30);
+  const out = [];
+  for (let i = 0; i < n; i += 1) {
+    out.push(addDaysYmd(startYmd, i));
+  }
+  return out;
+}
+
+function n(v) {
+  const x = Number(v);
+  return Number.isFinite(x) ? x : 0;
+}
+
+function r1(x) {
+  return Math.round(n(x) * 10) / 10;
+}
+
+function joinDayMacroParts(p, c, f, fib) {
+  const parts = [];
+  if (n(p) > 0) {
+    parts.push(`蛋白${r1(p)}g`);
+  }
+  if (n(c) > 0) {
+    parts.push(`碳水${r1(c)}g`);
+  }
+  if (n(f) > 0) {
+    parts.push(`脂肪${r1(f)}g`);
+  }
+  if (n(fib) > 0) {
+    parts.push(`纤${r1(fib)}g`);
+  }
+  return parts.join(' · ');
+}
+
+/** 食材行：热量 + 非零宏量 */
+function formatItemLine(it) {
+  const name = it.food_name != null ? String(it.food_name) : '食物';
+  const amt = it.amount != null ? it.amount : '';
+  const u = it.unit || 'g';
+  const cal = r1(it.calories);
+  const p = n(it.protein);
+  const c = n(it.carbohydrate);
+  const f = n(it.fat);
+  const fib = n(it.fiber);
+  let s = `${name} ${amt}${u}，约${cal}kcal`;
+  const tail = [];
+  if (p > 0) {
+    tail.push(`蛋白${r1(it.protein)}g`);
+  }
+  if (c > 0) {
+    tail.push(`碳水${r1(it.carbohydrate)}g`);
+  }
+  if (f > 0) {
+    tail.push(`脂肪${r1(it.fat)}g`);
+  }
+  if (fib > 0) {
+    tail.push(`纤${r1(it.fiber)}g`);
+  }
+  if (tail.length) {
+    s += `（${tail.join(' ')}）`;
+  }
+  return s;
+}
+
+/** 餐次下一行小字（仅非零项） */
+function formatMealMacro(p, c, f, fib) {
+  return joinDayMacroParts(p, c, f, fib);
+}
+
+function formatDiet7DayTitle(iso) {
+  const parts = String(iso || '').split('-');
+  if (parts.length !== 3) {
+    return String(iso || '—');
+  }
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  const d = new Date(y, m - 1, day);
+  if (isNaN(d.getTime())) {
+    return String(iso);
+  }
+  const wk = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  return `${m}月${day}日 ${wk[d.getDay()]}`;
+}
+
 /** 从规划师服务申请列表中选取与当前用户最相关的一条（与面板逻辑一致并放宽匹配） */
 function pickServiceRequestForUser(rows, userId, preferredRequestId) {
   const uid = String(userId || '').trim();
@@ -98,7 +213,19 @@ Page({
       plan_recommendations: '',
       energy_need_kcal: '',
       valid_until: ''
-    }
+    },
+    /** 被评估用户饮食（与 /api/nutrition/record/date?user_id= 配合） */
+    diet7Rows: [],
+    diet7Loading: false,
+    diet7Error: '',
+    diet7ShowDetail: false,
+    diet7Selected: null,
+    /** 历史范围：自某天起连续 N 天 */
+    todayYmd: todayYmd(),
+    dietStartDate: defaultDietStartYmd(),
+    dietRangeLabels: ['3 天', '5 天', '7 天', '10 天', '14 天', '30 天'],
+    dietRangeValues: [3, 5, 7, 10, 14, 30],
+    dietRangeIndex: 2
   },
 
   onLoad(options) {
@@ -109,8 +236,17 @@ Page({
       setTimeout(() => wx.navigateBack(), 1500);
       return;
     }
-    this.setData({ userId, serviceRequestId });
+    this.setData({
+      userId,
+      serviceRequestId,
+      todayYmd: todayYmd(),
+      dietStartDate: defaultDietStartYmd()
+    });
     this.loadContext();
+  },
+
+  onShow() {
+    this.setData({ todayYmd: todayYmd() });
   },
 
   loadContext() {
@@ -149,12 +285,133 @@ Page({
           serviceRequestId: srId || this.data.serviceRequestId
         };
         this.setData(upd);
+        this.loadDiet7();
       })
       .catch(() => {
         wx.hideLoading();
         wx.showToast({ title: '加载失败', icon: 'none' });
       });
   },
+
+  onDietStartDateChange(e) {
+    const v = (e.detail && e.detail.value) || '';
+    if (v) {
+      this.setData({ dietStartDate: v });
+      this.loadDiet7();
+    }
+  },
+
+  onDietRangeChange(e) {
+    const idx = parseInt(e.detail.value, 10);
+    if (isNaN(idx)) {
+      return;
+    }
+    this.setData({ dietRangeIndex: idx });
+    this.loadDiet7();
+  },
+
+  loadDiet7() {
+    const userId = String(this.data.userId || '').trim();
+    if (!userId) {
+      return;
+    }
+    this.setData({ diet7Loading: true, diet7Error: '' });
+    const numDays =
+      (this.data.dietRangeValues && this.data.dietRangeValues[this.data.dietRangeIndex]) || 7;
+    const dates = buildDateListFromStart(this.data.dietStartDate, numDays);
+    const mealOrder = { breakfast: 0, lunch: 1, dinner: 2, snack: 3 };
+    const label = (t) =>
+      ({ breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '加餐' }[t] || t || '餐次');
+    Promise.all(
+      dates.map((date) =>
+        api.nutrition.getRecordsByDate(date, userId).catch(() => ({ code: 0, data: null }))
+      )
+    )
+      .then((results) => {
+        const diet7Rows = dates.map((date, i) => {
+          const res = results[i];
+          const ok = res && (res.code === 200 || res.code === '200');
+          const raw = ok && res.data != null ? res.data : [];
+          const recs = Array.isArray(raw) ? raw : [];
+          let kcal = 0;
+          let sumP = 0;
+          let sumC = 0;
+          let sumF = 0;
+          let sumFib = 0;
+          recs.forEach((r) => {
+            kcal += n(r.total_calories);
+            sumP += n(r.total_protein);
+            sumC += n(r.total_carbohydrate);
+            sumF += n(r.total_fat);
+            sumFib += n(r.total_fiber);
+          });
+          const totalKcalR = r1(kcal);
+          const totalProteinR = r1(sumP);
+          const totalCarbR = r1(sumC);
+          const totalFatR = r1(sumF);
+          const totalFiberR = r1(sumFib);
+          const hasNutrition =
+            totalKcalR > 0 || totalProteinR > 0 || totalCarbR > 0 || totalFatR > 0 || totalFiberR > 0;
+          const meals = recs
+            .map((r) => ({
+              mealType: r.meal_type,
+              mealLabel: label(r.meal_type),
+              kcal: r1(r.total_calories),
+              protein: r1(r.total_protein),
+              carb: r1(r.total_carbohydrate),
+              fat: r1(r.total_fat),
+              fiber: r1(r.total_fiber),
+              macroSub: formatMealMacro(
+                r.total_protein,
+                r.total_carbohydrate,
+                r.total_fat,
+                r.total_fiber
+              ),
+              items: (r.items || []).map((it) => ({
+                food_name: it.food_name,
+                line: formatItemLine(it)
+              }))
+            }))
+            .sort(
+              (a, b) =>
+                (mealOrder[a.mealType] != null ? mealOrder[a.mealType] : 9) -
+                (mealOrder[b.mealType] != null ? mealOrder[b.mealType] : 9)
+            );
+          return {
+            date,
+            dayTitle: formatDiet7DayTitle(date),
+            totalKcal: totalKcalR,
+            totalProtein: totalProteinR,
+            totalCarb: totalCarbR,
+            totalFat: totalFatR,
+            totalFiber: totalFiberR,
+            hasNutrition,
+            dayMacroSub: joinDayMacroParts(sumP, sumC, sumF, sumFib),
+            mealCount: recs.length,
+            meals
+          };
+        });
+        this.setData({ diet7Rows, diet7Loading: false });
+      })
+      .catch(() => {
+        this.setData({ diet7Loading: false, diet7Error: '无法加载饮食记录' });
+      });
+  },
+
+  onTapDiet7Day(e) {
+    const date = e.currentTarget.dataset.date;
+    const row = (this.data.diet7Rows || []).find((r) => r.date === date);
+    if (!row) {
+      return;
+    }
+    this.setData({ diet7ShowDetail: true, diet7Selected: row });
+  },
+
+  closeDiet7Detail() {
+    this.setData({ diet7ShowDetail: false, diet7Selected: null });
+  },
+
+  noop() {},
 
   onInput(e) {
     const field = e.currentTarget.dataset.field;

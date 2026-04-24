@@ -2,6 +2,7 @@ const api = require('../../../../utils/api');
 
 Page({
   data: {
+    isLoggedIn: false,
     mealType: 'breakfast',
     showAddForm: false,
     editingIndex: -1,
@@ -34,8 +35,15 @@ Page({
   },
 
   onLoad() {
+    if (!this.checkLogin()) {
+      return;
+    }
     // 页面加载时获取食材列表
     this.loadIngredients();
+  },
+
+  onShow() {
+    this.checkLogin();
   },
 
   loadIngredients() {
@@ -435,5 +443,19 @@ Page({
       snack: '加餐'
     };
     return mealTypes[type] || '其他';
+  },
+
+  checkLogin() {
+    const userInfo = wx.getStorageSync('userInfo');
+    const token = wx.getStorageSync('token');
+    const isLoggedIn = !!(userInfo && token);
+    this.setData({ isLoggedIn });
+    return isLoggedIn;
+  },
+
+  gotoLogin() {
+    wx.navigateTo({
+      url: '/pages/auth/login/login'
+    });
   }
 });

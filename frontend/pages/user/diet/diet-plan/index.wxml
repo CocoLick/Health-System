@@ -1,4 +1,9 @@
 <view class="container">
+  <view wx:if="{{!isLoggedIn}}" class="auth-guard">
+    <view class="auth-title">请先登录</view>
+    <view class="auth-login-btn" bindtap="gotoLogin">去登录</view>
+  </view>
+  <block wx:else>
   <!-- 有膳食计划时，显示详情页面内容 -->
   <view wx:if="{{planStatus === 4}}" class="plan-detail-view">
     <view class="dashboard-card detail-card">
@@ -269,4 +274,5 @@
       </view>
     </view>
   </view>
+  </block>
 </view>

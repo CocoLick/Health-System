@@ -3,6 +3,7 @@ const api = require('../../../../utils/api');
 
 Page({
   data: {
+    isLoggedIn: false,
     activeTab: 'record',
     today: '',
     todayIntake: {
@@ -45,6 +46,9 @@ Page({
   },
 
   onLoad(options) {
+    if (!this.checkLogin()) {
+      return;
+    }
     // 设置今日日期
     const today = new Date().toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -80,6 +84,9 @@ Page({
   },
 
   onShow() {
+    if (!this.checkLogin()) {
+      return;
+    }
     // 每次显示页面时更新日期
     const today = new Date().toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -666,6 +673,21 @@ Page({
           }, 1000);
         }
       }
+    });
+  }
+  ,
+
+  checkLogin() {
+    const userInfo = wx.getStorageSync('userInfo');
+    const token = wx.getStorageSync('token');
+    const isLoggedIn = !!(userInfo && token);
+    this.setData({ isLoggedIn });
+    return isLoggedIn;
+  },
+
+  gotoLogin() {
+    wx.navigateTo({
+      url: '/pages/auth/login/login'
     });
   }
 });

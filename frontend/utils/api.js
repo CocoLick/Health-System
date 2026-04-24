@@ -390,21 +390,27 @@ const nutrition = {
   getRecords: function(params) {
     return get('/api/nutrition/record', params);
   },
-  // 获取今日饮食记录
-  getTodayRecords: function() {
-    return get('/api/nutrition/record/today');
+  // 获取今日饮食记录（规划师可传 userId 代查）
+  getTodayRecords: function(userId) {
+    const p = {};
+    if (userId) p.user_id = userId;
+    return get('/api/nutrition/record/today', p);
   },
   // 获取营养推荐标准
   getRecommendation: function(params) {
     return get('/api/nutrition/recommendation', params);
   },
-  // 获取指定日期的饮食记录
-  getRecordsByDate: function(date) {
-    return get('/api/nutrition/record/date', { date });
+  // 获取指定日期的饮食记录（规划师可传 userId 代查）
+  getRecordsByDate: function(date, userId) {
+    const p = { date: date };
+    if (userId) p.user_id = userId;
+    return get('/api/nutrition/record/date', p);
   },
-  // 获取营养摄入趋势数据
-  getTrendData: function(days) {
-    return get('/api/nutrition/record/trend', { days });
+  // 获取营养摄入趋势数据（规划师可传 userId 代查）
+  getTrendData: function(days, userId) {
+    const p = { days: days != null ? days : 7 };
+    if (userId) p.user_id = userId;
+    return get('/api/nutrition/record/trend', p);
   }
 };
 

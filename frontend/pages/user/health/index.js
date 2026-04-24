@@ -60,6 +60,22 @@ function backendGender(g) {
   return '';
 }
 
+function mapActivityToIndex(level) {
+  if (!level) {
+    return -1;
+  }
+  const m = { sedentary: 0, lightly_active: 1, moderately_active: 2, very_active: 3 };
+  return Object.prototype.hasOwnProperty.call(m, level) ? m[level] : -1;
+}
+
+function mapNutritionToIndex(goal) {
+  if (!goal) {
+    return -1;
+  }
+  const m = { lose_weight: 0, maintain: 1, healthy_gain: 2 };
+  return Object.prototype.hasOwnProperty.call(m, goal) ? m[goal] : -1;
+}
+
 Page({
   data: {
     hasHealthData: false,
@@ -68,33 +84,34 @@ Page({
     showHealthMetricsModal: false,
     isEditing: false,
     healthData: {
-      gender: '男',
-      age: 30,
+      gender: '',
+      age: '',
       height: '',
       weight: '',
       heartRate: '',
       bloodPressure: '',
       bloodSugar: '',
       allergyHistory: '',
-      activityLevel: 'moderately_active',
-      nutritionGoal: 'maintain'
+      activityLevel: '',
+      nutritionGoal: ''
     },
     formData: {
-      gender: '男',
-      age: 30,
+      gender: '',
+      age: '',
       height: '',
       weight: '',
       heartRate: '',
       bloodPressure: '',
       bloodSugar: '',
       allergyHistory: '',
-      activityLevel: 'moderately_active',
-      nutritionGoal: 'maintain'
+      activityLevel: '',
+      nutritionGoal: ''
     },
     activityLevelRange: ['久坐', '轻度', '中度', '高强度'],
     nutritionGoalRange: ['减重', '维持', '健康增重'],
-    activityLevelIndex: 2, // 0: sedentary, 1: lightly_active, 2: moderately_active, 3: very_active
-    nutritionGoalIndex: 1, // 0: lose_weight, 1: maintain, 2: healthy_gain
+    /** 未选择为 -1，与膳食/注册页 picker 一致 */
+    activityLevelIndex: -1,
+    nutritionGoalIndex: -1,
     evaluation: null,
     evaluationId: '',
     historyList: [],
@@ -245,7 +262,11 @@ Page({
         evaluationId: '',
         healthMainTab: 'data',
         heUserListDisplay: [],
-        heEduHint: ''
+        heEduHint: '',
+        'healthData.activityLevel': '',
+        'healthData.nutritionGoal': '',
+        activityLevelIndex: -1,
+        nutritionGoalIndex: -1
       });
       return;
     }
@@ -273,45 +294,16 @@ Page({
       wx.hideLoading();
       if (res.code === 200 && res.data) {
         const data = res.data;
-        const activityLevel = data.activity_level || 'moderately_active';
-        const nutritionGoal = data.nutrition_goal || 'maintain';
-        
-        // 设置活动水平索引
-        let activityLevelIndex = 2; // 默认中度
-        switch(activityLevel) {
-          case 'sedentary':
-            activityLevelIndex = 0;
-            break;
-          case 'lightly_active':
-            activityLevelIndex = 1;
-            break;
-          case 'moderately_active':
-            activityLevelIndex = 2;
-            break;
-          case 'very_active':
-            activityLevelIndex = 3;
-            break;
-        }
-        
-        // 设置营养目标索引
-        let nutritionGoalIndex = 1; // 默认维持
-        switch(nutritionGoal) {
-          case 'lose_weight':
-            nutritionGoalIndex = 0;
-            break;
-          case 'maintain':
-            nutritionGoalIndex = 1;
-            break;
-          case 'healthy_gain':
-            nutritionGoalIndex = 2;
-            break;
-        }
+        const activityLevel = (data.activity_level && String(data.activity_level).trim()) || '';
+        const nutritionGoal = (data.nutrition_goal && String(data.nutrition_goal).trim()) || '';
+        const activityLevelIndex = mapActivityToIndex(activityLevel);
+        const nutritionGoalIndex = mapNutritionToIndex(nutritionGoal);
         
         this.setData({
           healthData: {
             data_id: data.data_id || '',
-            gender: displayGender(data.gender) || '男',
-            age: data.age || 30,
+            gender: displayGender(data.gender) || '',
+            age: data.age != null && data.age !== '' ? data.age : '',
             height: data.height || '',
             weight: data.weight || '',
             heartRate: data.heart_rate || '',
@@ -329,13 +321,20 @@ Page({
       } else {
         console.log('暂无健康数据，设置hasHealthData为false');
         this.setData({
-          hasHealthData: false
+          hasHealthData: false,
+          'healthData.activityLevel': '',
+          'healthData.nutritionGoal': '',
+          activityLevelIndex: -1,
+          nutritionGoalIndex: -1
         });
         const cachedHealthData = wx.getStorageSync('cachedHealthData');
         if (cachedHealthData) {
+          const merged = { ...this.data.healthData, ...cachedHealthData };
           this.setData({
-            healthData: { ...this.data.healthData, ...cachedHealthData },
-            hasHealthData: true
+            healthData: merged,
+            hasHealthData: true,
+            activityLevelIndex: mapActivityToIndex(merged.activityLevel),
+            nutritionGoalIndex: mapNutritionToIndex(merged.nutritionGoal)
           });
         }
       }
@@ -349,19 +348,30 @@ Page({
       if (err.statusCode === 400 && err.data && err.data.message === '暂无健康数据') {
         console.log('暂无健康数据，设置hasHealthData为false');
         this.setData({
-          hasHealthData: false
+          hasHealthData: false,
+          'healthData.activityLevel': '',
+          'healthData.nutritionGoal': '',
+          activityLevelIndex: -1,
+          nutritionGoalIndex: -1
         });
       } else {
         // 其他错误，尝试使用缓存数据
         const cachedHealthData = wx.getStorageSync('cachedHealthData');
         if (cachedHealthData) {
+          const merged = { ...this.data.healthData, ...cachedHealthData };
           this.setData({
-            healthData: { ...this.data.healthData, ...cachedHealthData },
-            hasHealthData: true
+            healthData: merged,
+            hasHealthData: true,
+            activityLevelIndex: mapActivityToIndex(merged.activityLevel),
+            nutritionGoalIndex: mapNutritionToIndex(merged.nutritionGoal)
           });
         } else {
           this.setData({
-            hasHealthData: false
+            hasHealthData: false,
+            'healthData.activityLevel': '',
+            'healthData.nutritionGoal': '',
+            activityLevelIndex: -1,
+            nutritionGoalIndex: -1
           });
         }
       }
@@ -430,10 +440,13 @@ Page({
   },
 
   editBasicInfo() {
+    const h = this.data.healthData;
     this.setData({
       showBasicInfoModal: true,
       isEditing: this.data.hasHealthData,
-      formData: { ...this.data.healthData }
+      formData: { ...h },
+      activityLevelIndex: mapActivityToIndex(h.activityLevel),
+      nutritionGoalIndex: mapNutritionToIndex(h.nutritionGoal)
     });
   },
 
@@ -491,22 +504,22 @@ Page({
   },
 
   changeActivityLevel(e) {
-    const index = e.detail.value;
+    const index = parseInt(e.detail.value, 10);
     const activityLevels = ['sedentary', 'lightly_active', 'moderately_active', 'very_active'];
     const activityLevel = activityLevels[index];
     this.setData({ 
       activityLevelIndex: index,
-      'formData.activityLevel': activityLevel 
+      'formData.activityLevel': activityLevel
     });
   },
 
   changeNutritionGoal(e) {
-    const index = e.detail.value;
+    const index = parseInt(e.detail.value, 10);
     const nutritionGoals = ['lose_weight', 'maintain', 'healthy_gain'];
     const nutritionGoal = nutritionGoals[index];
     this.setData({ 
       nutritionGoalIndex: index,
-      'formData.nutritionGoal': nutritionGoal 
+      'formData.nutritionGoal': nutritionGoal
     });
   },
 
@@ -519,6 +532,14 @@ Page({
     }
     if (!age) {
       wx.showToast({ title: '请输入年龄', icon: 'none' });
+      return;
+    }
+    if (!activityLevel) {
+      wx.showToast({ title: '请选择活动水平', icon: 'none' });
+      return;
+    }
+    if (!nutritionGoal) {
+      wx.showToast({ title: '请选择营养目标', icon: 'none' });
       return;
     }
 
@@ -634,7 +655,9 @@ Page({
     this.setData({
       healthData,
       hasHealthData: true,
-      showBasicInfoModal: false
+      showBasicInfoModal: false,
+      activityLevelIndex: mapActivityToIndex(healthData.activityLevel),
+      nutritionGoalIndex: mapNutritionToIndex(healthData.nutritionGoal)
     });
 
     wx.showToast({ title: '保存成功', icon: 'success' });

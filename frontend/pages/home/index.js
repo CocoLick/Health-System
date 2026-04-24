@@ -1,6 +1,7 @@
 // home/index.js
 Page({
   data: {
+    isLoggedIn: false,
     userInfo: {},
     displayName: 'cocolike',
     greetingText: '你好',
@@ -46,11 +47,25 @@ Page({
   },
 
   onLoad() {
+    if (!this.checkLogin()) {
+      return;
+    }
     this.loadData();
   },
 
   onShow() {
+    if (!this.checkLogin()) {
+      return;
+    }
     this.loadData();
+  },
+
+  checkLogin() {
+    const userInfo = wx.getStorageSync('userInfo');
+    const token = wx.getStorageSync('token');
+    const isLoggedIn = !!(userInfo && token);
+    this.setData({ isLoggedIn });
+    return isLoggedIn;
   },
 
   loadData() {
@@ -177,5 +192,11 @@ Page({
 
   goToSelectDietitian() {
     wx.navigateTo({ url: '/pages/user/dietitian/select/index' });
+  },
+
+  gotoLogin() {
+    wx.navigateTo({
+      url: '/pages/auth/login/login'
+    });
   }
 });

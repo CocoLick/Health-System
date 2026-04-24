@@ -1,4 +1,9 @@
 <view class="container">
+  <view wx:if="{{!isLoggedIn}}" class="auth-guard">
+    <view class="auth-title">请先登录</view>
+    <view class="auth-login-btn" bindtap="gotoLogin">去登录</view>
+  </view>
+  <block wx:else>
   <view class="home-header card">
     <view class="header-greeting">{{greetingText}}</view>
     <view class="header-user">{{displayName}}</view>
@@ -121,5 +126,5 @@
       </view>
     </view>
   </view>
-
+  </block>
 </view>

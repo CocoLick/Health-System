@@ -28,6 +28,53 @@
     </view>
   </view>
 
+  <view class="section" wx:if="{{userId}}">
+    <view class="section-title">历史饮食记录</view>
+    <view class="d7-hint">与当前评估用户（{{userId}}）的膳食记录，按天汇总；点选下方日期、天数后自动拉取，点击行可查看各餐与食材明细</view>
+    <view class="d7-filters">
+      <view class="d7-filter">
+        <text class="d7-filter-label">开始日期</text>
+        <picker mode="date" value="{{dietStartDate}}" end="{{todayYmd}}" bindchange="onDietStartDateChange">
+          <view class="d7-picker-line">{{dietStartDate || '选择'}}</view>
+        </picker>
+      </view>
+      <view class="d7-filter">
+        <text class="d7-filter-label">连续天数</text>
+        <picker
+          mode="selector"
+          range="{{dietRangeLabels}}"
+          value="{{dietRangeIndex}}"
+          bindchange="onDietRangeChange"
+        >
+          <view class="d7-picker-line">{{dietRangeLabels[dietRangeIndex]}}</view>
+        </picker>
+      </view>
+    </view>
+    <view wx:if="{{diet7Loading}}" class="d7-hint d7-muted">加载中…</view>
+    <view wx:elif="{{diet7Error}}" class="d7-hint d7-warn">{{diet7Error}}</view>
+    <view wx:else>
+      <view
+        class="d7-row"
+        wx:for="{{diet7Rows}}"
+        wx:key="date"
+        bindtap="onTapDiet7Day"
+        data-date="{{item.date}}"
+      >
+        <view class="d7-left">
+          <text class="d7-dt">{{item.dayTitle}}</text>
+          <text class="d7-sub">{{item.mealCount ? (item.mealCount + ' 餐') : '无记录'}}</text>
+        </view>
+        <view class="d7-right-macro">
+          <block wx:if="{{item.hasNutrition}}">
+            <text class="d7-macro-k">热量 {{item.totalKcal}} kcal</text>
+            <text class="d7-macro-sub" wx:if="{{item.dayMacroSub}}">{{item.dayMacroSub}}</text>
+          </block>
+          <text class="d7-macro-na" wx:else>—</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <view class="section">
     <view class="section-title">维度提示（写作提纲）</view>
     <view class="hint">1. 体成分与 BMI：结合身高体重、腰围（若有）说明偏瘦/正常/超重等。</view>
@@ -77,5 +124,62 @@
 
   <view class="submit-bar">
     <view class="submit-btn" bindtap="submit">提交评估</view>
+  </view>
+
+  <view wx:if="{{diet7ShowDetail}}" class="d7-mask" catchtouchmove="noop" bindtap="closeDiet7Detail">
+    <view class="d7-sheet" catchtap="noop">
+      <view class="d7-sheet-head">
+        <text class="d7-sheet-title">{{diet7Selected.dayTitle}}</text>
+        <view class="d7-sheet-close" bindtap="closeDiet7Detail">×</view>
+      </view>
+      <!-- 原生 overflow 滚动，避免 scroll-view 右侧轨道与内容贴死叠层；内层勿 catchtouchmove 以免无法滚动 -->
+      <view class="d7-body-native">
+        <view class="d7-body-native-inner">
+        <block wx:if="{{diet7Selected.mealCount === 0}}">
+          <view class="d7-hint d7-muted">该日无饮食记录</view>
+        </block>
+        <view wx:else>
+          <view
+            class="d7-day-total"
+            wx:if="{{diet7Selected.hasNutrition}}"
+          >
+            <view class="d7-day-total-title">本日合计</view>
+            <view class="d7-day-total-k">热量 {{diet7Selected.totalKcal}} kcal</view>
+            <view
+              class="d7-day-total-sub"
+              wx:if="{{diet7Selected.dayMacroSub}}"
+            >{{diet7Selected.dayMacroSub}}</view>
+          </view>
+          <view
+            class="d7-meal"
+            wx:for="{{diet7Selected.meals}}"
+            wx:for-item="meal"
+            wx:for-index="mi"
+            wx:key="mi"
+          >
+            <view class="d7-meal-block">
+              <view class="d7-meal-titlerow">
+                <text class="d7-meal-t">{{meal.mealLabel}}</text>
+              </view>
+              <view class="d7-meal-krow">
+                <text class="d7-meal-k">约 {{meal.kcal}} kcal</text>
+              </view>
+              <view
+                class="d7-meal-macro"
+                wx:if="{{meal.macroSub}}"
+              >{{meal.macroSub}}</view>
+            </view>
+            <view
+              class="d7-item"
+              wx:for="{{meal.items}}"
+              wx:for-item="it"
+              wx:for-index="ii"
+              wx:key="ii"
+            >{{it.line}}</view>
+          </view>
+        </view>
+        </view>
+      </view>
+    </view>
   </view>
 </view>

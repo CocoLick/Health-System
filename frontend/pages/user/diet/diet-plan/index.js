@@ -3,6 +3,7 @@ const api = require('../../../../utils/api');
 // diet-plan/index.js
 Page({
   data: {
+    isLoggedIn: false,
     planStatus: 0,
     selectedDietitian: null,
     pendingRequest: null,
@@ -19,6 +20,9 @@ Page({
   },
 
   onLoad() {
+    if (!this.checkLogin()) {
+      return;
+    }
     console.log('页面加载');
     this.checkPendingRequest();
     this.loadLatestRequest();
@@ -27,6 +31,9 @@ Page({
   },
 
   onShow() {
+    if (!this.checkLogin()) {
+      return;
+    }
     console.log('页面显示');
     this.checkPendingRequest();
     this.loadLatestRequest();
@@ -801,6 +808,21 @@ Page({
             wx.showToast({ title: msg, icon: 'none', duration: 3000 });
           });
       }
+    });
+  }
+  ,
+
+  checkLogin() {
+    const userInfo = wx.getStorageSync('userInfo');
+    const token = wx.getStorageSync('token');
+    const isLoggedIn = !!(userInfo && token);
+    this.setData({ isLoggedIn });
+    return isLoggedIn;
+  },
+
+  gotoLogin() {
+    wx.navigateTo({
+      url: '/pages/auth/login/login'
     });
   }
 });

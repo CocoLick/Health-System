@@ -1,14 +1,8 @@
 <view class="container">
   <view wx:if="{{!isLoggedIn}}">
-    <view class="header header-guest">
-      <view class="header-title">健康</view>
-      <view class="header-subtitle">登录后可查看健康数据与健康教育内容</view>
-    </view>
-    <view class="login-tip">
-      <view class="login-icon">🔐</view>
-      <view class="login-text">请先登录</view>
-      <view class="login-subtext">登录后可记录和查看您的健康数据</view>
-      <button class="login-btn" bindtap="gotoLogin">去登录</button>
+    <view class="auth-guard">
+      <view class="auth-title">请先登录</view>
+      <view class="auth-login-btn" bindtap="gotoLogin">去登录</view>
     </view>
   </view>
 
@@ -51,11 +45,11 @@
           <view class="info-row">
             <view class="info-item info-item-card">
               <view class="info-label">活动水平</view>
-              <view class="info-value">{{healthData.activityLevel === 'sedentary' ? '久坐' : healthData.activityLevel === 'lightly_active' ? '轻度' : healthData.activityLevel === 'moderately_active' ? '中度' : '高强度'}}</view>
+              <view class="info-value">{{!healthData.activityLevel ? '未设置' : (healthData.activityLevel === 'sedentary' ? '久坐' : healthData.activityLevel === 'lightly_active' ? '轻度' : healthData.activityLevel === 'moderately_active' ? '中度' : healthData.activityLevel === 'very_active' ? '高强度' : '未设置')}}</view>
             </view>
             <view class="info-item info-item-card">
               <view class="info-label">营养目标</view>
-              <view class="info-value">{{healthData.nutritionGoal === 'lose_weight' ? '减重' : healthData.nutritionGoal === 'maintain' ? '维持' : '健康增重'}}</view>
+              <view class="info-value">{{!healthData.nutritionGoal ? '未设置' : (healthData.nutritionGoal === 'lose_weight' ? '减重' : healthData.nutritionGoal === 'maintain' ? '维持' : healthData.nutritionGoal === 'healthy_gain' ? '健康增重' : '未设置')}}</view>
             </view>
           </view>
         </view>
@@ -222,16 +216,16 @@
           <view class="form-item">
             <view class="form-label">活动水平</view>
             <picker bindchange="changeActivityLevel" value="{{activityLevelIndex}}" range="{{activityLevelRange}}">
-              <view class="picker-view">
-                {{formData.activityLevel === 'sedentary' ? '久坐' : formData.activityLevel === 'lightly_active' ? '轻度' : formData.activityLevel === 'moderately_active' ? '中度' : '高强度'}}
+              <view class="picker-view {{activityLevelIndex < 0 ? 'picker-placeholder' : ''}}">
+                {{activityLevelIndex < 0 ? '请选择活动水平' : activityLevelRange[activityLevelIndex]}}
               </view>
             </picker>
           </view>
           <view class="form-item">
             <view class="form-label">营养目标</view>
             <picker bindchange="changeNutritionGoal" value="{{nutritionGoalIndex}}" range="{{nutritionGoalRange}}">
-              <view class="picker-view">
-                {{formData.nutritionGoal === 'lose_weight' ? '减重' : formData.nutritionGoal === 'maintain' ? '维持' : '健康增重'}}
+              <view class="picker-view {{nutritionGoalIndex < 0 ? 'picker-placeholder' : ''}}">
+                {{nutritionGoalIndex < 0 ? '请选择营养目标' : nutritionGoalRange[nutritionGoalIndex]}}
               </view>
             </picker>
           </view>
