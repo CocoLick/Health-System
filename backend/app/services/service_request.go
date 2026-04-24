@@ -245,10 +245,10 @@ func (s *ServiceRequestService) GetDietitianServiceUsers(dietitianID string) ([]
 		healthDataErr := s.db.Where("user_id = ?", userID).First(&healthData).Error
 		hasProfile = healthDataErr == nil
 
-		// 查询用户是否有膳食计划
+		// 查询本规划师是否已为该用户创建过膳食计划（同用户多规划师时须按 dietitian_id 区分）
 		var hasPlan bool
 		var dietPlan models.DietPlan
-		dietPlanErr := s.db.Where("user_id = ?", userID).First(&dietPlan).Error
+		dietPlanErr := s.db.Where("user_id = ? AND dietitian_id = ?", userID, dietitianID).First(&dietPlan).Error
 		hasPlan = dietPlanErr == nil
 
 		evalSvc := NewNutritionEvaluationService()

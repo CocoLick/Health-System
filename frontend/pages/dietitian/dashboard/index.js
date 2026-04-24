@@ -11,7 +11,7 @@ Page({
     showPersonalCenterModal: false,
     dietitianName: '营养师',
     stats: {
-      pendingPlans: 3,
+      pendingPlans: 0,
       pendingArticles: 1,
       pendingFeedbacks: 0,
       serviceUsers: 0,
@@ -21,28 +21,6 @@ Page({
       avgRating: 4.8,
       pendingRequests: 0
     },
-    recentActivities: [
-      {
-        icon: '👤',
-        text: '新用户李四申请服务',
-        time: '2小时前'
-      },
-      {
-        icon: '✅',
-        text: '您的计划已审核通过',
-        time: '4小时前'
-      },
-      {
-        icon: '📄',
-        text: '您的文章已发布',
-        time: '6小时前'
-      },
-      {
-        icon: '💬',
-        text: '用户王五提交了新反馈',
-        time: '1天前'
-      }
-    ],
     notices: [
       {
         title: '系统更新通知',
@@ -64,7 +42,9 @@ Page({
     heStatusLabels: ['全部', '草稿', '已发布'],
     heStatusIndex: 0,
     heVisLabels: ['全部', '公开', '指派'],
-    heVisIndex: 0
+    heVisIndex: 0,
+    // 首页「服务动态」由 loadServiceRequests 实时生成
+    homeServiceFeed: []
   },
 
   onLoad() {
@@ -108,14 +88,23 @@ Page({
             hasPlan: user.has_plan,
             lastServiceTime: user.last_service_time
           }));
+          // 待制定计划 = 已建立服务关系但本规划师尚未创建膳食计划的用户数（与「计划 待生成」列一致）
+          const pendingPlans = processedUsers.filter((u) => !u.hasPlan).length;
           this.setData({
             users: processedUsers,
-            'stats.serviceUsers': users.length
+            'stats.serviceUsers': users.length,
+            'stats.pendingPlans': pendingPlans
           });
+        } else {
+          this.setData({ users: [], 'stats.serviceUsers': 0, 'stats.pendingPlans': 0 });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('加载服务用户失败:', err);
+        this.setData({
+          'stats.serviceUsers': 0,
+          'stats.pendingPlans': 0
+        });
       });
   },
 
@@ -130,27 +119,74 @@ Page({
           const requests = res.data || [];
           console.log('请求列表长度:', requests.length);
           // 预处理所有请求，添加中文翻译字段
-          const processedRequests = requests.map(req => ({
+          const processedRequests = requests.map((req) => ({
             ...req,
             statusText: this.getStatusText(req.status),
             serviceTypeText: this.getServiceTypeText(req.service_type),
             dietGoalText: this.getDietGoalText(req.diet_goal, req.other_goal),
-            createTimeText: this.formatDate(req.create_time)
+            createTimeText: this.formatDate(req.create_time),
+            updateTimeText: this.formatDate(req.update_time || req.create_time)
           }));
           console.log('处理后数据:', JSON.stringify(processedRequests, null, 2));
           // 按状态分组
-          const pendingRequests = processedRequests.filter(r => r.status === 'pending');
+          const pendingRequests = processedRequests.filter((r) => r.status === 'pending');
+          const homeServiceFeed = this.buildHomeServiceFeed(processedRequests);
           this.setData({
             serviceRequests: processedRequests,
             filteredRequests: processedRequests,
-            'stats.pendingRequests': pendingRequests.length
+            'stats.pendingRequests': pendingRequests.length,
+            homeServiceFeed
           });
           this.filterRequests();
+        } else {
+          this.setData({ serviceRequests: [], filteredRequests: [], homeServiceFeed: [] });
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('加载服务请求失败:', err);
+        this.setData({ homeServiceFeed: [] });
       });
+  },
+
+  /** 首页服务动态：按最近更新时间取最多 5 条 */
+  buildHomeServiceFeed(processedRequests) {
+    const list = (processedRequests || [])
+      .slice()
+      .sort((a, b) => {
+        const ta = new Date(a.update_time || a.create_time).getTime();
+        const tb = new Date(b.update_time || b.create_time).getTime();
+        return tb - ta;
+      })
+      .slice(0, 5);
+    return list.map((r) => ({
+      requestId: r.request_id,
+      status: r.status,
+      statusText: r.statusText,
+      userId: r.user_id,
+      serviceTypeText: r.serviceTypeText,
+      timeText: r.updateTimeText || r.createTimeText
+    }));
+  },
+
+  onHomeFeedTap(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    const { serviceRequests } = this.data;
+    const found = (serviceRequests || []).find((r) => r.request_id === id);
+    if (!found) {
+      return;
+    }
+    this.setData({
+      activeTab: 'service',
+      serviceSubTab: 'requests',
+      filterType: 'all',
+      searchKeyword: '',
+      selectedRequest: found,
+      showRequestDetail: true
+    });
+    this.filterRequests();
   },
 
   // 筛选服务请求

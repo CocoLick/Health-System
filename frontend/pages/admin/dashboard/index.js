@@ -71,28 +71,7 @@ Page({
       completedPlans: 45,
       likedArticles: 230
     },
-    recentActivities: [
-      {
-        icon: '👤',
-        text: '新用户注册：张三',
-        time: '2小时前'
-      },
-      {
-        icon: '📋',
-        text: '规划师提交新膳食计划',
-        time: '4小时前'
-      },
-      {
-        icon: '📄',
-        text: '规划师发布健康文章',
-        time: '6小时前'
-      },
-      {
-        icon: '💬',
-        text: '用户提交反馈：系统功能建议',
-        time: '1天前'
-      }
-    ],
+    recentActivities: [],
     notices: [
       {
         title: '系统更新通知',
@@ -172,6 +151,7 @@ Page({
     this.loadDietitians();
     this.loadUsers();
     this.loadNutritionItems();
+    this.loadRecentActivities();
 
     // 检查是否首次访问管理中心
     this.checkFirstVisit();
@@ -179,6 +159,7 @@ Page({
 
   onShow() {
     this.loadUsers();
+    this.loadRecentActivities();
   },
 
   checkFirstVisit() {
@@ -215,6 +196,109 @@ Page({
 
   loadSystemStats() {
     console.log('加载系统统计数据');
+  },
+
+  /** 与后端 created_at/updated_at 一致，按时间合并多条来源 */
+  isOk200(code) {
+    return code === 200 || code === '200';
+  },
+
+  formatActivityRelativeTime(iso) {
+    if (iso == null || iso === '') {
+      return '';
+    }
+    const t = new Date(iso);
+    if (isNaN(t.getTime())) {
+      return '';
+    }
+    const now = Date.now();
+    const diff = Math.floor((now - t.getTime()) / 1000);
+    if (diff < 0) {
+      return '刚刚';
+    }
+    if (diff < 60) {
+      return '刚刚';
+    }
+    if (diff < 3600) {
+      return `${Math.floor(diff / 60)} 分钟前`;
+    }
+    if (diff < 86400) {
+      return `${Math.floor(diff / 3600)} 小时前`;
+    }
+    if (diff < 86400 * 7) {
+      return `${Math.floor(diff / 86400)} 天前`;
+    }
+    const pad = (n) => (n < 10 ? '0' + n : String(n));
+    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(
+      t.getMinutes()
+    )}`;
+  },
+
+  loadRecentActivities() {
+    const safe =
+      (p) =>
+        p.then((r) => r).catch(() => null);
+    const events = [];
+    const pushEvt = (icon, text, sortAt, actKey) => {
+      if (!sortAt) {
+        return;
+      }
+      const k = actKey + String(sortAt);
+      events.push({ icon, text, sortAt, actKey: k });
+    };
+
+    Promise.all([
+      safe(api.admin.getAllUsers()),
+      safe(api.admin.getAllDietitians()),
+      safe(api.ingredient.getList({ category: '', page: 1, page_size: 100 }))
+    ]).then(([uRes, dRes, iRes]) => {
+      if (uRes && this.isOk200(uRes.code) && Array.isArray(uRes.data)) {
+        uRes.data.forEach((u) => {
+          const name = u.username || u.user_id || '用户';
+          pushEvt('👤', `注册新用户：${name}`, u.created_at, `u-${u.user_id || name}-`);
+        });
+      }
+      if (dRes && this.isOk200(dRes.code) && Array.isArray(dRes.data)) {
+        dRes.data.forEach((u) => {
+          const name = (u.name && String(u.name).trim()) || u.username || u.user_id || '规划师';
+          pushEvt('📋', `添加规划师账号：${name}`, u.created_at, `d-${u.user_id || name}-`);
+        });
+      }
+      if (iRes && this.isOk200(iRes.code) && iRes.data) {
+        const ings = iRes.data.ingredients || [];
+        ings.forEach((ing) => {
+          const t = ing.updated_at || ing.created_at;
+          const n = ing.name || ing.ingredient_id || '食材';
+          const tc = ing.created_at ? new Date(ing.created_at).getTime() : 0;
+          const tu = ing.updated_at ? new Date(ing.updated_at).getTime() : 0;
+          // 仅新建或创建与更新时刻接近 →「添加」；之后有内容变更则多为「更新」
+          const isAdd = !tu || !tc || Math.abs(tu - tc) < 2000;
+          const verb = isAdd ? '添加营养库食材' : '更新营养库食材';
+          pushEvt('🥗', `${verb}：${n}`, t, `i-${ing.ingredient_id || n}-`);
+        });
+      }
+      events.sort((a, b) => {
+        const ta = new Date(a.sortAt).getTime();
+        const tb = new Date(b.sortAt).getTime();
+        if (isNaN(ta) && isNaN(tb)) {
+          return 0;
+        }
+        if (isNaN(ta)) {
+          return 1;
+        }
+        if (isNaN(tb)) {
+          return -1;
+        }
+        return tb - ta;
+      });
+      const out = events.slice(0, 10).map((e) => ({
+        icon: e.icon,
+        text: e.text,
+        time: this.formatActivityRelativeTime(e.sortAt),
+        actKey: e.actKey
+      }));
+      this.setData({ recentActivities: out });
+    });
   },
 
   loadUsers() {

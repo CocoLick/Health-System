@@ -1,4 +1,6 @@
 // home/index.js
+const api = require('../../utils/api');
+
 Page({
   data: {
     isLoggedIn: false,
@@ -68,46 +70,82 @@ Page({
     return isLoggedIn;
   },
 
+  /**
+   * 与营养页一致：接口返回 total_*，本地缓存可能为 calories 等
+   */
+  sumRecordTotals(records) {
+    const t = { calories: 0, protein: 0, fat: 0, carbohydrate: 0 };
+    (records || []).forEach((record) => {
+      const c = record.total_calories != null ? record.total_calories : record.calories;
+      const p = record.total_protein != null ? record.total_protein : record.protein;
+      const f = record.total_fat != null ? record.total_fat : record.fat;
+      const cb = record.total_carbohydrate != null ? record.total_carbohydrate : record.carbohydrate;
+      t.calories += Number(c) || 0;
+      t.protein += Number(p) || 0;
+      t.fat += Number(f) || 0;
+      t.carbohydrate += Number(cb) || 0;
+    });
+    return {
+      calories: Math.round(t.calories * 10) / 10,
+      protein: Math.round(t.protein * 10) / 10,
+      fat: Math.round(t.fat * 10) / 10,
+      carbohydrate: Math.round(t.carbohydrate * 10) / 10
+    };
+  },
+
   loadData() {
     const userInfo = wx.getStorageSync('userInfo') || {};
-    const todayRecords = wx.getStorageSync('todayNutritionRecords') || [];
     const currentPlan = wx.getStorageSync('currentDietPlan');
     const waterIntake = wx.getStorageSync('homeWaterIntake') || 0;
     const exerciseDone = !!wx.getStorageSync('homeExerciseDone');
-
-    let totals = { calories: 0, protein: 0, fat: 0, carbohydrate: 0 };
-    todayRecords.forEach(record => {
-      totals.calories += record.calories || 0;
-      totals.protein += record.protein || 0;
-      totals.fat += record.fat || 0;
-      totals.carbohydrate += record.carbohydrate || 0;
-    });
 
     const displayName = userInfo.username || 'cocolike';
     const greetingText = this.getGreetingText();
     const today = this.getTodayText();
     const targets = this.getTargets(currentPlan);
-    const metricProgress = this.getMetricProgress(totals, targets);
-    const remaining = {
-      calories: Math.max((targets.calories || 0) - (totals.calories || 0), 0),
-      protein: Math.max((targets.protein || 0) - (totals.protein || 0), 0)
-    };
     const waterProgress = targets ? Math.min((waterIntake / 2000) * 100, 100) : 0;
 
-    this.setData({
-      userInfo,
-      displayName,
-      greetingText,
-      today,
-      todayIntake: totals,
-      targets,
-      metricProgress,
-      remaining,
-      waterIntake,
-      waterProgress,
-      exerciseDone,
-      currentPlan
-    });
+    const applyTotals = (totals) => {
+      const metricProgress = this.getMetricProgress(totals, targets);
+      const remaining = {
+        calories: Math.max((targets.calories || 0) - (totals.calories || 0), 0),
+        protein: Math.max((targets.protein || 0) - (totals.protein || 0), 0)
+      };
+      this.setData({
+        userInfo,
+        displayName,
+        greetingText,
+        today,
+        todayIntake: totals,
+        targets,
+        metricProgress,
+        remaining,
+        waterIntake,
+        waterProgress,
+        exerciseDone,
+        currentPlan
+      });
+    };
+
+    const fromCache = () => {
+      const todayRecords = wx.getStorageSync('todayNutritionRecords') || [];
+      return this.sumRecordTotals(todayRecords);
+    };
+
+    api.nutrition
+      .getTodayRecords()
+      .then((res) => {
+        if (res && res.code === 200 && res.data != null) {
+          const records = res.data || [];
+          wx.setStorageSync('todayNutritionRecords', records);
+          applyTotals(this.sumRecordTotals(records));
+        } else {
+          applyTotals(fromCache());
+        }
+      })
+      .catch(() => {
+        applyTotals(fromCache());
+      });
   },
 
   getGreetingText() {
