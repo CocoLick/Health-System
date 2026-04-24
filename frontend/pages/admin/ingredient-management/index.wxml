@@ -1,2 +1,63 @@
-<!--pages/admin/ingredient-management/index.wxml-->
-<text>pages/admin/ingredient-management/index.wxml</text>
+<view class="ingredient-page">
+  <view class="page-header">
+    <text class="page-title">食材库管理</text>
+    <text class="page-subtitle">统一维护基础营养数据，减少配餐误差</text>
+  </view>
+
+  <view class="toolbar-card">
+    <input
+      class="search-input"
+      placeholder="搜索食材名称"
+      value="{{keyword}}"
+      bindinput="onSearchInput"
+    />
+    <view class="category-row">
+      <view
+        wx:for="{{categories}}"
+        wx:key="*this"
+        class="cat-pill {{category === item ? 'active' : ''}}"
+        bindtap="switchCategory"
+        data-category="{{item}}"
+      >
+        {{item}}
+      </view>
+    </view>
+    <view class="add-btn" bindtap="addIngredient">+ 新增食材</view>
+  </view>
+
+  <view wx:if="{{filteredList.length === 0}}" class="empty-card">
+    <text class="empty-title">当前没有匹配食材</text>
+    <text class="empty-sub">检查筛选条件，或新建一条食材数据。</text>
+  </view>
+
+  <view wx:for="{{filteredList}}" wx:key="id" class="ingredient-card">
+    <view class="card-head">
+      <text class="name">{{item.name}}</text>
+      <text class="cat">{{item.category}}</text>
+    </view>
+
+    <view class="nutri-grid">
+      <view class="nutri-cell">
+        <text class="k">热量</text>
+        <text class="v">{{item.calories}} kcal</text>
+      </view>
+      <view class="nutri-cell">
+        <text class="k">蛋白质</text>
+        <text class="v">{{item.protein}} g</text>
+      </view>
+      <view class="nutri-cell">
+        <text class="k">脂肪</text>
+        <text class="v">{{item.fat}} g</text>
+      </view>
+      <view class="nutri-cell">
+        <text class="k">碳水</text>
+        <text class="v">{{item.carbohydrate}} g</text>
+      </view>
+    </view>
+
+    <view class="actions">
+      <view class="action ghost" bindtap="editIngredient" data-name="{{item.name}}">编辑</view>
+      <view class="action danger" bindtap="removeIngredient" data-id="{{item.id}}">删除</view>
+    </view>
+  </view>
+</view>

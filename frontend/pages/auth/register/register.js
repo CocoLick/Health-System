@@ -13,9 +13,9 @@ Page({
     successMessage: '',
     showPassword: false,
     genderOptions: ['男', '女', '其他'],
-    genderIndex: 0,
+    genderIndex: -1,
     ageOptions: Array.from({ length: 100 }, (_, i) => (i + 1).toString()),
-    ageIndex: 0
+    ageIndex: -1
   },
 
   bindUsername(e) {

@@ -1,2 +1,80 @@
-<!--pages/admin/user-management/index.wxml-->
-<text>pages/admin/user-management/index.wxml</text>
+<view class="admin-page">
+  <view class="page-header">
+    <text class="page-title">用户管理</text>
+    <text class="page-subtitle">按角色筛选、搜索账号并快速处理状态</text>
+  </view>
+
+  <view class="metrics-grid">
+    <view class="metric-card">
+      <text class="metric-label">用户总数</text>
+      <text class="metric-value">{{metrics.total}}</text>
+    </view>
+    <view class="metric-card">
+      <text class="metric-label">正常账号</text>
+      <text class="metric-value ok">{{metrics.active}}</text>
+    </view>
+    <view class="metric-card">
+      <text class="metric-label">已停用</text>
+      <text class="metric-value warn">{{metrics.blocked}}</text>
+    </view>
+  </view>
+
+  <view class="filter-card">
+    <input
+      class="search-input"
+      placeholder="搜索姓名或手机号"
+      value="{{searchKeyword}}"
+      bindinput="onSearchInput"
+    />
+    <view class="tab-row">
+      <view
+        wx:for="{{roleTabs}}"
+        wx:key="key"
+        class="tab-pill {{roleTab === item.key ? 'active' : ''}}"
+        bindtap="switchRoleTab"
+        data-key="{{item.key}}"
+      >
+        {{item.text}}
+      </view>
+    </view>
+  </view>
+
+  <view class="list-wrap">
+    <view wx:if="{{filteredUsers.length === 0}}" class="empty-card">
+      <text class="empty-title">没有匹配的账号</text>
+      <text class="empty-sub">换个关键词试试，或者切回「全部」查看。</text>
+    </view>
+
+    <view wx:for="{{filteredUsers}}" wx:key="id" class="user-card">
+      <view class="card-top">
+        <view class="user-main">
+          <text class="name">{{item.name}}</text>
+          <text class="role">{{item.roleText}}</text>
+        </view>
+        <text class="status-chip {{item.status === 'active' ? 'ok' : 'warn'}}">
+          {{item.status === 'active' ? '正常' : '停用'}}
+        </text>
+      </view>
+
+      <view class="info-row">
+        <text class="label">手机号</text>
+        <text class="value">{{item.phone}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">注册时间</text>
+        <text class="value">{{item.joinedAt}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">最近活跃</text>
+        <text class="value">{{item.lastActive}}</text>
+      </view>
+
+      <view class="card-actions">
+        <view class="action ghost" bindtap="quickContact" data-name="{{item.name}}">发送提醒</view>
+        <view class="action solid" bindtap="toggleStatus" data-id="{{item.id}}">
+          {{item.status === 'active' ? '设为停用' : '恢复账号'}}
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

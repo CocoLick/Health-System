@@ -62,7 +62,7 @@
         <view class="input-wrapper">
           <view class="input-icon">⚥</view>
           <picker bindchange="bindGenderChange" range="{{genderOptions}}" value="{{genderIndex}}">
-            <view class="picker-view">
+            <view class="picker-view {{genderIndex < 0 ? 'picker-placeholder' : ''}}">
               {{genderOptions[genderIndex] || '请选择性别'}}
             </view>
           </picker>
@@ -71,7 +71,7 @@
         <view class="input-wrapper">
           <view class="input-icon">🎂</view>
           <picker bindchange="bindAgeChange" range="{{ageOptions}}" value="{{ageIndex}}">
-            <view class="picker-view">
+            <view class="picker-view {{ageIndex < 0 ? 'picker-placeholder' : ''}}">
               {{ageOptions[ageIndex] || '请选择年龄'}}
             </view>
           </picker>

@@ -1,66 +1,47 @@
-// pages/admin/system-settings/index.js
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    settings: [
+      {
+        title: '审核提醒',
+        desc: '有新计划或文章提交时，第一时间提醒管理员',
+        key: 'auditNotify',
+        enabled: true
+      },
+      {
+        title: '系统异常告警',
+        desc: '接口错误率上升时触发告警消息',
+        key: 'alertNotify',
+        enabled: true
+      },
+      {
+        title: '夜间静默',
+        desc: '23:00 - 07:00 不推送普通通知',
+        key: 'nightSilent',
+        enabled: false
+      }
+    ],
+    securityItems: [
+      { title: '管理员密码策略', value: '至少 10 位，含大小写与数字' },
+      { title: '登录保护', value: '连续 5 次失败后锁定 15 分钟' },
+      { title: '会话有效期', value: '24 小时自动过期' }
+    ]
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
-
+  onToggleSetting(e) {
+    const key = e.currentTarget.dataset.key;
+    const next = !!e.detail.value;
+    const settings = this.data.settings.map((item) => (
+      item.key === key ? { ...item, enabled: next } : item
+    ));
+    this.setData({ settings });
+    wx.showToast({ title: '设置已更新', icon: 'success' });
   },
 
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
+  saveSettings() {
+    wx.showToast({ title: '配置已保存', icon: 'success' });
   },
 
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
-  },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
+  resetRiskConfig() {
+    wx.showToast({ title: '已恢复默认', icon: 'none' });
   }
-})
+});

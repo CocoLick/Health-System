@@ -1,2 +1,41 @@
-<!--pages/admin/system-settings/index.wxml-->
-<text>pages/admin/system-settings/index.wxml</text>
+<view class="settings-page">
+  <view class="page-header">
+    <text class="page-title">系统设置</text>
+    <text class="page-subtitle">通知、风控与账号策略一处维护</text>
+  </view>
+
+  <view class="section-card">
+    <text class="section-title">通知与消息</text>
+    <view wx:for="{{settings}}" wx:key="key" class="setting-row">
+      <view class="setting-main">
+        <text class="setting-title">{{item.title}}</text>
+        <text class="setting-desc">{{item.desc}}</text>
+      </view>
+      <switch
+        class="setting-switch"
+        color="#2d6a4f"
+        checked="{{item.enabled}}"
+        bindchange="onToggleSetting"
+        data-key="{{item.key}}"
+      />
+    </view>
+  </view>
+
+  <view class="section-card">
+    <text class="section-title">安全策略</text>
+    <view wx:for="{{securityItems}}" wx:key="title" class="policy-row">
+      <text class="policy-key">{{item.title}}</text>
+      <text class="policy-val">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="section-card tip-card">
+    <text class="section-title">维护提示</text>
+    <text class="tip-text">关键策略建议在低峰时段修改，避免影响在线服务体验。</text>
+  </view>
+
+  <view class="action-row">
+    <view class="action ghost" bindtap="resetRiskConfig">恢复默认</view>
+    <view class="action solid" bindtap="saveSettings">保存配置</view>
+  </view>
+</view>

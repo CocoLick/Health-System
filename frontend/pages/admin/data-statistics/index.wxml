@@ -1,2 +1,50 @@
-<!--pages/admin/data-statistics/index.wxml-->
-<text>pages/admin/data-statistics/index.wxml</text>
+<view class="stats-page">
+  <view class="page-header">
+    <text class="page-title">数据统计</text>
+    <text class="page-subtitle">跟踪核心指标，快速发现异常波动</text>
+  </view>
+
+  <view class="range-card">
+    <text class="range-label">统计区间</text>
+    <view class="range-row">
+      <view
+        wx:for="{{rangeOptions}}"
+        wx:key="key"
+        class="range-pill {{activeRange === item.key ? 'active' : ''}}"
+        bindtap="switchRange"
+        data-key="{{item.key}}"
+        data-text="{{item.text}}"
+      >
+        {{item.text}}
+      </view>
+    </view>
+  </view>
+
+  <view class="overview-grid">
+    <view wx:for="{{overview}}" wx:key="key" class="overview-card">
+      <text class="overview-label">{{item.label}}</text>
+      <text class="overview-value">{{item.value}}</text>
+      <text class="overview-trend">{{item.trend}}</text>
+    </view>
+  </view>
+
+  <view class="trend-card">
+    <text class="section-title">日趋势对比</text>
+    <view wx:for="{{trendRows}}" wx:key="label" class="trend-row">
+      <text class="day">{{item.label}}</text>
+      <view class="bar-group">
+        <view class="bar user-bar" style="width: {{item.users * 2}}rpx;"></view>
+        <view class="bar service-bar" style="width: {{item.services * 1.2}}rpx;"></view>
+      </view>
+      <text class="value">{{item.users}} / {{item.services}}</text>
+    </view>
+  </view>
+
+  <view class="insight-card">
+    <text class="section-title">运营观察</text>
+    <view wx:for="{{issueList}}" wx:key="index" class="insight-row">
+      <text class="dot"></text>
+      <text class="insight-text">{{item}}</text>
+    </view>
+  </view>
+</view>

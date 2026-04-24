@@ -170,6 +170,11 @@
   line-height: 44rpx;
 }
 
+.picker-placeholder {
+  color: #adb5bd;
+  font-size: 30rpx;
+}
+
 .input-wrapper {
   position: relative;
 }
