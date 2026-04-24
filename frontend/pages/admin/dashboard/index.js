@@ -1,6 +1,25 @@
 // admin/dashboard/index.js
 const api = require('../../../utils/api');
 
+function displayStatusFromDB(st) {
+  const s = st == null ? '' : String(st).trim();
+  return s === '禁用' ? '已禁用' : '正常';
+}
+
+const ROLE_LABEL = { user: '普通用户', dietitian: '规划师', admin: '管理员' };
+
+function mapAdminUserRow(u) {
+  return {
+    user_id: u.user_id,
+    username: u.username || '—',
+    usernameInitial: (u.username || '?').charAt(0),
+    role: ROLE_LABEL[u.role_type] || u.role_type || '—',
+    roleType: u.role_type,
+    status: displayStatusFromDB(u.status),
+    canToggle: u.role_type !== 'admin'
+  };
+}
+
 Page({
   data: {
     activeTab: 'home',
@@ -43,7 +62,7 @@ Page({
     showTabHint: false,
     hasMoreTabs: true,
     stats: {
-      userCount: 128,
+      userCount: 0,
       dietitianCount: 15,
       pendingPlans: 3,
       pendingArticles: 2,
@@ -136,26 +155,7 @@ Page({
         auditTime: '2026-04-17 15:45'
       }
     ],
-    users: [
-      {
-        username: 'test',
-        usernameInitial: 't',
-        role: '普通用户',
-        status: '正常'
-      },
-      {
-        username: 'admin',
-        usernameInitial: 'a',
-        role: '管理员',
-        status: '正常'
-      },
-      {
-        username: 'D20260325001',
-        usernameInitial: 'D',
-        role: '营养师',
-        status: '正常'
-      }
-    ],
+    users: [],
     feedbacks: [
       {
         id: 1,
@@ -170,10 +170,15 @@ Page({
   onLoad() {
     this.loadSystemStats();
     this.loadDietitians();
+    this.loadUsers();
     this.loadNutritionItems();
 
     // 检查是否首次访问管理中心
     this.checkFirstVisit();
+  },
+
+  onShow() {
+    this.loadUsers();
   },
 
   checkFirstVisit() {
@@ -210,6 +215,32 @@ Page({
 
   loadSystemStats() {
     console.log('加载系统统计数据');
+  },
+
+  loadUsers() {
+    api.admin
+      .getAllUsers()
+      .then((res) => {
+        if (res.code === 200 || res.code === '200') {
+          const raw = Array.isArray(res.data) ? res.data : [];
+          const users = raw.map(mapAdminUserRow);
+          this.setData({
+            users,
+            'stats.userCount': users.length
+          });
+        }
+      })
+      .catch((err) => {
+        this.setData({ users: [] });
+        const code = err && (err.statusCode != null ? err.statusCode : err.status);
+        if (code === 404) {
+          wx.showToast({
+            title: '用户列表接口 404：请先停止并重新 go run 后端，再打开本页',
+            icon: 'none',
+            duration: 3500
+          });
+        }
+      });
   },
 
   loadDietitians() {
@@ -591,14 +622,27 @@ Page({
     const index = e.currentTarget.dataset.index;
     const users = [...this.data.users];
     const user = users[index];
-    user.status = user.status === '正常' ? '已禁用' : '正常';
-    this.setData({
-      users: users
-    });
-    wx.showToast({
-      title: user.status === '正常' ? '已启用' : '已禁用',
-      icon: 'success'
-    });
+    if (!user || !user.user_id) {
+      return;
+    }
+    if (!user.canToggle) {
+      wx.showToast({ title: '不能通过此处修改管理员账号', icon: 'none' });
+      return;
+    }
+    const toApi = user.status === '正常' ? '禁用' : '启用';
+    api.admin
+      .updateUserStatus(user.user_id, toApi)
+      .then((res) => {
+        if (res.code === 200 || res.code === '200') {
+          this.loadUsers();
+          wx.showToast({ title: toApi === '启用' ? '已启用' : '已禁用', icon: 'success' });
+        } else {
+          wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+        }
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
   },
 
   replyFeedback(e) {

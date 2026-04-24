@@ -233,7 +233,7 @@
 
       <view class="manage-list">
         <view wx:if="{{manageSubTab === 'users'}}">
-          <view wx:for="{{users}}" wx:key="index" class="manage-item">
+          <view wx:for="{{users}}" wx:key="user_id" class="manage-item">
             <view class="item-header">
               <view class="user-avatar-small">{{item.usernameInitial}}</view>
               <view class="user-info-small">
@@ -244,7 +244,12 @@
             </view>
             <view class="item-footer">
               <view class="btn-text" bindtap="editUser" data-index="{{index}}">编辑</view>
-              <view class="btn-text" bindtap="toggleUserStatus" data-index="{{index}}">{{item.status === '正常' ? '禁用' : '启用'}}</view>
+              <view
+                class="btn-text"
+                wx:if="{{item.canToggle}}"
+                bindtap="toggleUserStatus"
+                data-index="{{index}}"
+              >{{item.status === '正常' ? '禁用' : '启用'}}</view>
             </view>
           </view>
           <view wx:if="{{users.length === 0}}" class="empty-state">

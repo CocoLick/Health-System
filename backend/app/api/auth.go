@@ -314,6 +314,50 @@ func (h *AuthHandler) GetDietitians(c *gin.Context) {
 	})
 }
 
+// GetAllUsers 管理员：获取普通用户账号列表（不含规划师、管理员）
+// @Success 200 {object} schemas.Response
+// @Router /api/auth/admin/users [get]
+func (h *AuthHandler) GetAllUsers(c *gin.Context) {
+	users, err := h.authService.GetAllUsersForAdmin()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "获取成功",
+		Data:    users,
+	})
+}
+
+// UpdateUserStatus 管理员：更新非管理员用户状态（启用/禁用）
+// @Router /api/auth/admin/user/{user_id}/status [put]
+func (h *AuthHandler) UpdateUserStatus(c *gin.Context) {
+	userID := c.Param("user_id")
+	var req schemas.UserStatusUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "请求参数错误",
+		})
+		return
+	}
+	if err := h.authService.UpdateUserStatusByAdmin(userID, req.Status); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "状态已更新",
+	})
+}
+
 // GetUserByID 根据ID获取用户信息
 // @Summary 根据ID获取用户信息
 // @Description 根据用户ID获取用户的详细信息
@@ -353,9 +397,11 @@ func RegisterAuthRoutes(router *gin.RouterGroup) {
 		authGroup.POST("/admin/login", handler.AdminLogin)
 		authGroup.POST("/admin/dietitian", handler.CreateDietitian)
 		authGroup.GET("/admin/dietitians", handler.GetAllDietitians)
+		authGroup.GET("/admin/users", handler.GetAllUsers)
 		authGroup.GET("/dietitians", handler.GetDietitians)
 		authGroup.GET("/user/:user_id", handler.GetUserByID)
 		authGroup.PUT("/admin/dietitian/:user_id/status", handler.UpdateDietitianStatus)
+		authGroup.PUT("/admin/user/:user_id/status", handler.UpdateUserStatus)
 		authGroup.DELETE("/admin/dietitian/:user_id", handler.DeleteDietitian)
 	}
 }

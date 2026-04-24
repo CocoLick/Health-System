@@ -255,6 +255,31 @@ func (s *AuthService) GetAllDietitians() ([]models.User, error) {
 	return dietitians, nil
 }
 
+// GetAllUsersForAdmin 管理员：仅获取普通用户（user），不含规划师/管理员；password 不序列化
+func (s *AuthService) GetAllUsersForAdmin() ([]models.User, error) {
+	var users []models.User
+	err := config.DB.Where("role_type = ?", "user").Order("created_at DESC").Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+// UpdateUserStatusByAdmin 管理员：修改非管理员账号状态（启用/禁用，与普通登录校验一致）
+func (s *AuthService) UpdateUserStatusByAdmin(userID, status string) error {
+	if status != "启用" && status != "禁用" {
+		return errors.New("状态仅支持 启用 或 禁用")
+	}
+	var u models.User
+	if err := config.DB.Where("user_id = ?", userID).First(&u).Error; err != nil {
+		return errors.New("用户不存在")
+	}
+	if u.RoleType == "admin" {
+		return errors.New("不能通过此接口修改管理员账号")
+	}
+	return config.DB.Model(&models.User{}).Where("user_id = ?", userID).Update("status", status).Error
+}
+
 // UpdateDietitianStatus 更新规划师状态
 func (s *AuthService) UpdateDietitianStatus(userID string, status string) error {
 	result := config.DB.Model(&models.User{}).Where("user_id = ? AND role_type = ?", userID, "dietitian").Update("status", status)

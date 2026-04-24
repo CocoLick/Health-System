@@ -1,7 +1,7 @@
 <view class="admin-page">
   <view class="page-header">
     <text class="page-title">用户管理</text>
-    <text class="page-subtitle">按角色筛选、搜索账号并快速处理状态</text>
+    <text class="page-subtitle">仅普通用户（不含规划师/管理员），支持搜索与状态</text>
   </view>
 
   <view class="metrics-grid">
@@ -39,7 +39,7 @@
     </view>
   </view>
 
-  <view class="list-wrap">
+  <view class="list-wrap" wx:if="{{!listLoading}}">
     <view wx:if="{{filteredUsers.length === 0}}" class="empty-card">
       <text class="empty-title">没有匹配的账号</text>
       <text class="empty-sub">换个关键词试试，或者切回「全部」查看。</text>
@@ -71,10 +71,17 @@
 
       <view class="card-actions">
         <view class="action ghost" bindtap="quickContact" data-name="{{item.name}}">发送提醒</view>
-        <view class="action solid" bindtap="toggleStatus" data-id="{{item.id}}">
+        <view
+          class="action solid"
+          wx:if="{{item.canToggle}}"
+          bindtap="toggleStatus"
+          data-id="{{item.id}}"
+        >
           {{item.status === 'active' ? '设为停用' : '恢复账号'}}
         </view>
+        <view class="action ghost disabled" wx:else>管理员不可在此切换</view>
       </view>
     </view>
   </view>
+  <view class="list-loading" wx:else>加载中…</view>
 </view>

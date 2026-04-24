@@ -134,9 +134,17 @@ const admin = {
   getAllDietitians: function() {
     return get('/api/auth/admin/dietitians');
   },
+  // 管理员：全部用户（工作台用户管理、用户管理页）
+  getAllUsers: function() {
+    return get('/api/auth/admin/users');
+  },
   // 更新规划师状态
   updateDietitianStatus: function(userId, status) {
     return put(`/api/auth/admin/dietitian/${userId}/status`, { status });
+  },
+  // 更新非管理员用户状态（启用/禁用）
+  updateUserStatus: function(userId, status) {
+    return put(`/api/auth/admin/user/${userId}/status`, { status });
   },
   // 删除规划师
   deleteDietitian: function(userId) {

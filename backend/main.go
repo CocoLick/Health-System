@@ -23,7 +23,7 @@ func main() {
 
 	// 启动服务器
 	port := config.GetEnv("PORT", "8000")
-	log.Printf("Server starting on port %s", port)
+	log.Printf("Server starting on port %s (include GET /api/auth/admin/users)", port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

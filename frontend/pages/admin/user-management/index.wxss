@@ -210,3 +210,15 @@
   background: var(--c-primary);
   color: #fff;
 }
+
+.list-loading {
+  text-align: center;
+  padding: 48rpx 24rpx;
+  color: var(--c-text-3);
+  font-size: 26rpx;
+}
+
+.action.ghost.disabled {
+  opacity: 0.7;
+  font-size: 22rpx;
+}

@@ -44,6 +44,11 @@ type UpdateDietitianStatusRequest struct {
 	Status string `json:"status" binding:"required"`
 }
 
+// UserStatusUpdateRequest 管理员更新用户账号状态
+type UserStatusUpdateRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
 // LoginResponse 登录响应
 type LoginResponse struct {
 	Token    string      `json:"token"`
