@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container page-surface-bg">
   <view wx:if="{{!isLoggedIn}}">
     <view class="auth-guard">
       <view class="auth-title">请先登录</view>

@@ -423,34 +423,43 @@
     </view>
   </view>
 
-  <!-- 个人中心弹窗 -->
+  <!-- 个人中心弹窗（与全站主色/管理员工作台统一） -->
   <view wx:if="{{showPersonalCenterModal}}" class="modal-mask" bindtap="hidePersonalCenter">
     <view class="personal-center-modal" catchtap="stopPropagation">
-      <view class="personal-header">
-        <text class="personal-title">个人中心</text>
-        <view class="modal-close" bindtap="hidePersonalCenter">×</view>
-      </view>
-      <view class="personal-content">
-        <view class="personal-info">
-          <view class="personal-avatar" bindtap="chooseAvatar">营</view>
-          <text class="personal-name">{{dietitianName}}</text>
-          <text class="personal-role">营养师</text>
+      <view class="pc-head">
+        <view class="pc-head-left">
+          <text class="pc-eyebrow">ACCOUNT</text>
+          <text class="pc-title">个人中心</text>
         </view>
-        <view class="personal-menu">
-          <view class="menu-item" bindtap="editProfile">
-            <text class="menu-icon">👤</text>
-            <text class="menu-text">个人资料</text>
-            <text class="menu-arrow">→</text>
+        <view class="pc-close" bindtap="hidePersonalCenter" hover-class="pc-close-press">×</view>
+      </view>
+      <view class="pc-body">
+        <view class="pc-profile">
+          <view class="pc-avatar" bindtap="chooseAvatar">营</view>
+          <text class="pc-name">{{dietitianName}}</text>
+          <text class="pc-role">营养师</text>
+        </view>
+        <view class="pc-list">
+          <view class="pc-item" bindtap="editProfile" hover-class="pc-item-press">
+            <view class="pc-item-main">
+              <view class="pc-ico">资</view>
+              <text class="pc-label">个人资料</text>
+            </view>
+            <text class="pc-chev">›</text>
           </view>
-          <view class="menu-item" bindtap="changePassword">
-            <text class="menu-icon">🔒</text>
-            <text class="menu-text">修改密码</text>
-            <text class="menu-arrow">→</text>
+          <view class="pc-item" bindtap="changePassword" hover-class="pc-item-press">
+            <view class="pc-item-main">
+              <view class="pc-ico">密</view>
+              <text class="pc-label">修改密码</text>
+            </view>
+            <text class="pc-chev">›</text>
           </view>
-          <view class="menu-item" bindtap="handleLogout">
-            <text class="menu-icon">🚪</text>
-            <text class="menu-text logout-text">退出登录</text>
-            <text class="menu-arrow">→</text>
+          <view class="pc-item pc-item--danger" bindtap="handleLogout" hover-class="pc-item-press">
+            <view class="pc-item-main">
+              <view class="pc-ico pc-ico--out">出</view>
+              <text class="pc-label">退出登录</text>
+            </view>
+            <text class="pc-chev">›</text>
           </view>
         </view>
       </view>

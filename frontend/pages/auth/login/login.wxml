@@ -1,23 +1,23 @@
-<view class="login-page">
-  <view class="bg-decoration">
-    <view class="bg-circle bg-circle-1"></view>
-    <view class="bg-circle bg-circle-2"></view>
-    <view class="bg-circle bg-circle-3"></view>
+<view class="auth-page login-page">
+  <view class="auth-bg" aria-hidden="true">
+    <view class="auth-bg-orb auth-bg-orb-1"></view>
+    <view class="auth-bg-orb auth-bg-orb-2"></view>
   </view>
 
-  <view class="login-header">
-    <view class="logo-wrapper">
-      <view class="logo-icon">🍽️</view>
+  <view class="auth-header">
+    <text class="auth-eyebrow">SIGN IN</text>
+    <view class="auth-logo">
+      <text class="auth-logo-icon" aria-hidden="true">🍽️</text>
     </view>
-    <text class="app-title">营养膳食规划</text>
-    <text class="app-subtitle">科学饮食，健康生活</text>
+    <text class="auth-title">营养膳食规划</text>
+    <text class="auth-subtitle">科学饮食，健康管理</text>
   </view>
 
-  <view class="login-card">
-    <view class="card-inner">
-      <view class="welcome-text">
-        <text class="welcome-title">欢迎回来</text>
-        <text class="welcome-desc">登录您的账户，继续健康管理</text>
+  <view class="auth-card ui-card">
+    <view class="auth-card-inner">
+      <view class="auth-section-head">
+        <text class="auth-welcome-title">欢迎回来</text>
+        <text class="auth-welcome-desc">使用账号登录，与规划师服务、营养评估等能力打通</text>
       </view>
 
 
@@ -56,28 +56,28 @@
         <view wx:if="{{successMessage}}" class="success-tip">{{successMessage}}</view>
       </view>
 
-      <view class="btn-login" bindtap="handleLogin">
-        <text class="btn-text">登 录</text>
+      <view class="auth-btn btn-primary" hover-class="auth-btn-hover" bindtap="handleLogin">
+        <text class="auth-btn-text">登 录</text>
       </view>
 
-      <view class="card-footer">
-        <view class="divider">
-          <view class="divider-line"></view>
-          <text class="divider-text">或</text>
-          <view class="divider-line"></view>
+      <view class="auth-card-footer">
+        <view class="auth-divider">
+          <view class="auth-divider-line"></view>
+          <text class="auth-divider-text">或</text>
+          <view class="auth-divider-line"></view>
         </view>
-        <view class="register-hint">
-          <text class="hint-text">还没有账号？</text>
-          <text class="register-link" bindtap="navigateToRegister">立即注册</text>
+        <view class="auth-switch-row">
+          <text class="auth-switch-hint">还没有账号？</text>
+          <text class="auth-link" bindtap="navigateToRegister">立即注册</text>
         </view>
       </view>
     </view>
   </view>
 
-  <view class="login-footer">
-    <text class="footer-text">登录即表示同意</text>
-    <text class="footer-link">《用户协议》</text>
-    <text class="footer-text">和</text>
-    <text class="footer-link">《隐私政策》</text>
+  <view class="auth-legal">
+    <text class="auth-legal-t">登录即表示同意</text>
+    <text class="auth-legal-a">《用户协议》</text>
+    <text class="auth-legal-t">和</text>
+    <text class="auth-legal-a">《隐私政策》</text>
   </view>
 </view>

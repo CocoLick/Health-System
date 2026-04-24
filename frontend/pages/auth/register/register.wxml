@@ -1,23 +1,23 @@
-<view class="register-page">
-  <view class="bg-decoration">
-    <view class="bg-circle bg-circle-1"></view>
-    <view class="bg-circle bg-circle-2"></view>
-    <view class="bg-circle bg-circle-3"></view>
+<view class="auth-page register-page">
+  <view class="auth-bg" aria-hidden="true">
+    <view class="auth-bg-orb auth-bg-orb-1"></view>
+    <view class="auth-bg-orb auth-bg-orb-2"></view>
   </view>
 
-  <view class="register-header">
-    <view class="logo-wrapper">
-      <view class="logo-icon">🍽️</view>
+  <view class="auth-header">
+    <text class="auth-eyebrow">CREATE ACCOUNT</text>
+    <view class="auth-logo">
+      <text class="auth-logo-icon" aria-hidden="true">🍽️</text>
     </view>
-    <text class="app-title">营养膳食规划</text>
-    <text class="app-subtitle">科学饮食，健康生活</text>
+    <text class="auth-title">营养膳食规划</text>
+    <text class="auth-subtitle">科学饮食，健康管理</text>
   </view>
 
-  <view class="register-card">
-    <view class="card-inner">
-      <view class="welcome-text">
-        <text class="welcome-title">创建账户</text>
-        <text class="welcome-desc">填写以下信息完成注册</text>
+  <view class="auth-card ui-card">
+    <view class="auth-card-inner auth-card-inner--tall">
+      <view class="auth-section-head">
+        <text class="auth-welcome-title">创建账户</text>
+        <text class="auth-welcome-desc">填写信息完成注册，与系统其他模块风格一致、数据互通</text>
       </view>
 
       <view class="input-group">
@@ -94,28 +94,28 @@
         <view wx:if="{{successMessage}}" class="success-tip">{{successMessage}}</view>
       </view>
 
-      <view class="btn-register" bindtap="handleRegister">
-        <text class="btn-text">注 册</text>
+      <view class="auth-btn btn-primary" hover-class="auth-btn-hover" bindtap="handleRegister">
+        <text class="auth-btn-text">注 册</text>
       </view>
 
-      <view class="card-footer">
-        <view class="divider">
-          <view class="divider-line"></view>
-          <text class="divider-text">或</text>
-          <view class="divider-line"></view>
+      <view class="auth-card-footer">
+        <view class="auth-divider">
+          <view class="auth-divider-line"></view>
+          <text class="auth-divider-text">或</text>
+          <view class="auth-divider-line"></view>
         </view>
-        <view class="login-hint">
-          <text class="hint-text">已有账号？</text>
-          <text class="login-link" bindtap="navigateToLogin">立即登录</text>
+        <view class="auth-switch-row">
+          <text class="auth-switch-hint">已有账号？</text>
+          <text class="auth-link" bindtap="navigateToLogin">立即登录</text>
         </view>
       </view>
     </view>
   </view>
 
-  <view class="register-footer">
-    <text class="footer-text">注册即表示同意</text>
-    <text class="footer-link">《用户协议》</text>
-    <text class="footer-text">和</text>
-    <text class="footer-link">《隐私政策》</text>
+  <view class="auth-legal">
+    <text class="auth-legal-t">注册即表示同意</text>
+    <text class="auth-legal-a">《用户协议》</text>
+    <text class="auth-legal-t">和</text>
+    <text class="auth-legal-a">《隐私政策》</text>
   </view>
 </view>

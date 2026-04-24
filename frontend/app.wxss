@@ -31,6 +31,15 @@ page {
   background-size: 8rpx 8rpx, 100% 100%;
 }
 
+/* 用户端多页共用的主背景，与 page 一致，避免各 tab 未登录态底色不统一 */
+.page-surface-bg {
+  background-color: var(--c-bg);
+  background-image:
+    radial-gradient(rgba(60, 54, 45, 0.03) 0.8rpx, transparent 0.8rpx),
+    linear-gradient(160deg, #f0ede8 0%, #f7f4ef 58%, #f1eee9 100%);
+  background-size: 8rpx 8rpx, 100% 100%;
+}
+
 .container {
   padding: 24rpx;
 }
