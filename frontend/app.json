@@ -4,6 +4,8 @@
     "pages/home/index",
     "pages/user/diet/nutrition/index",
     "pages/user/diet/add-record/index",
+    "pages/user/diet/ingredients/index",
+    "pages/user/diet/ingredient-submit/index",
     "pages/user/diet/diet-plan/index",
     "pages/user/health/index",
     "pages/user/health/education-detail/index",

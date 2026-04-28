@@ -494,6 +494,21 @@
   color: #721c24;
 }
 
+.risk-abnormal {
+  background: #ffe5e8;
+  color: #b42318;
+}
+
+.risk-warn {
+  background: #fff2cc;
+  color: #9a6700;
+}
+
+.risk-pass {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
 .status-active {
   background: #d4edda;
   color: #155724;
@@ -1644,6 +1659,48 @@
   color: var(--c-text-3);
 }
 
+/* 审核区微调：拉开 tab 与卡片间距 */
+.content-panel .audit-list {
+  margin-top: 20rpx;
+}
+
+/* 审核信息单行展示，避免风险/偏差、提交时间被折行 */
+.item-info--singleline {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.item-info--singleline .info-label {
+  flex: 0 0 auto;
+  width: auto;
+  margin-right: 8rpx;
+}
+
+.item-info--singleline .info-value,
+.info-value--singleline {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 食材风险标签颜色强化，突出正常/提示/异常 */
+.item-status.risk-pass {
+  background: rgba(45, 106, 79, 0.16) !important;
+  color: #1e6a4d !important;
+}
+
+.item-status.risk-warn {
+  background: rgba(181, 109, 66, 0.22) !important;
+  color: #8d4d27 !important;
+}
+
+.item-status.risk-abnormal {
+  background: rgba(180, 35, 24, 0.18) !important;
+  color: #b42318 !important;
+}
+
 .user-avatar-small,
 .dietitian-avatar {
   background: var(--c-primary);
@@ -1668,6 +1725,46 @@
 
 .chart-text {
   color: var(--c-text-3);
+}
+
+/* 食材审核卡片底部按钮微调 */
+.ingredient-actions {
+  justify-content: space-between;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.ingredient-detail-link {
+  padding: 0;
+  color: #2e7d32;
+  font-size: 24rpx;
+  flex: 0 0 auto;
+}
+
+.ingredient-action-group {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 18rpx;
+  flex: 0 0 auto;
+}
+
+.ingredient-btn-approve {
+  background: #1f6a4d;
+  box-shadow: 0 4rpx 10rpx rgba(31, 106, 77, 0.22);
+}
+
+.ingredient-btn-edit {
+  background: #d9efe2;
+  color: #1f6a4d;
+  border: 1rpx solid #bcdcc9;
+  box-shadow: none;
+}
+
+.ingredient-btn-return {
+  background: #ffffff;
+  color: #6b7280;
+  border: 1rpx solid #d1d5db;
 }
 
 .scroll-indicator {

@@ -1,53 +1,32 @@
+const api = require('../../../../utils/api');
+
+function statusText(workflowStatus) {
+  if (workflowStatus === 'approved') return '已通过';
+  if (workflowStatus === 'returned') return '已退回';
+  return '待审核';
+}
+
+function statusClass(workflowStatus) {
+  if (workflowStatus === 'approved') return 'status-approved';
+  if (workflowStatus === 'returned') return 'status-returned';
+  return 'status-pending';
+}
+
 Page({
   data: {
     isLoggedIn: false,
-    searchQuery: '',
-    currentCategory: 'all',
-    categories: [
-      { id: 'all', name: '全部' },
-      { id: 'vegetables', name: '蔬菜' },
-      { id: 'fruits', name: '水果' },
-      { id: 'meat', name: '肉类' },
-      { id: 'grain', name: '谷物' },
-      { id: 'dairy', name: '乳制品' }
+    loading: false,
+    statusTab: 'all',
+    tabs: [
+      { id: 'all', text: '全部' },
+      { id: 'pending', text: '待审核' },
+      { id: 'returned', text: '已退回' },
+      { id: 'approved', text: '已通过' }
     ],
-    ingredients: [
-      {
-        id: 1,
-        name: '西红柿',
-        category: 'vegetables',
-        nutrition: '富含维生素C、番茄红素',
-        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=fresh%20tomato%20vegetable&image_size=square'
-      },
-      {
-        id: 2,
-        name: '苹果',
-        category: 'fruits',
-        nutrition: '富含膳食纤维、维生素C',
-        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=fresh%20apple%20fruit&image_size=square'
-      },
-      {
-        id: 3,
-        name: '鸡胸肉',
-        category: 'meat',
-        nutrition: '富含蛋白质、低脂肪',
-        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=raw%20chicken%20breast%20meat&image_size=square'
-      },
-      {
-        id: 4,
-        name: '大米',
-        category: 'grain',
-        nutrition: '富含碳水化合物、B族维生素',
-        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=rice%20grain&image_size=square'
-      },
-      {
-        id: 5,
-        name: '牛奶',
-        category: 'dairy',
-        nutrition: '富含钙、蛋白质',
-        image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=fresh%20milk%20dairy&image_size=square'
-      }
-    ]
+    items: [],
+    visibleItems: [],
+    showDetailModal: false,
+    selectedItem: null
   },
 
   onLoad() {
@@ -55,96 +34,89 @@ Page({
   },
 
   onShow() {
-    this.checkLoginStatus();
+    if (this.checkLoginStatus()) {
+      this.loadMySubmissions();
+    }
   },
 
-  // 检查登录状态
   checkLoginStatus() {
     const userInfo = wx.getStorageSync('userInfo');
     const token = wx.getStorageSync('token');
-    
-    if (userInfo && token) {
-      this.setData({
-        isLoggedIn: true
-      });
-    } else {
-      this.setData({
-        isLoggedIn: false
-      });
-    }
+    const isLoggedIn = !!(userInfo && token);
+    this.setData({ isLoggedIn });
+    return isLoggedIn;
   },
 
-  // 处理登录
   handleLogin() {
+    wx.navigateTo({ url: '/pages/auth/login/login' });
+  },
+
+  loadMySubmissions() {
+    this.setData({ loading: true });
+    api.ingredient.getMySubmissions({ page: 1, page_size: 100 })
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          const items = (res.data.items || []).map((it) => ({
+            ...it,
+            statusText: statusText(it.workflow_status),
+            statusClass: statusClass(it.workflow_status),
+            updatedText: it.created_at ? String(it.created_at).replace('T', ' ').slice(0, 16) : '-',
+            nutritionText: `蛋白${it.submitted_nutrition_100g.protein || 0} / 碳水${it.submitted_nutrition_100g.carbohydrate || 0} / 脂肪${it.submitted_nutrition_100g.fat || 0}`
+          }));
+          this.setData({ items });
+          this.applyFilter();
+        }
+      })
+      .catch(() => {
+        wx.showToast({ title: '加载失败', icon: 'none' });
+      })
+      .finally(() => {
+        this.setData({ loading: false });
+      });
+  },
+
+  switchTab(e) {
+    this.setData({ statusTab: e.currentTarget.dataset.tab }, () => {
+      this.applyFilter();
+    });
+  },
+
+  applyFilter() {
+    const { statusTab, items } = this.data;
+    const visibleItems = statusTab === 'all'
+      ? items
+      : items.filter((it) => it.workflow_status === statusTab);
+    this.setData({ visibleItems });
+  },
+
+  goSubmitNew() {
+    wx.navigateTo({ url: '/pages/user/diet/ingredient-submit/index' });
+  },
+
+  editReturnedItem(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item || item.workflow_status !== 'returned') return;
+    wx.setStorageSync('ingredientResubmitDraft', item);
     wx.navigateTo({
-      url: '/pages/auth/login/login'
+      url: `/pages/user/diet/ingredient-submit/index?mode=resubmit&submission_id=${encodeURIComponent(item.submission_id)}`
     });
   },
 
-  // 搜索输入
-  handleSearchInput(e) {
-    if (!this.data.isLoggedIn) {
-      this.handleLogin();
-      return;
-    }
+  showDetail(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item) return;
     this.setData({
-      searchQuery: e.detail.value
+      selectedItem: item,
+      showDetailModal: true
     });
   },
 
-  // 搜索提交
-  handleSearchSubmit() {
-    if (!this.data.isLoggedIn) {
-      this.handleLogin();
-      return;
-    }
-    // 实现搜索逻辑
-    console.log('搜索:', this.data.searchQuery);
-  },
-
-  // 切换分类
-  switchCategory(e) {
-    if (!this.data.isLoggedIn) {
-      this.handleLogin();
-      return;
-    }
+  hideDetailModal() {
     this.setData({
-      currentCategory: e.currentTarget.dataset.category
+      showDetailModal: false,
+      selectedItem: null
     });
   },
 
-  // 查看食材详情
-  viewIngredientDetail(e) {
-    if (!this.data.isLoggedIn) {
-      this.handleLogin();
-      return;
-    }
-    const ingredientId = e.currentTarget.dataset.id;
-    wx.navigateTo({
-      url: `/pages/ingredients/detail/index?id=${ingredientId}`
-    });
-  },
-
-  // 获取过滤后的食材列表
-  getFilteredIngredients() {
-    const { searchQuery, currentCategory, ingredients } = this.data;
-    
-    return ingredients.filter(ingredient => {
-      const matchesSearch = searchQuery === '' || ingredient.name.includes(searchQuery);
-      const matchesCategory = currentCategory === 'all' || ingredient.category === currentCategory;
-      return matchesSearch && matchesCategory;
-    });
-  },
-
-  // 加载更多
-  loadMore() {
-    if (!this.data.isLoggedIn) {
-      this.handleLogin();
-      return;
-    }
-    wx.showToast({
-      title: '加载更多功能暂未实现',
-      icon: 'none'
-    });
-  }
+  noop() {}
 });

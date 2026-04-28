@@ -1,3 +1,5 @@
+const api = require('../../../utils/api');
+
 // admin/audit/index.js
 Page({
   data: {
@@ -66,12 +68,23 @@ Page({
         auditTime: '2026-04-17 15:45',
         reason: '内容需要进一步科学验证'
       }
-    ]
+    ],
+    ingredientSubmissions: [],
+    ingredientLoading: false,
+    showIngredientDetailModal: false,
+    selectedIngredientSubmission: null
   },
 
   onLoad() {
     // 加载待审核数据
     this.loadPendingData();
+    this.loadIngredientSubmissions();
+  },
+
+  onShow() {
+    if (this.data.activeTab === 'ingredients') {
+      this.loadIngredientSubmissions();
+    }
   },
 
   loadPendingData() {
@@ -85,7 +98,12 @@ Page({
     this.setData({
       activeTab: tab
     });
+    if (tab === 'ingredients') {
+      this.loadIngredientSubmissions();
+    }
   },
+
+  noop() {},
 
   bindFilterChange(e) {
     this.setData({
@@ -203,5 +221,88 @@ Page({
     const record = this.data.auditHistory[index];
     console.log('查看审核详情:', record);
     // 跳转到详情页面
+  },
+
+  loadIngredientSubmissions() {
+    this.setData({ ingredientLoading: true });
+    api.ingredient.getSubmissionList({ workflow_status: 'pending', page: 1, page_size: 100 })
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          const items = (res.data.items || []).map((it) => ({
+            ...it,
+            riskText: it.auto_check_result === 'abnormal' ? '异常' : '正常',
+            deltaPct: `${((it.auto_delta_ratio || 0) * 100).toFixed(1)}%`,
+            submitTimeText: it.created_at ? String(it.created_at).replace('T', ' ').slice(0, 19) : '-'
+          }));
+          this.setData({ ingredientSubmissions: items });
+        }
+      })
+      .catch(() => {
+        wx.showToast({ title: '加载食材审核失败', icon: 'none' });
+      })
+      .finally(() => {
+        this.setData({ ingredientLoading: false });
+      });
+  },
+
+  approveIngredient(e) {
+    const submissionId = e.currentTarget.dataset.id;
+    api.ingredient.approveSubmission(submissionId, { review_note: '管理员审核通过' })
+      .then((res) => {
+        if (res.code === 200) {
+          wx.showToast({ title: '审核通过', icon: 'success' });
+          this.loadIngredientSubmissions();
+          return;
+        }
+        wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
+  },
+
+  returnIngredient(e) {
+    const submissionId = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '退回提交',
+      editable: true,
+      placeholderText: '请输入退回原因',
+      success: (modalRes) => {
+        if (!modalRes.confirm) return;
+        const reviewNote = (modalRes.content || '').trim();
+        if (!reviewNote) {
+          wx.showToast({ title: '请填写退回原因', icon: 'none' });
+          return;
+        }
+        api.ingredient.returnSubmission(submissionId, { review_note: reviewNote })
+          .then((res) => {
+            if (res.code === 200) {
+              wx.showToast({ title: '已退回', icon: 'success' });
+              this.loadIngredientSubmissions();
+              return;
+            }
+            wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
+    });
+  },
+
+  viewIngredientDetail(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item) return;
+    this.setData({
+      selectedIngredientSubmission: item,
+      showIngredientDetailModal: true
+    });
+  },
+
+  hideIngredientDetailModal() {
+    this.setData({
+      showIngredientDetailModal: false,
+      selectedIngredientSubmission: null
+    });
   }
 })

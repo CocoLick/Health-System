@@ -19,14 +19,14 @@ func RegisterServiceRequestRoutes(router *gin.RouterGroup) {
 
 	serviceRequestGroup := router.Group("/service-request")
 	{
-		serviceRequestGroup.POST("/", handler.CreateServiceRequest)                   // 创建服务请求
-		serviceRequestGroup.GET("/", handler.GetUserServiceRequests)                // 获取用户的服务请求列表
+		serviceRequestGroup.POST("/", handler.CreateServiceRequest)                     // 创建服务请求
+		serviceRequestGroup.GET("/", handler.GetUserServiceRequests)                    // 获取用户的服务请求列表
 		serviceRequestGroup.GET("/dietitian/list", handler.GetDietitianServiceRequests) // 获取规划师的服务请求列表
-		serviceRequestGroup.GET("/dietitian/users", handler.GetDietitianServiceUsers) // 获取规划师的服务用户列表
-		serviceRequestGroup.PUT("/:id/cancel", handler.CancelServiceRequest)         // 取消服务请求
-		serviceRequestGroup.PUT("/:id/approve", handler.ApproveServiceRequest)    // 批准服务请求
-		serviceRequestGroup.PUT("/:id/reject", handler.RejectServiceRequest)       // 拒绝服务请求
-		serviceRequestGroup.GET("/:id", handler.GetServiceRequestByID)             // 根据ID获取服务请求
+		serviceRequestGroup.GET("/dietitian/users", handler.GetDietitianServiceUsers)   // 获取规划师的服务用户列表
+		serviceRequestGroup.PUT("/:id/cancel", handler.CancelServiceRequest)            // 取消服务请求
+		serviceRequestGroup.PUT("/:id/approve", handler.ApproveServiceRequest)          // 批准服务请求
+		serviceRequestGroup.PUT("/:id/reject", handler.RejectServiceRequest)            // 拒绝服务请求
+		serviceRequestGroup.GET("/:id", handler.GetServiceRequestByID)                  // 根据ID获取服务请求
 	}
 }
 
@@ -84,6 +84,9 @@ func RegisterRoutes(router *gin.Engine) {
 			dietPlanService := services.NewDietPlanService()
 			dietPlanHandler := NewDietPlanHandler(dietPlanService)
 			dietPlanHandler.RegisterRoutes(authGroup)
+
+			// 注册登录态食材路由（用户私有食材提交与查询）
+			RegisterIngredientAuthRoutes(authGroup)
 		}
 	}
 }

@@ -4,7 +4,7 @@ Page({
     userRole: 'user',
     userInfo: {},
     menuItems: [
-      { icon: '🥬', text: '食材管理', path: '/pages/ingredients/index' },
+      { icon: '🥬', text: '食材管理', path: '/pages/user/diet/ingredients/index' },
       { icon: '💬', text: '意见反馈', path: '/pages/user/feedback/index' },
       { icon: '📋', text: '健康记录', action: 'viewHealthHistory' },
       { icon: '⚙️', text: '设置', action: 'showSettings' }

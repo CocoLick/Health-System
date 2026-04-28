@@ -1,63 +1,72 @@
-<!-- ingredients/index.wxml -->
 <view class="container">
-  <!-- 未登录状态 -->
   <view wx:if="{{!isLoggedIn}}" class="login-container">
-    <view class="avatar-placeholder">
-      <text class="avatar-text">登录</text>
-    </view>
-    <text class="login-text">点击登录，查看和管理食材信息</text>
+    <view class="avatar-placeholder"><text class="avatar-text">登录</text></view>
+    <text class="login-text">登录后可查看并管理你新增的私有食材</text>
     <button class="login-btn" bindtap="handleLogin">立即登录</button>
   </view>
 
-  <!-- 已登录状态 -->
   <view wx:else>
-    <!-- 搜索栏 -->
-    <view class="search-bar">
-      <view class="search-input">
-        <text class="search-icon">🔍</text>
-        <input type="text" placeholder="搜索食材" bindinput="handleSearchInput" value="{{searchQuery}}" />
+    <view class="header-card">
+      <view>
+        <view class="header-title">我的食材管理</view>
+        <view class="header-sub">查看新增食材状态，退回后可继续使用并修改重提</view>
       </view>
-      <view class="filter-btn" bindtap="handleSearchSubmit">筛选</view>
+      <view class="add-btn" bindtap="goSubmitNew">+ 新增</view>
     </view>
 
-    <!-- 分类导航 -->
-    <view class="category-nav">
-      <scroll-view scroll-x="true" class="category-scroll">
-        <view class="category-item {{currentCategory === 'all' ? 'active' : ''}}" bindtap="switchCategory" data-category="all">全部</view>
-        <view class="category-item {{currentCategory === 'grain' ? 'active' : ''}}" bindtap="switchCategory" data-category="grain">谷物</view>
-        <view class="category-item {{currentCategory === 'vegetables' ? 'active' : ''}}" bindtap="switchCategory" data-category="vegetables">蔬菜</view>
-        <view class="category-item {{currentCategory === 'fruits' ? 'active' : ''}}" bindtap="switchCategory" data-category="fruits">水果</view>
-        <view class="category-item {{currentCategory === 'meat' ? 'active' : ''}}" bindtap="switchCategory" data-category="meat">肉类</view>
-        <view class="category-item {{currentCategory === 'dairy' ? 'active' : ''}}" bindtap="switchCategory" data-category="dairy">乳制品</view>
-        <view class="category-item {{currentCategory === 'nut' ? 'active' : ''}}" bindtap="switchCategory" data-category="nut">坚果</view>
-        <view class="category-item {{currentCategory === 'other' ? 'active' : ''}}" bindtap="switchCategory" data-category="other">其他</view>
-      </scroll-view>
+    <view class="tab-row">
+      <view wx:for="{{tabs}}" wx:key="id" class="tab-item {{statusTab===item.id?'active':''}}" data-tab="{{item.id}}" bindtap="switchTab">{{item.text}}</view>
     </view>
 
-    <!-- 食材列表 -->
-    <view class="ingredients-list">
-      <view class="ingredient-item" wx:for="{{getFilteredIngredients()}}" wx:key="index" bindtap="viewIngredientDetail" data-id="{{item.id}}">
-        <view class="ingredient-image">
-          <image src="{{item.image}}" mode="aspectFill" />
+    <view wx:if="{{loading}}" class="empty-wrap"><text class="empty-text">加载中...</text></view>
+
+    <view wx:else class="list-wrap">
+      <view wx:for="{{visibleItems}}" wx:key="submission_id" class="item-card">
+        <view class="item-head">
+          <text class="item-title">{{item.submitted_name}}</text>
+          <text class="status-pill {{item.statusClass}}">{{item.statusText}}</text>
         </view>
-        <view class="ingredient-info">
-          <view class="ingredient-name">{{item.name}}</view>
-          <view class="ingredient-nutrition">
-            <view class="nutrition-item">
-              <view class="nutrition-label">营养</view>
-              <view class="nutrition-value">{{item.nutrition}}</view>
-            </view>
+        <view class="item-line"><text class="label">类别</text><text class="value">{{item.submitted_category}}</text></view>
+        <view class="item-line"><text class="label">热量</text><text class="value">{{item.submitted_calories_per_100g}} kcal/100g</text></view>
+        <view class="item-line"><text class="label">营养</text><text class="value">{{item.nutritionText}} (g/100g)</text></view>
+        <view class="item-line"><text class="label">更新</text><text class="value">{{item.updatedText}}</text></view>
+        <view wx:if="{{item.workflow_status==='returned' && item.review_note}}" class="returned-note">
+          退回原因：{{item.review_note}}
+        </view>
+        <view class="item-foot">
+          <view wx:if="{{item.workflow_status==='returned'}}" class="detail-btn" bindtap="editReturnedItem" data-item="{{item}}">重新编辑</view>
+          <view class="detail-btn" bindtap="showDetail" data-item="{{item}}">查看详情</view>
+        </view>
+      </view>
+      <view wx:if="{{visibleItems.length===0}}" class="empty-wrap">
+        <text class="empty-text">暂无对应食材记录</text>
+      </view>
+    </view>
+
+    <view wx:if="{{showDetailModal}}" class="detail-modal-mask" bindtap="hideDetailModal">
+      <view class="detail-modal-card" catchtap="noop">
+        <view class="detail-modal-head">
+          <text class="detail-modal-title">食材详情</text>
+          <view class="detail-modal-close" bindtap="hideDetailModal">×</view>
+        </view>
+        <view class="detail-modal-body">
+          <view class="item-line"><text class="label">名称</text><text class="value">{{selectedItem.submitted_name}}</text></view>
+          <view class="item-line"><text class="label">类别</text><text class="value">{{selectedItem.submitted_category}}</text></view>
+          <view class="item-line"><text class="label">状态</text><text class="value">{{selectedItem.statusText}}</text></view>
+          <view class="item-line"><text class="label">热量</text><text class="value">{{selectedItem.submitted_calories_per_100g}} kcal/100g</text></view>
+          <view class="item-line"><text class="label">蛋白质</text><text class="value">{{selectedItem.submitted_nutrition_100g.protein}} g/100g</text></view>
+          <view class="item-line"><text class="label">碳水</text><text class="value">{{selectedItem.submitted_nutrition_100g.carbohydrate}} g/100g</text></view>
+          <view class="item-line"><text class="label">脂肪</text><text class="value">{{selectedItem.submitted_nutrition_100g.fat}} g/100g</text></view>
+          <view class="item-line"><text class="label">单位</text><text class="value">{{selectedItem.submitted_unit}}，每单位{{selectedItem.submitted_gram_per_unit}}g</text></view>
+          <view class="item-line"><text class="label">更新时间</text><text class="value">{{selectedItem.updatedText}}</text></view>
+          <view wx:if="{{selectedItem.review_note}}" class="returned-note">
+            退回原因：{{selectedItem.review_note}}
           </view>
         </view>
-        <view class="ingredient-action">
-          <view class="action-btn">详情</view>
+        <view class="item-foot">
+          <view class="detail-btn" bindtap="hideDetailModal">关闭</view>
         </view>
       </view>
-    </view>
-
-    <!-- 加载更多 -->
-    <view class="load-more" bindtap="loadMore">
-      <text>加载更多</text>
     </view>
   </view>
 </view>

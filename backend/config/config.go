@@ -87,6 +87,7 @@ func autoMigrate() error {
 		&models.HealthData{},
 		&models.HealthDataHistory{},
 		&models.Ingredient{},
+		&models.IngredientSubmission{},
 		&models.NutritionRecord{},
 		&models.NutritionRecordItem{},
 		&models.ServiceRequest{},

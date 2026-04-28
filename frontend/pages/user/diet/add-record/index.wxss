@@ -300,6 +300,9 @@
 .result-info {
   font-size: 20rpx;
   color: #666;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
 }
 
 .result-calorie {
@@ -308,6 +311,34 @@
   border-radius: 12rpx;
   color: #1976d2;
   font-size: 18rpx;
+}
+
+.private-tag {
+  font-size: 18rpx;
+  color: #9a6700;
+  background: #fff1c2;
+  border-radius: 12rpx;
+  padding: 4rpx 10rpx;
+}
+
+.empty-search {
+  padding: 24rpx 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.empty-text {
+  font-size: 22rpx;
+  color: #666;
+}
+
+.create-ingredient-btn {
+  font-size: 22rpx;
+  color: #fff;
+  background: #ff8a3d;
+  border-radius: 999rpx;
+  padding: 10rpx 20rpx;
 }
 
 .nutrition-preview {

@@ -370,6 +370,38 @@ const ingredient = {
   getList: function(params) {
     return get('/api/ingredients', params);
   },
+  // 获取当前用户可见食材（公共 + 私有）
+  getUserVisibleList: function(params) {
+    return get('/api/ingredients/user-visible', params);
+  },
+  // 用户提交新食材
+  submitIngredient: function(data) {
+    return post('/api/ingredients/submission', data);
+  },
+  // 用户：我的食材提交记录
+  getMySubmissions: function(params) {
+    return get('/api/ingredients/my-submissions', params);
+  },
+  // 用户：退回后重新提交
+  resubmitSubmission: function(submissionId, data) {
+    return put(`/api/ingredients/my-submissions/${encodeURIComponent(submissionId)}/resubmit`, data);
+  },
+  // 管理员：食材提交审核列表
+  getSubmissionList: function(params) {
+    return get('/api/ingredients/admin/submissions', params);
+  },
+  // 管理员：审核通过
+  approveSubmission: function(submissionId, data = {}) {
+    return post(`/api/ingredients/admin/submissions/${encodeURIComponent(submissionId)}/approve`, data);
+  },
+  // 管理员：修正并通过
+  approveSubmissionWithEdit: function(submissionId, data = {}) {
+    return post(`/api/ingredients/admin/submissions/${encodeURIComponent(submissionId)}/approve-with-edit`, data);
+  },
+  // 管理员：退回
+  returnSubmission: function(submissionId, data = {}) {
+    return post(`/api/ingredients/admin/submissions/${encodeURIComponent(submissionId)}/return`, data);
+  },
   // 获取食材详情
   getDetail: function(id) {
     return get(`/api/ingredients/${id}`);

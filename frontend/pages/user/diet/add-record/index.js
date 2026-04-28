@@ -44,6 +44,19 @@ Page({
 
   onShow() {
     this.checkLogin();
+    if (this.data.isLoggedIn) {
+      const submitFlag = wx.getStorageSync('ingredientSubmitRefreshFlag');
+      if (submitFlag && submitFlag.shouldRefresh) {
+        const keyword = submitFlag.keyword || this.data.newFood.name || '';
+        wx.removeStorageSync('ingredientSubmitRefreshFlag');
+        this.setData({
+          showAddForm: true,
+          'newFood.name': keyword,
+          searchQuery: keyword
+        });
+      }
+      this.loadIngredients();
+    }
   },
 
   loadIngredients() {
@@ -57,7 +70,7 @@ Page({
     }
     
     // 然后尝试从后端获取最新数据
-    api.ingredient.getList()
+    api.ingredient.getUserVisibleList({ page: 1, page_size: 200 })
       .then(res => {
         if (res.code === 200 && res.data.ingredients) {
           const ingredients = res.data.ingredients;
@@ -65,11 +78,31 @@ Page({
           // 缓存到本地存储
           wx.setStorageSync('cachedIngredients', ingredients);
           console.log('从后端更新食材数据并缓存');
+          this.refreshSearchResultsAfterLoad();
         }
       })
       .catch(() => {
-        console.log('从后端加载食材数据失败，使用本地缓存');
+        // 新接口不可用时回退旧接口，确保历史逻辑仍可用
+        api.ingredient.getList()
+          .then(res => {
+            if (res.code === 200 && res.data.ingredients) {
+              const ingredients = res.data.ingredients;
+              this.setData({ ingredients: ingredients });
+              wx.setStorageSync('cachedIngredients', ingredients);
+              this.refreshSearchResultsAfterLoad();
+            }
+          })
+          .catch(() => {
+            console.log('从后端加载食材数据失败，使用本地缓存');
+          });
       });
+  },
+
+  refreshSearchResultsAfterLoad() {
+    const keyword = (this.data.newFood.name || '').trim();
+    if (this.data.showAddForm && keyword) {
+      this.searchIngredients(keyword);
+    }
   },
   selectMealType(e) {
     const type = e.currentTarget.dataset.type;
@@ -123,8 +156,16 @@ Page({
     
     this.setData({
       searchResults: results,
-      showSearchResults: results.length > 0
+      showSearchResults: query.length >= 1
     });
+  },
+
+  gotoCreateIngredient() {
+    const name = (this.data.newFood.name || '').trim();
+    const url = name
+      ? `/pages/user/diet/ingredient-submit/index?name=${encodeURIComponent(name)}`
+      : '/pages/user/diet/ingredient-submit/index';
+    wx.navigateTo({ url });
   },
 
   selectIngredient(e) {

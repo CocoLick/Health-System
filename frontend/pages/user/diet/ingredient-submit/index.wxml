@@ -1,0 +1,61 @@
+<view class="container">
+  <view class="card">
+    <view class="title">{{isResubmitMode ? '编辑并重新提交' : '新增食材'}}</view>
+    <view class="sub">{{isResubmitMode ? '修改后重新提交，状态将变为待审核。' : '提交后会立即进入你的私有库，并同步进入管理员审核队列。'}}</view>
+    <view wx:if="{{isResubmitMode && returnReason}}" class="return-reason">
+      退回原因：{{returnReason}}
+    </view>
+
+    <view class="form-item">
+      <view class="label">食材名称</view>
+      <input class="input" data-field="name" value="{{form.name}}" bindinput="onInput" placeholder="如：自制鸡肉饼" />
+    </view>
+
+    <view class="form-item">
+      <view class="label">食材类别</view>
+      <picker mode="selector" range="{{categoryOptions}}" value="{{categoryIndex}}" bindchange="onCategoryChange">
+        <view class="input picker-like">{{form.category || '请选择食材类别'}}</view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <view class="label">热量(kcal/100g)</view>
+      <input class="input" type="digit" data-field="calorie_100g" value="{{form.calorie_100g}}" bindinput="onInput" placeholder="如：165" />
+    </view>
+
+    <view class="grid">
+      <view class="form-item">
+        <view class="label">蛋白质(g/100g)</view>
+        <input class="input" type="digit" data-field="protein" value="{{form.protein}}" bindinput="onInput" />
+      </view>
+      <view class="form-item">
+        <view class="label">碳水(g/100g)</view>
+        <input class="input" type="digit" data-field="carbohydrate" value="{{form.carbohydrate}}" bindinput="onInput" />
+      </view>
+      <view class="form-item">
+        <view class="label">脂肪(g/100g)</view>
+        <input class="input" type="digit" data-field="fat" value="{{form.fat}}" bindinput="onInput" />
+      </view>
+    </view>
+
+    <view class="grid">
+      <view class="form-item">
+        <view class="label">计量单位</view>
+        <input class="input" data-field="unit" value="{{form.unit}}" bindinput="onInput" placeholder="g/个/碗" />
+      </view>
+      <view class="form-item">
+        <view class="label">每单位克数</view>
+        <input class="input" type="digit" data-field="gram_per_unit" value="{{form.gram_per_unit}}" bindinput="onInput" />
+      </view>
+    </view>
+  </view>
+
+  <view class="card tip-card" wx:if="{{checkResult}}">
+    <view class="tip-title">自动校验</view>
+    <view class="tip-line">估算热量：{{autoCalcCaloriesText}} kcal/100g</view>
+    <view class="tip-line">偏差比例：{{deltaRatioText}}%</view>
+    <view class="tip-line {{checkResultClass}}">结果：{{checkResult}}</view>
+  </view>
+
+  <button class="submit" loading="{{submitting}}" bindtap="submit">{{isResubmitMode ? '重新提交审核' : '提交新食材'}}</button>
+</view>

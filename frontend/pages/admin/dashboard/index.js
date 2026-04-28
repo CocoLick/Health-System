@@ -118,6 +118,26 @@ Page({
     ],
     pendingPlansCount: 2,
     pendingArticlesCount: 2,
+    pendingIngredientsCount: 0,
+    ingredientSubmissions: [],
+    ingredientLoading: false,
+    showIngredientDetailModal: false,
+    selectedIngredientSubmission: null,
+    showIngredientEditModal: false,
+    ingredientCategoryOptions: ['主食', '蛋白质', '蔬菜', '水果', '乳制品', '豆制品', '坚果', '其他'],
+    ingredientCategoryIndex: -1,
+    editIngredientForm: {
+      submissionId: '',
+      name: '',
+      category: '',
+      calorie_100g: '',
+      protein: '',
+      carbohydrate: '',
+      fat: '',
+      unit: 'g',
+      gram_per_unit: '100',
+      review_note: ''
+    },
     auditHistory: [
       {
         id: 1,
@@ -152,6 +172,7 @@ Page({
     this.loadUsers();
     this.loadNutritionItems();
     this.loadRecentActivities();
+    this.loadIngredientSubmissions();
 
     // 检查是否首次访问管理中心
     this.checkFirstVisit();
@@ -627,6 +648,169 @@ Page({
     this.setData({
       auditSubTab: subtab
     });
+    if (subtab === 'ingredients') {
+      this.loadIngredientSubmissions();
+    }
+  },
+
+  loadIngredientSubmissions() {
+    this.setData({ ingredientLoading: true });
+    api.ingredient.getSubmissionList({ workflow_status: 'pending', page: 1, page_size: 20 })
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          const rows = (res.data.items || []).map((it) => ({
+            ...it,
+            riskText: it.auto_check_result === 'abnormal' ? '异常' : '正常',
+            deltaPct: `${((it.auto_delta_ratio || 0) * 100).toFixed(1)}%`,
+            submitTimeText: it.created_at ? String(it.created_at).replace('T', ' ').slice(0, 19) : '-'
+          }));
+          this.setData({
+            ingredientSubmissions: rows,
+            pendingIngredientsCount: rows.length
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.setData({ ingredientLoading: false });
+      });
+  },
+
+  approveIngredientSubmission(e) {
+    const submissionId = e.currentTarget.dataset.id;
+    api.ingredient.approveSubmission(submissionId, { review_note: '管理员审核通过' })
+      .then((res) => {
+        if (res.code === 200) {
+          wx.showToast({ title: '审核通过', icon: 'success' });
+          this.loadIngredientSubmissions();
+          return;
+        }
+        wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
+  },
+
+  rejectIngredientSubmission(e) {
+    const submissionId = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '退回食材',
+      editable: true,
+      placeholderText: '请输入退回原因',
+      success: (modalRes) => {
+        if (!modalRes.confirm) return;
+        const reviewNote = (modalRes.content || '').trim();
+        if (!reviewNote) {
+          wx.showToast({ title: '请填写退回原因', icon: 'none' });
+          return;
+        }
+        api.ingredient.returnSubmission(submissionId, { review_note: reviewNote })
+          .then((res) => {
+            if (res.code === 200) {
+              wx.showToast({ title: '已退回', icon: 'success' });
+              this.loadIngredientSubmissions();
+              return;
+            }
+            wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
+    });
+  },
+
+  viewIngredientSubmissionDetail(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item) return;
+    this.setData({
+      selectedIngredientSubmission: item,
+      showIngredientDetailModal: true
+    });
+  },
+
+  hideIngredientDetailModal() {
+    this.setData({
+      showIngredientDetailModal: false,
+      selectedIngredientSubmission: null
+    });
+  },
+
+  openIngredientEditModal(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item) return;
+    const nutri = item.submitted_nutrition_100g || {};
+    const ingredientCategoryIndex = this.data.ingredientCategoryOptions.indexOf(item.submitted_category);
+    this.setData({
+      showIngredientEditModal: true,
+      ingredientCategoryIndex: ingredientCategoryIndex >= 0 ? ingredientCategoryIndex : -1,
+      editIngredientForm: {
+        submissionId: item.submission_id,
+        name: item.submitted_name || '',
+        category: item.submitted_category || '',
+        calorie_100g: String(item.submitted_calories_per_100g || ''),
+        protein: String(nutri.protein || ''),
+        carbohydrate: String(nutri.carbohydrate || ''),
+        fat: String(nutri.fat || ''),
+        unit: item.submitted_unit || 'g',
+        gram_per_unit: String(item.submitted_gram_per_unit || 100),
+        review_note: '管理员修正后通过'
+      }
+    });
+  },
+
+  hideIngredientEditModal() {
+    this.setData({ showIngredientEditModal: false });
+  },
+
+  bindEditIngredientField(e) {
+    const field = e.currentTarget.dataset.field;
+    const value = e.detail.value;
+    this.setData({ [`editIngredientForm.${field}`]: value });
+  },
+
+  onIngredientEditCategoryChange(e) {
+    const ingredientCategoryIndex = Number(e.detail.value);
+    const category = this.data.ingredientCategoryOptions[ingredientCategoryIndex] || '';
+    this.setData({
+      ingredientCategoryIndex,
+      'editIngredientForm.category': category
+    });
+  },
+
+  submitIngredientApproveWithEdit() {
+    const f = this.data.editIngredientForm;
+    if (!f.submissionId || !f.name || !f.category || !f.calorie_100g || !f.protein || !f.carbohydrate || !f.fat) {
+      wx.showToast({ title: '请完整填写修正信息', icon: 'none' });
+      return;
+    }
+    const payload = {
+      name: f.name.trim(),
+      category: f.category.trim(),
+      calorie_100g: parseFloat(f.calorie_100g),
+      nutrition_100g: {
+        protein: parseFloat(f.protein),
+        carbohydrate: parseFloat(f.carbohydrate),
+        fat: parseFloat(f.fat)
+      },
+      unit: f.unit || 'g',
+      gram_per_unit: parseFloat(f.gram_per_unit) || 100,
+      review_note: (f.review_note || '').trim() || '管理员修正后通过'
+    };
+    api.ingredient.approveSubmissionWithEdit(f.submissionId, payload)
+      .then((res) => {
+        if (res.code === 200) {
+          wx.showToast({ title: '修正并通过成功', icon: 'success' });
+          this.hideIngredientEditModal();
+          this.loadIngredientSubmissions();
+          return;
+        }
+        wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
   },
 
   switchManageSubTab(e) {

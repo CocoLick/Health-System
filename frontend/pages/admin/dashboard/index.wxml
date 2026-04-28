@@ -102,6 +102,11 @@
           <text>健康文章</text>
           <text class="badge" wx:if="{{pendingArticlesCount > 0}}">{{pendingArticlesCount}}</text>
         </view>
+        <view class="audit-tab {{auditSubTab === 'ingredients' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="ingredients">
+          <text class="tab-icon">🥗</text>
+          <text>食材新增</text>
+          <text class="badge" wx:if="{{pendingIngredientsCount > 0}}">{{pendingIngredientsCount}}</text>
+        </view>
         <view class="audit-tab {{auditSubTab === 'history' ? 'active' : ''}}" bindtap="switchAuditSubTab" data-subtab="history">
           <text class="tab-icon">📊</text>
           <text>审核历史</text>
@@ -124,9 +129,9 @@
                 <text class="info-label">规划师：</text>
                 <text class="info-value">{{item.dietitian}}</text>
               </view>
-              <view class="item-info">
+              <view class="item-info item-info--singleline">
                 <text class="info-label">提交时间：</text>
-                <text class="info-value">{{item.submitTime}}</text>
+                <text class="info-value info-value--singleline">{{item.submitTime}}</text>
               </view>
             </view>
             <view class="item-footer">
@@ -170,6 +175,48 @@
           </view>
         </view>
 
+        <view wx:if="{{auditSubTab === 'ingredients'}}">
+          <view wx:if="{{ingredientLoading}}" class="empty-state">
+            <text class="empty-text">加载中...</text>
+          </view>
+          <view wx:for="{{ingredientSubmissions}}" wx:key="submission_id" class="audit-item">
+            <view class="item-header">
+              <text class="item-title">{{item.submitted_name}}</text>
+              <text class="item-status risk-{{item.auto_check_result}}">{{item.riskText}}</text>
+            </view>
+            <view class="item-body">
+              <view class="item-info">
+                <text class="info-label">类别：</text>
+                <text class="info-value">{{item.submitted_category}}</text>
+              </view>
+              <view class="item-info">
+                <text class="info-label">提交人：</text>
+                <text class="info-value">{{item.user_id}}</text>
+              </view>
+              <view class="item-info">
+                <text class="info-label">热量：</text>
+                <text class="info-value">{{item.submitted_calories_per_100g}} kcal/100g</text>
+              </view>
+              <view class="item-info item-info--singleline">
+                <text class="info-label">风险/偏差：</text>
+                <text class="info-value info-value--singleline">{{item.riskText}} · {{item.deltaPct}}</text>
+              </view>
+            </view>
+            <view class="item-footer ingredient-actions">
+              <view class="btn-text ingredient-detail-link" bindtap="viewIngredientSubmissionDetail" data-item="{{item}}">查看详情</view>
+              <view class="ingredient-action-group">
+                <view class="btn-primary ingredient-btn-approve" bindtap="approveIngredientSubmission" data-id="{{item.submission_id}}">通过</view>
+                <view class="btn-primary ingredient-btn-edit" bindtap="openIngredientEditModal" data-item="{{item}}">修正并通过</view>
+                <view class="btn-secondary ingredient-btn-return" bindtap="rejectIngredientSubmission" data-id="{{item.submission_id}}">退回</view>
+              </view>
+            </view>
+          </view>
+          <view wx:if="{{!ingredientLoading && ingredientSubmissions.length === 0}}" class="empty-state">
+            <text class="empty-icon">🥗</text>
+            <text class="empty-text">暂无待审核食材</text>
+          </view>
+        </view>
+
         <view wx:if="{{auditSubTab === 'history'}}">
           <view wx:for="{{auditHistory}}" wx:key="index" class="audit-item">
             <view class="item-header">
@@ -191,6 +238,60 @@
             <text class="empty-icon">📋</text>
             <text class="empty-text">暂无审核历史</text>
           </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{showIngredientDetailModal}}" class="modal-mask" bindtap="hideIngredientDetailModal">
+      <view class="modal-content" catchtap="stopPropagation">
+        <view class="modal-header">
+          <text class="modal-title">食材提交详情</text>
+          <view class="modal-close" bindtap="hideIngredientDetailModal">×</view>
+        </view>
+        <view class="modal-body">
+          <view class="item-info"><text class="info-label">食材：</text><text class="info-value">{{selectedIngredientSubmission.submitted_name}}</text></view>
+          <view class="item-info"><text class="info-label">类别：</text><text class="info-value">{{selectedIngredientSubmission.submitted_category}}</text></view>
+          <view class="item-info"><text class="info-label">提交人：</text><text class="info-value">{{selectedIngredientSubmission.user_id}}</text></view>
+          <view class="item-info"><text class="info-label">热量：</text><text class="info-value">{{selectedIngredientSubmission.submitted_calories_per_100g}} kcal/100g</text></view>
+          <view class="item-info"><text class="info-label">蛋白质：</text><text class="info-value">{{selectedIngredientSubmission.submitted_nutrition_100g.protein}} g/100g</text></view>
+          <view class="item-info"><text class="info-label">碳水：</text><text class="info-value">{{selectedIngredientSubmission.submitted_nutrition_100g.carbohydrate}} g/100g</text></view>
+          <view class="item-info"><text class="info-label">脂肪：</text><text class="info-value">{{selectedIngredientSubmission.submitted_nutrition_100g.fat}} g/100g</text></view>
+          <view class="item-info"><text class="info-label">单位：</text><text class="info-value">{{selectedIngredientSubmission.submitted_unit}}，每单位{{selectedIngredientSubmission.submitted_gram_per_unit}}g</text></view>
+          <view class="item-info"><text class="info-label">估算热量：</text><text class="info-value">{{selectedIngredientSubmission.auto_calc_calories}} kcal/100g</text></view>
+          <view class="item-info"><text class="info-label">风险/偏差：</text><text class="info-value">{{selectedIngredientSubmission.riskText}} · {{selectedIngredientSubmission.deltaPct}}</text></view>
+          <view class="item-info"><text class="info-label">提交时间：</text><text class="info-value">{{selectedIngredientSubmission.submitTimeText}}</text></view>
+        </view>
+        <view class="modal-footer">
+          <view class="btn-cancel" bindtap="hideIngredientDetailModal">关闭</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{showIngredientEditModal}}" class="modal-mask" bindtap="hideIngredientEditModal">
+      <view class="modal-content" catchtap="stopPropagation">
+        <view class="modal-header">
+          <text class="modal-title">修正并通过</text>
+          <view class="modal-close" bindtap="hideIngredientEditModal">×</view>
+        </view>
+        <view class="modal-body">
+          <view class="form-item"><text class="form-label">名称</text><input class="form-input" value="{{editIngredientForm.name}}" data-field="name" bindinput="bindEditIngredientField" /></view>
+          <view class="form-item">
+            <text class="form-label">类别</text>
+            <picker mode="selector" range="{{ingredientCategoryOptions}}" value="{{ingredientCategoryIndex}}" bindchange="onIngredientEditCategoryChange">
+              <view class="form-input">{{editIngredientForm.category || '请选择食材类别'}}</view>
+            </picker>
+          </view>
+          <view class="form-item"><text class="form-label">热量(kcal/100g)</text><input class="form-input" type="digit" value="{{editIngredientForm.calorie_100g}}" data-field="calorie_100g" bindinput="bindEditIngredientField" /></view>
+          <view class="form-item"><text class="form-label">蛋白质(g/100g)</text><input class="form-input" type="digit" value="{{editIngredientForm.protein}}" data-field="protein" bindinput="bindEditIngredientField" /></view>
+          <view class="form-item"><text class="form-label">碳水(g/100g)</text><input class="form-input" type="digit" value="{{editIngredientForm.carbohydrate}}" data-field="carbohydrate" bindinput="bindEditIngredientField" /></view>
+          <view class="form-item"><text class="form-label">脂肪(g/100g)</text><input class="form-input" type="digit" value="{{editIngredientForm.fat}}" data-field="fat" bindinput="bindEditIngredientField" /></view>
+          <view class="form-item"><text class="form-label">单位</text><input class="form-input" value="{{editIngredientForm.unit}}" data-field="unit" bindinput="bindEditIngredientField" /></view>
+          <view class="form-item"><text class="form-label">每单位克重(g)</text><input class="form-input" type="digit" value="{{editIngredientForm.gram_per_unit}}" data-field="gram_per_unit" bindinput="bindEditIngredientField" /></view>
+          <view class="form-item"><text class="form-label">审核备注</text><input class="form-input" value="{{editIngredientForm.review_note}}" data-field="review_note" bindinput="bindEditIngredientField" /></view>
+        </view>
+        <view class="modal-footer">
+          <view class="btn-cancel" bindtap="hideIngredientEditModal">取消</view>
+          <view class="btn-confirm" bindtap="submitIngredientApproveWithEdit">提交</view>
         </view>
       </view>
     </view>

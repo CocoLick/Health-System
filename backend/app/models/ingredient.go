@@ -7,27 +7,34 @@ import (
 
 // Ingredient 食材模型
 type Ingredient struct {
-	IngredientID  string    `json:"ingredient_id" gorm:"primaryKey"`
-	Name          string    `json:"name" gorm:"not null"`
-	Category      string    `json:"category" gorm:"not null"`
-	Calorie100g   float64   `json:"calorie_100g" gorm:"column:calories_per_100g;not null"` // 每100克热量
-	Nutrition100g string    `json:"nutrition_100g" gorm:"type:text;not null"` // 每100克营养成分，JSON格式
-	Unit          string    `json:"unit" gorm:"column:unit;not null;default:'g'"` // 常用单位
-	GramPerUnit   float64   `json:"gram_per_unit" gorm:"column:gram_per_unit;default:100"` // 每个单位等于多少克
-	Status        string    `json:"status" gorm:"default:'enabled'"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	IngredientID       string    `json:"ingredient_id" gorm:"primaryKey"`
+	Name               string    `json:"name" gorm:"not null"`
+	Category           string    `json:"category" gorm:"not null"`
+	Calorie100g        float64   `json:"calorie_100g" gorm:"column:calories_per_100g;not null"`    // 每100克热量
+	Nutrition100g      string    `json:"nutrition_100g" gorm:"type:text;not null"`                 // 每100克营养成分，JSON格式
+	Unit               string    `json:"unit" gorm:"column:unit;not null;default:'g'"`             // 常用单位
+	GramPerUnit        float64   `json:"gram_per_unit" gorm:"column:gram_per_unit;default:100"`    // 每个单位等于多少克
+	Scope              string    `json:"scope" gorm:"column:scope;size:20;default:'public';index"` // public/private
+	OwnerUserID        string    `json:"owner_user_id" gorm:"column:owner_user_id;size:64;index"`
+	SourceType         string    `json:"source_type" gorm:"column:source_type;size:30;default:'system_seed'"` // system_seed/user_submission/admin_created
+	SourceSubmissionID string    `json:"source_submission_id" gorm:"column:source_submission_id;size:64;index"`
+	ReviewStatus       string    `json:"review_status" gorm:"column:review_status;size:20;default:'approved';index"` // pending/approved/returned/rejected
+	RiskLevel          string    `json:"risk_level" gorm:"column:risk_level;size:20;default:'normal'"`
+	RiskScore          int       `json:"risk_score" gorm:"column:risk_score;default:0"`
+	Status             string    `json:"status" gorm:"default:'enabled'"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // NutritionDetails 营养成分详情结构
 type NutritionDetails struct {
-	Protein      float64 `json:"protein"`      // 蛋白质 (g/100g)
-	Carbohydrate float64 `json:"carbohydrate"` // 碳水化合物 (g/100g)
-	Fat          float64 `json:"fat"`          // 脂肪 (g/100g)
-	Fiber        float64 `json:"fiber,omitempty"` // 膳食纤维 (g/100g)
+	Protein      float64 `json:"protein"`             // 蛋白质 (g/100g)
+	Carbohydrate float64 `json:"carbohydrate"`        // 碳水化合物 (g/100g)
+	Fat          float64 `json:"fat"`                 // 脂肪 (g/100g)
+	Fiber        float64 `json:"fiber,omitempty"`     // 膳食纤维 (g/100g)
 	VitaminC     float64 `json:"vitamin_c,omitempty"` // 维生素C (mg/100g)
-	Calcium      float64 `json:"calcium,omitempty"` // 钙 (mg/100g)
-	Iron         float64 `json:"iron,omitempty"` // 铁 (mg/100g)
+	Calcium      float64 `json:"calcium,omitempty"`   // 钙 (mg/100g)
+	Iron         float64 `json:"iron,omitempty"`      // 铁 (mg/100g)
 }
 
 // GetNutritionDetails 获取营养成分详情
