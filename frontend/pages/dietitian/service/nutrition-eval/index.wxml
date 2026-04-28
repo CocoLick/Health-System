@@ -12,7 +12,7 @@
     </view>
     <view class="ctx-row" wx:if="{{context.bmi}}">
       <text class="label">参考 BMI</text>
-      <view class="ctx-value">{{context.bmi}}（由身高体重估算，可在表单中覆盖）</view>
+      <view class="ctx-value">{{context.bmi}}（由身高体重估算）</view>
     </view>
     <view class="ctx-row">
       <text class="label">活动水平</text>
@@ -22,15 +22,22 @@
       <text class="label">饮食目标</text>
       <view class="ctx-value">{{context.dietGoalText}}</view>
     </view>
-    <view class="ctx-row" wx:if="{{context.otherGoal}}">
-      <text class="label">其他目标说明</text>
-      <view class="ctx-value">{{context.otherGoal}}</view>
+    <view class="ctx-core-tip">提示：优先参考下方趋势图与推荐偏差，快速完成本次评估结论。</view>
+  </view>
+
+  <view class="accordion-tools">
+    <view class="accordion-tool-btn" bindtap="toggleAllSections">
+      {{accordion.dietHistory && accordion.trendOverview && accordion.writingHints && accordion.evalForm ? '全部收起' : '全部展开'}}
     </view>
   </view>
 
-  <view class="section" wx:if="{{userId}}">
-    <view class="section-title">历史饮食记录</view>
-    <view class="d7-hint">与当前评估用户（{{userId}}）的膳食记录，按天汇总；点选下方日期、天数后自动拉取，点击行可查看各餐与食材明细</view>
+  <view class="section accordion-section" wx:if="{{userId}}">
+    <view class="section-title section-title-accordion" data-key="dietHistory" bindtap="toggleSection">
+      <text>历史饮食记录</text>
+      <text class="section-arrow">{{accordion.dietHistory ? '收起' : '展开'}}</text>
+    </view>
+    <view wx:if="{{accordion.dietHistory}}">
+      <view class="d7-hint">与当前评估用户（{{userId}}）的膳食记录，按天汇总；点选下方日期、天数后自动拉取，点击行可查看各餐与食材明细</view>
     <view class="d7-filters">
       <view class="d7-filter">
         <text class="d7-filter-label">开始日期</text>
@@ -50,42 +57,163 @@
         </picker>
       </view>
     </view>
-    <view wx:if="{{diet7Loading}}" class="d7-hint d7-muted">加载中…</view>
-    <view wx:elif="{{diet7Error}}" class="d7-hint d7-warn">{{diet7Error}}</view>
-    <view wx:else>
-      <view
-        class="d7-row"
-        wx:for="{{diet7Rows}}"
-        wx:key="date"
-        bindtap="onTapDiet7Day"
-        data-date="{{item.date}}"
-      >
-        <view class="d7-left">
-          <text class="d7-dt">{{item.dayTitle}}</text>
-          <text class="d7-sub">{{item.mealCount ? (item.mealCount + ' 餐') : '无记录'}}</text>
-        </view>
-        <view class="d7-right-macro">
-          <block wx:if="{{item.hasNutrition}}">
-            <text class="d7-macro-k">热量 {{item.totalKcal}} kcal</text>
-            <text class="d7-macro-sub" wx:if="{{item.dayMacroSub}}">{{item.dayMacroSub}}</text>
-          </block>
-          <text class="d7-macro-na" wx:else>—</text>
+      <view wx:if="{{diet7Loading}}" class="d7-hint d7-muted">加载中…</view>
+      <view wx:elif="{{diet7Error}}" class="d7-hint d7-warn">{{diet7Error}}</view>
+      <view wx:else>
+        <view
+          class="d7-row"
+          wx:for="{{diet7Rows}}"
+          wx:key="date"
+          bindtap="onTapDiet7Day"
+          data-date="{{item.date}}"
+        >
+          <view class="d7-left">
+            <text class="d7-dt">{{item.dayTitle}}</text>
+            <text class="d7-sub">{{item.mealCount ? (item.mealCount + ' 餐') : '无记录'}}</text>
+          </view>
+          <view class="d7-right-macro">
+            <block wx:if="{{item.hasNutrition}}">
+              <text class="d7-macro-k">热量 {{item.totalKcal}} kcal</text>
+              <text class="d7-macro-sub" wx:if="{{item.dayMacroSub}}">{{item.dayMacroSub}}</text>
+            </block>
+            <text class="d7-macro-na" wx:else>—</text>
+          </view>
         </view>
       </view>
     </view>
   </view>
 
-  <view class="section">
-    <view class="section-title">维度提示（写作提纲）</view>
-    <view class="hint">1. 体成分与 BMI：结合身高体重、腰围（若有）说明偏瘦/正常/超重等。</view>
-    <view class="hint">2. 膳食结构：供能比、多样性、油盐糖、优质蛋白来源；若缺少饮食记录请注明依据有限。</view>
-    <view class="hint">3. 能量与营养素：是否存在能量过剩/不足；微量营养素与纤维（有数据再写）。</view>
-    <view class="hint">4. 风险与禁忌：疾病、用药、过敏对饮食的影响。</view>
-    <view class="hint">5. 结论与配餐衔接：给出可执行的配餐优先事项。</view>
+  <view class="section accordion-section" wx:if="{{userId}}">
+    <view class="section-title section-title-accordion" data-key="trendOverview" bindtap="toggleSection">
+      <text>用户营养趋势概览</text>
+      <text class="section-arrow">{{accordion.trendOverview ? '收起' : '展开'}}</text>
+    </view>
+    <view wx:if="{{accordion.trendOverview}}">
+
+    <view class="chart-block">
+      <view class="chart-title-row">
+        <view class="chart-title">总热量趋势图（单位：{{energyChartUnit}}）</view>
+        <view class="chart-title-side" wx:if="{{recommendation}}">推荐 {{recommendation.calories}} kcal/日</view>
+      </view>
+      <scroll-view class="chart-scroll" scroll-x="true" enhanced="true" show-scrollbar="false">
+        <view class="history-line-row">
+          <view class="history-y-axis" style="height: {{energyChart.height}};">
+            <view class="history-y-tick" wx:for="{{energyChart.ticks}}" wx:key="id" style="top: {{item.yPos}};">
+              <text class="history-y-text">{{item.text}}</text>
+              <view class="history-y-grid"></view>
+            </view>
+          </view>
+          <view class="history-line-wrap" style="width: {{energyChart.width}};">
+            <view class="history-line-chart" style="width: {{energyChart.width}}; height: {{energyChart.height}};">
+              <view class="history-line-segment" wx:for="{{energyChart.segments}}" wx:key="id" style="left: {{item.left}}; top: {{item.top}}; width: {{item.width}}; transform: {{item.angle}};"></view>
+              <view class="history-line-dot" wx:for="{{energyChart.points}}" wx:key="id" hidden="{{item.isEmpty}}" style="left: {{item.xPos}}; top: {{item.yPos}};"></view>
+            </view>
+            <view class="history-line-labels" style="width: {{energyChart.width}};">
+              <view class="history-point-item" wx:for="{{energyChart.points}}" wx:key="id">
+                <view class="history-point-value">{{item.valueText}}</view>
+                <view class="history-point-day">{{item.label}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="chart-inline-summary" wx:if="{{intakeDeviation}}">
+        <view class="chart-inline-summary-line">
+          近{{dietRangeValues[dietRangeIndex]}}天（有效{{intakeDeviation.validDays}}天）平均 {{intakeDeviation.avg.calories}} kcal/日
+        </view>
+        <view class="chart-inline-summary-line">
+          较推荐 {{intakeDeviation.diff.calories.delta >= 0 ? '+' : ''}}{{intakeDeviation.diff.calories.delta}} kcal/日（{{intakeDeviation.diff.calories.pct >= 0 ? '+' : ''}}{{intakeDeviation.diff.calories.pct}}%）
+        </view>
+      </view>
+    </view>
+
+    <view class="chart-block">
+      <view class="chart-title">营养素结构图（供能占比）</view>
+      <view class="nutri-compare-wrap" wx:if="{{nutrientStructCompare.length > 0}}">
+        <view class="nutri-compare-title">每项营养素：实际占比 vs 推荐占比</view>
+        <view class="chart-inline-summary" wx:if="{{intakeDeviation}}">
+          按近{{dietRangeValues[dietRangeIndex]}}天有效摄入日均值计算（有效{{intakeDeviation.validDays}}天）。
+        </view>
+        <view class="nutri-compare-row" wx:for="{{nutrientStructCompare}}" wx:key="key">
+          <view class="nutri-compare-head">
+            <text class="nutri-compare-label">{{item.label}}</text>
+            <text class="nutri-compare-values">实际 {{item.actualPct}}% | 推荐 {{item.recPct}}%</text>
+          </view>
+          <view class="nutri-compare-bars">
+            <view class="nutri-compare-line">
+              <text class="nutri-compare-tag">实</text>
+              <view class="nutri-bar-bg">
+                <view class="nutri-bar-fill" style="width: {{item.actualPct}}%; background: {{item.color}};"></view>
+              </view>
+            </view>
+            <view class="nutri-compare-line">
+              <text class="nutri-compare-tag rec">推</text>
+              <view class="nutri-bar-bg">
+                <view class="nutri-bar-fill rec" style="width: {{item.recPct}}%; background: {{item.color}};"></view>
+              </view>
+            </view>
+          </view>
+          <text class="nutri-compare-delta {{item.deltaPct > 0 ? 'up' : item.deltaPct < 0 ? 'down' : ''}}">
+            差值 {{item.deltaPct > 0 ? '+' : ''}}{{item.deltaPct}}pp
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <view class="chart-block">
+      <view class="chart-title">体征趋势图（单位：{{healthTrendUnit}}）</view>
+      <view class="tab-row">
+        <view wx:for="{{healthTrendTabs}}" wx:key="key" class="tab-item {{healthTrendMetric === item.key ? 'on' : ''}}" data-metric="{{item.key}}" bindtap="switchHealthTrendMetric">{{item.label}}</view>
+      </view>
+      <view class="tab-row tab-row-days">
+        <view wx:for="{{healthTrendDayTabs}}" wx:key="*this" class="tab-item {{healthTrendDays === item ? 'on' : ''}}" data-days="{{item}}" bindtap="switchHealthTrendDays">{{item}}天</view>
+      </view>
+      <scroll-view class="chart-scroll" scroll-x="true" enhanced="true" show-scrollbar="false">
+        <view class="history-line-row">
+          <view class="history-y-axis" style="height: {{healthTrendChart.height}};">
+            <view class="history-y-tick" wx:for="{{healthTrendChart.ticks}}" wx:key="id" style="top: {{item.yPos}};">
+              <text class="history-y-text">{{item.text}}</text>
+              <view class="history-y-grid"></view>
+            </view>
+          </view>
+          <view class="history-line-wrap" style="width: {{healthTrendChart.width}};">
+            <view class="history-line-chart" style="width: {{healthTrendChart.width}}; height: {{healthTrendChart.height}};">
+              <view class="history-line-segment" wx:for="{{healthTrendChart.segments}}" wx:key="id" style="left: {{item.left}}; top: {{item.top}}; width: {{item.width}}; transform: {{item.angle}};"></view>
+              <view class="history-line-dot" wx:for="{{healthTrendChart.points}}" wx:key="id" hidden="{{item.isEmpty}}" style="left: {{item.xPos}}; top: {{item.yPos}};"></view>
+            </view>
+            <view class="history-line-labels" style="width: {{healthTrendChart.width}};">
+              <view class="history-point-item" wx:for="{{healthTrendChart.points}}" wx:key="id">
+                <view class="history-point-value">{{item.valueText}}</view>
+                <view class="history-point-day">{{item.label}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+    </view>
   </view>
 
-  <view class="section">
-    <view class="section-title">评估表单</view>
+  <view class="section accordion-section">
+    <view class="section-title section-title-accordion" data-key="writingHints" bindtap="toggleSection">
+      <text>维度提示（写作提纲）</text>
+      <text class="section-arrow">{{accordion.writingHints ? '收起' : '展开'}}</text>
+    </view>
+    <view wx:if="{{accordion.writingHints}}">
+      <view class="hint">1. 体成分与 BMI：结合身高体重、腰围（若有）说明偏瘦/正常/超重等。</view>
+      <view class="hint">2. 膳食结构：供能比、多样性、油盐糖、优质蛋白来源；若缺少饮食记录请注明依据有限。</view>
+      <view class="hint">3. 能量与营养素：是否存在能量过剩/不足；微量营养素与纤维（有数据再写）。</view>
+      <view class="hint">4. 风险与禁忌：疾病、用药、过敏对饮食的影响。</view>
+      <view class="hint">5. 结论与配餐衔接：给出可执行的配餐优先事项。</view>
+    </view>
+  </view>
+
+  <view class="section accordion-section">
+    <view class="section-title section-title-accordion" data-key="evalForm" bindtap="toggleSection">
+      <text>评估表单</text>
+      <text class="section-arrow">{{accordion.evalForm ? '收起' : '展开'}}</text>
+    </view>
+    <view wx:if="{{accordion.evalForm}}">
     <view class="field-label">营养状态标签</view>
     <picker mode="selector" range="{{statusLabels}}" value="{{statusIndex}}" bindchange="onStatusChange">
       <view class="picker">{{statusLabels[statusIndex]}}</view>
@@ -105,7 +233,7 @@
     <textarea class="textarea" value="{{form.risks_text}}" bindinput="onInput" data-field="risks_text" placeholder="过敏、慢病相关饮食注意…" />
 
     <view class="field-label">主要问题（每行一条，将存为列表）</view>
-    <textarea class="textarea" value="{{form.priority_lines}}" bindinput="onInput" data-field="priority_lines" placeholder="能量过剩&#10;蔬菜不足" />
+    <textarea class="textarea" value="{{form.priority_lines}}" bindinput="onInput" data-field="priority_lines" placeholder="{{priorityPlaceholder}}" />
 
     <view class="field-label">专业评估结论 *</view>
     <textarea class="textarea textarea-lg" value="{{form.professional_conclusion}}" bindinput="onInput" data-field="professional_conclusion" placeholder="面向用户的总结性结论，2～4 段为宜" />
@@ -113,16 +241,15 @@
     <view class="field-label">对膳食计划的建议（可选）</view>
     <textarea class="textarea" value="{{form.plan_recommendations}}" bindinput="onInput" data-field="plan_recommendations" placeholder="能量区间、宏量调整方向、必须遵守的约束等" />
 
-    <view class="field-label">估算日能量需求 kcal（可选）</view>
-    <input class="input input-energy" type="number" value="{{form.energy_need_kcal}}" bindinput="onInput" data-field="energy_need_kcal" placeholder="例如 1800" />
-
     <view class="field-label">评估有效期至（可选，默认约 3 个月）</view>
     <picker mode="date" value="{{form.valid_until}}" bindchange="onValidUntilChange">
       <view class="picker">{{form.valid_until || '使用默认'}}</view>
     </picker>
+    </view>
   </view>
 
-  <view class="submit-bar">
+  <view class="submit-spacer"></view>
+  <view class="submit-bar submit-bar-fixed">
     <view class="submit-btn" bindtap="submit">提交评估</view>
   </view>
 

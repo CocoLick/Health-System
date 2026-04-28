@@ -185,6 +185,7 @@
               <view class="history-trend-delta">{{historyMetricDeltaText}}</view>
             </view>
             <view class="history-trend-hint">{{historyTrendHint}}</view>
+            <view class="history-trend-unit" wx:if="{{historyMetricUnit}}">单位：{{historyMetricUnit}}</view>
             <view class="history-trend-rule">统计口径：按天展示，每天取最后一条记录</view>
             <scroll-view class="history-bars-scroll" scroll-x="true" enhanced="true" show-scrollbar="false" wx:if="{{historyChartPoints.length > 0}}">
               <view class="history-line-row">
@@ -201,10 +202,10 @@
                   <view class="history-line-segment {{item.carried ? 'carried' : ''}}" wx:for="{{historyChartSegments}}" wx:key="id" style="left: {{item.left}}; top: {{item.top}}; width: {{item.width}}; transform: {{item.angle}};"></view>
                   <view class="history-line-dot {{item.carried ? 'carried' : ''}}" wx:for="{{historyChartPoints}}" wx:key="id" hidden="{{item.isEmpty}}" style="left: {{item.xPos}}; top: {{item.yPos}};"></view>
                 </view>
-                <view class="history-line-labels" style="width: {{historyLineWidth}};">
-                  <view class="history-point-item" wx:for="{{historyChartPoints}}" wx:key="id">
-                    <view class="history-point-value">{{item.valueText}}</view>
-                    <view class="history-point-day">{{item.day}}</view>
+                <view class="history-line-labels {{selectedHistoryDays > 7 ? 'compact' : ''}}" style="width: {{historyLineWidth}};">
+                  <view class="history-point-item {{selectedHistoryDays > 7 ? 'compact' : ''}}" wx:for="{{historyChartPoints}}" wx:key="id">
+                    <view class="history-point-value {{selectedHistoryDays > 7 ? 'compact' : ''}}">{{item.valueText}}</view>
+                    <view class="history-point-day {{selectedHistoryDays > 7 ? 'compact' : ''}}">{{item.day}}</view>
                   </view>
                 </view>
               </view>

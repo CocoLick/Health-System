@@ -209,11 +209,12 @@ function buildHistoryVisualModel(historyRows, metric, days) {
   const min = validValues.length ? Math.min.apply(null, validValues) : 0;
   const range = Math.max(max - min, 1);
   const chartHeightRpx = 130;
-  const pointGapRpx = 72;
-  const chartWidthRpxNum = Math.max(520, Math.max(dayRows.length, 1) * pointGapRpx);
-  const xPaddingRpx = 12;
+  const slotWidthRpx = 72;
+  const pointCount = Math.max(dayRows.length, 1);
+  const chartWidthRpxNum = pointCount * slotWidthRpx;
+  const xPaddingRpx = slotWidthRpx / 2;
   const yPaddingRpx = 10;
-  const xUsable = Math.max(chartWidthRpxNum - xPaddingRpx * 2, 1);
+  const xUsable = Math.max((pointCount - 1) * slotWidthRpx, 1);
   const yUsable = Math.max(chartHeightRpx - yPaddingRpx * 2, 1);
   const points = dayRows.map((row, idx) => {
     const val = values[idx].value;
@@ -225,7 +226,7 @@ function buildHistoryVisualModel(historyRows, metric, days) {
     return {
       id: row.id,
       day: row.date ? row.date.slice(5) : '--',
-      valueText: val == null ? '--' : `${Number(val).toFixed(1)} ${unit}`,
+      valueText: val == null ? '--' : `${Number(val).toFixed(1)}`,
       xPos: `${Math.round(xRpxNum * 10) / 10}rpx`,
       yPos: yRpxNum == null ? null : `${Math.round(yRpxNum * 10) / 10}rpx`,
       xNum: xRpxNum,
@@ -261,7 +262,6 @@ function buildHistoryVisualModel(historyRows, metric, days) {
   const delta = latest != null && earliest != null ? latest - earliest : null;
   const realDayCount = validValues.length;
   const carriedDayCount = 0;
-  const pointCount = Math.max(points.length, 1);
   const lineWidthRpx = `${chartWidthRpxNum}rpx`;
   const hasLeadingBlank = dayRows.length > 0 && points.length > 0 && points[0].isEmpty;
   const tickCount = 5;
@@ -286,7 +286,8 @@ function buildHistoryVisualModel(historyRows, metric, days) {
     hasLeadingBlank,
     chartHeightRpx: `${chartHeightRpx}rpx`,
     axisTicks,
-    latestText: latest == null ? '--' : `${Number(latest).toFixed(1)} ${unit}`,
+    unitText: unit,
+    latestText: latest == null ? '--' : `${Number(latest).toFixed(1)}`,
     deltaText: formatDelta(delta, unit),
     hasTrendData: validValues.length >= 2,
     validDayCount: validValues.length,
@@ -360,10 +361,11 @@ function buildYearlyVisualModel(historyRows, metric) {
   const max = valid.length ? Math.max.apply(null, valid) : 1;
   const range = Math.max(max - min, 1);
   const chartHeightRpx = 150;
-  const chartWidthRpxNum = 760;
-  const xPaddingRpx = 16;
+  const slotWidthRpx = 72;
+  const chartWidthRpxNum = 12 * slotWidthRpx;
+  const xPaddingRpx = slotWidthRpx / 2;
   const yPaddingRpx = 12;
-  const xUsable = chartWidthRpxNum - xPaddingRpx * 2;
+  const xUsable = 11 * slotWidthRpx;
   const yUsable = chartHeightRpx - yPaddingRpx * 2;
 
   const bars = monthly.map((m, idx) => {
@@ -373,7 +375,7 @@ function buildYearlyVisualModel(historyRows, metric) {
     return {
       id: m.key,
       label: m.label,
-      valueText: m.value == null ? '--' : `${m.value.toFixed(1)} ${unit}`,
+      valueText: m.value == null ? '--' : `${m.value.toFixed(1)}`,
       left: `${Math.round((x - 18) * 10) / 10}rpx`,
       height: `${Math.round(h * 10) / 10}rpx`,
       isEmpty: m.value == null
@@ -387,7 +389,7 @@ function buildYearlyVisualModel(historyRows, metric) {
     return {
       id: m.key,
       label: m.label,
-      valueText: m.value == null ? '--' : `${m.value.toFixed(1)} ${unit}`,
+      valueText: m.value == null ? '--' : `${m.value.toFixed(1)}`,
       xPos: `${Math.round(x * 10) / 10}rpx`,
       yPos: y == null ? null : `${Math.round(y * 10) / 10}rpx`,
       xNum: x,
@@ -436,7 +438,8 @@ function buildYearlyVisualModel(historyRows, metric) {
     lineWidthRpx: `${chartWidthRpxNum}rpx`,
     chartHeightRpx: `${chartHeightRpx}rpx`,
     axisTicks,
-    latestText: latest == null ? '--' : `${Number(latest).toFixed(1)} ${unit}`,
+    unitText: unit,
+    latestText: latest == null ? '--' : `${Number(latest).toFixed(1)}`,
     deltaText: formatDelta(delta, unit),
     hasTrendData: validPoints.length >= 2,
     realDayCount: valid.length,
@@ -504,6 +507,7 @@ Page({
     historyLineWidth: '520rpx',
     historyChartHeight: '130rpx',
     historyAxisTicks: [],
+    historyMetricUnit: '',
     historyLeadingHint: '',
     historyRenderMode: 'daily',
     historyYearlyBars: [],
@@ -803,6 +807,7 @@ Page({
           historyLineWidth: visual.lineWidthRpx,
           historyChartHeight: visual.chartHeightRpx,
           historyAxisTicks: visual.axisTicks,
+          historyMetricUnit: visual.unitText || '',
           historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
           historyRenderMode: visual.renderMode || 'daily',
           historyYearlyBars: visual.bars || [],
@@ -822,6 +827,7 @@ Page({
           historyLineWidth: '520rpx',
           historyChartHeight: '130rpx',
           historyAxisTicks: [],
+          historyMetricUnit: '',
           historyLeadingHint: '',
           historyRenderMode: 'daily',
           historyYearlyBars: [],
@@ -855,6 +861,7 @@ Page({
         historyLineWidth: visual.lineWidthRpx,
         historyChartHeight: visual.chartHeightRpx,
         historyAxisTicks: visual.axisTicks,
+        historyMetricUnit: visual.unitText || '',
         historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
         historyRenderMode: visual.renderMode || 'daily',
         historyYearlyBars: visual.bars || [],
@@ -899,6 +906,7 @@ Page({
       historyLineWidth: visual.lineWidthRpx,
       historyChartHeight: visual.chartHeightRpx,
       historyAxisTicks: visual.axisTicks,
+      historyMetricUnit: visual.unitText || '',
       historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
       historyRenderMode: visual.renderMode || 'daily',
       historyYearlyBars: visual.bars || [],
@@ -931,6 +939,7 @@ Page({
       historyLineWidth: visual.lineWidthRpx,
       historyChartHeight: visual.chartHeightRpx,
       historyAxisTicks: visual.axisTicks,
+      historyMetricUnit: visual.unitText || '',
       historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
       historyRenderMode: visual.renderMode || 'daily',
       historyYearlyBars: visual.bars || [],

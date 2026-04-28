@@ -440,6 +440,10 @@ const nutrition = {
   getRecommendation: function(params) {
     return get('/api/nutrition/recommendation', params);
   },
+  // 规划师/管理员：获取指定用户营养推荐标准
+  getUserRecommendation: function(userId, params) {
+    return get(`/api/nutrition/recommendation/user/${encodeURIComponent(userId)}`, params || {});
+  },
   // 获取指定日期的饮食记录（规划师可传 userId 代查）
   getRecordsByDate: function(date, userId) {
     const p = { date: date };

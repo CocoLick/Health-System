@@ -1173,6 +1173,12 @@
   color: var(--u-gray);
 }
 
+.history-trend-unit {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: var(--u-gray);
+}
+
 .history-trend-rule {
   margin-top: 6rpx;
   font-size: 20rpx;
@@ -1228,7 +1234,7 @@
   position: relative;
   display: inline-block;
   min-width: max-content;
-  padding: 0 12rpx;
+  padding: 0;
 }
 
 .history-line-chart {
@@ -1251,13 +1257,15 @@
 
 .history-line-labels {
   display: flex;
-  gap: 14rpx;
+  gap: 0;
   margin-top: 8rpx;
   width: 100%;
+  flex-wrap: nowrap;
 }
 
 .history-point-item {
-  width: 58rpx;
+  width: 72rpx;
+  flex: 0 0 72rpx;
 }
 
 .history-point-value {
@@ -1269,6 +1277,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .history-line-dot {
@@ -1315,6 +1324,26 @@
   text-align: center;
   font-size: 20rpx;
   color: var(--u-gray);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-line-labels.compact {
+  margin-top: 6rpx;
+}
+
+.history-point-item.compact {
+  width: 72rpx;
+  flex: 0 0 72rpx;
+}
+
+.history-point-value.compact {
+  font-size: 16rpx;
+  margin-bottom: 4rpx;
+}
+
+.history-point-day.compact {
+  font-size: 18rpx;
+  margin-top: 4rpx;
 }
 
 .history-detail-toggle {
