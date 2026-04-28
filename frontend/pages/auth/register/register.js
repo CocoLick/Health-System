@@ -78,9 +78,13 @@ Page({
 
   handleRegister() {
     const { username, password, phone, gender, age, email } = this.data;
+    const usernameTrim = String(username || '').trim();
+    const phoneTrim = String(phone || '').trim();
+    const emailTrim = String(email || '').trim();
+    const ageNum = parseInt(String(age).trim(), 10);
 
     // 表单验证
-    if (!username) {
+    if (!usernameTrim) {
       this.setData({ errorMessage: '请输入用户名', successMessage: '' });
       return;
     }
@@ -88,7 +92,7 @@ Page({
       this.setData({ errorMessage: '密码长度至少6位', successMessage: '' });
       return;
     }
-    if (!phone) {
+    if (!phoneTrim) {
       this.setData({ errorMessage: '请输入手机号', successMessage: '' });
       return;
     }
@@ -96,35 +100,36 @@ Page({
       this.setData({ errorMessage: '请选择性别', successMessage: '' });
       return;
     }
-    if (!age || isNaN(age) || age <= 0) {
+    if (!age || !Number.isFinite(ageNum) || ageNum < 1 || ageNum > 150) {
       this.setData({ errorMessage: '请选择有效的年龄', successMessage: '' });
       return;
     }
-    if (!email) {
+    if (!emailTrim) {
       this.setData({ errorMessage: '请输入邮箱', successMessage: '' });
       return;
     }
     // 邮箱格式验证
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(emailTrim)) {
       this.setData({ errorMessage: '请输入有效的邮箱格式', successMessage: '' });
       return;
     }
 
-    // 注册请求
-    console.log('注册请求参数:', { username, password, phone, gender, age, email });
+    // 注册请求：age 必须为数字，避免 NaN 序列化为 null 导致后端 age=0 校验失败
+    const payload = {
+      username: usernameTrim,
+      password: String(password),
+      phone: phoneTrim,
+      gender: String(gender),
+      age: ageNum,
+      email: emailTrim
+    };
+    console.log('注册请求参数:', { ...payload, password: '***' });
     
-    api.auth.register({
-      username,
-      password,
-      phone,
-      gender,
-      age: parseInt(age),
-      email
-    })
+    api.auth.register(payload)
     .then(res => {
       console.log('注册响应:', res);
-      if (res.code === 200) {
+      if (res.code === 200 || res.code === '200') {
         this.setData({
           successMessage: '注册成功，请登录',
           errorMessage: ''
@@ -138,15 +143,21 @@ Page({
         }, 1500);
       } else {
         this.setData({
-          errorMessage: res.message,
+          errorMessage: res.message || '注册失败',
           successMessage: ''
         });
       }
     })
     .catch(err => {
       console.log('注册失败:', err);
+      const body = err && err.data;
+      const msg =
+        (body && (body.message || body.Message)) ||
+        (typeof err === 'string' ? err : '') ||
+        (err && err.errMsg) ||
+        '';
       this.setData({
-        errorMessage: '注册失败，请检查网络连接',
+        errorMessage: msg ? String(msg) : '注册失败，请检查网络连接',
         successMessage: ''
       });
     });

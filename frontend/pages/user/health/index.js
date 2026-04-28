@@ -76,6 +76,375 @@ function mapNutritionToIndex(goal) {
   return Object.prototype.hasOwnProperty.call(m, goal) ? m[goal] : -1;
 }
 
+function safeNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatDelta(value, unit) {
+  if (value == null || !Number.isFinite(value)) {
+    return '--';
+  }
+  const abs = Math.abs(value).toFixed(1);
+  if (value > 0) {
+    return `+${abs}${unit}`;
+  }
+  if (value < 0) {
+    return `-${abs}${unit}`;
+  }
+  return `0.0${unit}`;
+}
+
+function calcDelta(latest, baseline) {
+  const a = safeNumber(latest);
+  const b = safeNumber(baseline);
+  if (a == null || b == null) {
+    return null;
+  }
+  return a - b;
+}
+
+function formatDateKey(ts) {
+  if (!ts) {
+    return '';
+  }
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) {
+    return String(ts).slice(0, 10);
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function aggregateLatestByDay(rows) {
+  const dayMap = {};
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = row.date || formatDateKey(row.snapshotAt);
+    if (!key) {
+      return;
+    }
+    const prev = dayMap[key];
+    if (!prev) {
+      dayMap[key] = row;
+      return;
+    }
+    const currentTs = new Date(row.snapshotAt || row.date).getTime();
+    const prevTs = new Date(prev.snapshotAt || prev.date).getTime();
+    if (currentTs > prevTs) {
+      dayMap[key] = row;
+    }
+  });
+  return Object.keys(dayMap)
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+    .map((dateKey) => dayMap[dateKey]);
+}
+
+function createRecentDayKeys(days) {
+  const n = Math.max(1, Number(days) || 7);
+  const list = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < n; i += 1) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    list.push(formatDateKey(d));
+  }
+  return list;
+}
+
+function filterRowsByRecentDays(rows, days) {
+  const daySet = {};
+  createRecentDayKeys(days).forEach((key) => {
+    daySet[key] = true;
+  });
+  return (Array.isArray(rows) ? rows : []).filter((row) => row && daySet[row.date]);
+}
+
+function buildHistoryVisualModel(historyRows, metric, days) {
+  const dayKeysDesc = createRecentDayKeys(days);
+  const dayMap = {};
+  (Array.isArray(historyRows) ? historyRows : []).forEach((row) => {
+    if (row && row.date) {
+      dayMap[row.date] = row;
+    }
+  });
+  const dayRows = dayKeysDesc
+    .map((dateKey) => {
+      const row = dayMap[dateKey];
+      if (row) {
+        return row;
+      }
+      return {
+        id: `empty-${dateKey}`,
+        date: dateKey,
+        empty: true
+      };
+    })
+    .reverse();
+  const metricFieldMap = {
+    weight: 'weight',
+    bloodSugar: 'bloodSugar',
+    heartRate: 'heartRate'
+  };
+  const unitMap = {
+    weight: 'kg',
+    bloodSugar: 'mmol/L',
+    heartRate: '次/分'
+  };
+  const field = metricFieldMap[metric] || 'weight';
+  const unit = unitMap[metric] || 'kg';
+  const dayRowsWithValue = dayRows.map((row) => ({
+    id: row.id,
+    date: row.date,
+    rawValue: safeNumber(row[field])
+  }));
+  const values = dayRowsWithValue.map((row) => ({
+    value: row.rawValue,
+    carried: false
+  }));
+  const validValues = values.map((x) => x.value).filter((n) => n != null);
+  const max = validValues.length ? Math.max.apply(null, validValues) : 0;
+  const min = validValues.length ? Math.min.apply(null, validValues) : 0;
+  const range = Math.max(max - min, 1);
+  const chartHeightRpx = 130;
+  const pointGapRpx = 72;
+  const chartWidthRpxNum = Math.max(520, Math.max(dayRows.length, 1) * pointGapRpx);
+  const xPaddingRpx = 12;
+  const yPaddingRpx = 10;
+  const xUsable = Math.max(chartWidthRpxNum - xPaddingRpx * 2, 1);
+  const yUsable = Math.max(chartHeightRpx - yPaddingRpx * 2, 1);
+  const points = dayRows.map((row, idx) => {
+    const val = values[idx].value;
+    const ratio = val == null ? null : ((val - min) / range);
+    const total = Math.max(dayRows.length - 1, 1);
+    const xRatio = idx / total;
+    const xRpxNum = xPaddingRpx + xRatio * xUsable;
+    const yRpxNum = val == null ? null : (yPaddingRpx + (1 - ratio) * yUsable);
+    return {
+      id: row.id,
+      day: row.date ? row.date.slice(5) : '--',
+      valueText: val == null ? '--' : `${Number(val).toFixed(1)} ${unit}`,
+      xPos: `${Math.round(xRpxNum * 10) / 10}rpx`,
+      yPos: yRpxNum == null ? null : `${Math.round(yRpxNum * 10) / 10}rpx`,
+      xNum: xRpxNum,
+      yNum: yRpxNum,
+      isEmpty: val == null,
+      carried: values[idx].carried
+    };
+  });
+  const segments = [];
+  const validPoints = points.filter((p) => !p.isEmpty);
+  for (let i = 1; i < validPoints.length; i += 1) {
+    const p1 = validPoints[i - 1];
+    const p2 = validPoints[i];
+    const x1 = p1.xNum;
+    const y1 = p1.yNum;
+    const x2 = p2.xNum;
+    const y2 = p2.yNum;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    segments.push({
+      id: `${p1.id}-${p2.id}`,
+      left: `${Math.round(x1 * 10) / 10}rpx`,
+      top: `${Math.round(y1 * 10) / 10}rpx`,
+      width: `${Math.round(length * 10) / 10}rpx`,
+      angle: `rotate(${angle}deg)`,
+      carried: p1.carried || p2.carried
+    });
+  }
+  const latest = validValues.length ? validValues[validValues.length - 1] : null;
+  const earliest = validValues.length > 1 ? validValues[0] : latest;
+  const delta = latest != null && earliest != null ? latest - earliest : null;
+  const realDayCount = validValues.length;
+  const carriedDayCount = 0;
+  const pointCount = Math.max(points.length, 1);
+  const lineWidthRpx = `${chartWidthRpxNum}rpx`;
+  const hasLeadingBlank = dayRows.length > 0 && points.length > 0 && points[0].isEmpty;
+  const tickCount = 5;
+  const axisTicks = [];
+  const axisMin = validValues.length ? min : 0;
+  const axisMax = validValues.length ? max : 1;
+  const axisRange = Math.max(axisMax - axisMin, 1);
+  for (let i = 0; i < tickCount; i += 1) {
+    const ratio = i / (tickCount - 1);
+    const value = axisMax - axisRange * ratio;
+    axisTicks.push({
+      id: `tick-${i}`,
+      text: Number(value).toFixed(1),
+      yPos: `${Math.round((yPaddingRpx + ratio * yUsable) * 10) / 10}rpx`
+    });
+  }
+
+  return {
+    points,
+    segments,
+    lineWidthRpx,
+    hasLeadingBlank,
+    chartHeightRpx: `${chartHeightRpx}rpx`,
+    axisTicks,
+    latestText: latest == null ? '--' : `${Number(latest).toFixed(1)} ${unit}`,
+    deltaText: formatDelta(delta, unit),
+    hasTrendData: validValues.length >= 2,
+    validDayCount: validValues.length,
+    realDayCount,
+    carriedDayCount
+  };
+}
+
+function monthKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+function buildYearlyVisualModel(historyRows, metric) {
+  const metricFieldMap = {
+    weight: 'weight',
+    bloodSugar: 'bloodSugar',
+    heartRate: 'heartRate'
+  };
+  const unitMap = {
+    weight: 'kg',
+    bloodSugar: 'mmol/L',
+    heartRate: '次/分'
+  };
+  const field = metricFieldMap[metric] || 'weight';
+  const unit = unitMap[metric] || 'kg';
+
+  const now = new Date();
+  now.setDate(1);
+  now.setHours(0, 0, 0, 0);
+  const monthBuckets = [];
+  for (let i = 11; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setMonth(now.getMonth() - i);
+    monthBuckets.push({
+      key: monthKey(d),
+      label: `${d.getMonth() + 1}月`,
+      values: []
+    });
+  }
+  const idxMap = {};
+  monthBuckets.forEach((b, idx) => {
+    idxMap[b.key] = idx;
+  });
+  (Array.isArray(historyRows) ? historyRows : []).forEach((row) => {
+    if (!row || !row.date) return;
+    const d = new Date(row.date);
+    if (isNaN(d.getTime())) return;
+    const key = monthKey(d);
+    const idx = idxMap[key];
+    if (idx == null) return;
+    const v = safeNumber(row[field]);
+    if (v != null) monthBuckets[idx].values.push(v);
+  });
+
+  const monthly = monthBuckets.map((b) => {
+    if (!b.values.length) {
+      return { key: b.key, label: b.label, value: null };
+    }
+    const sum = b.values.reduce((acc, n) => acc + n, 0);
+    return {
+      key: b.key,
+      label: b.label,
+      value: sum / b.values.length
+    };
+  });
+
+  const valid = monthly.filter((m) => m.value != null).map((m) => m.value);
+  const min = valid.length ? Math.min.apply(null, valid) : 0;
+  const max = valid.length ? Math.max.apply(null, valid) : 1;
+  const range = Math.max(max - min, 1);
+  const chartHeightRpx = 150;
+  const chartWidthRpxNum = 760;
+  const xPaddingRpx = 16;
+  const yPaddingRpx = 12;
+  const xUsable = chartWidthRpxNum - xPaddingRpx * 2;
+  const yUsable = chartHeightRpx - yPaddingRpx * 2;
+
+  const bars = monthly.map((m, idx) => {
+    const x = xPaddingRpx + (idx / 11) * xUsable;
+    const ratio = m.value == null ? 0 : (m.value - min) / range;
+    const h = m.value == null ? 0 : Math.max(6, ratio * yUsable);
+    return {
+      id: m.key,
+      label: m.label,
+      valueText: m.value == null ? '--' : `${m.value.toFixed(1)} ${unit}`,
+      left: `${Math.round((x - 18) * 10) / 10}rpx`,
+      height: `${Math.round(h * 10) / 10}rpx`,
+      isEmpty: m.value == null
+    };
+  });
+
+  const points = monthly.map((m, idx) => {
+    const x = xPaddingRpx + (idx / 11) * xUsable;
+    const ratio = m.value == null ? null : (m.value - min) / range;
+    const y = m.value == null ? null : (yPaddingRpx + (1 - ratio) * yUsable);
+    return {
+      id: m.key,
+      label: m.label,
+      valueText: m.value == null ? '--' : `${m.value.toFixed(1)} ${unit}`,
+      xPos: `${Math.round(x * 10) / 10}rpx`,
+      yPos: y == null ? null : `${Math.round(y * 10) / 10}rpx`,
+      xNum: x,
+      yNum: y,
+      isEmpty: m.value == null
+    };
+  });
+
+  const validPoints = points.filter((p) => !p.isEmpty);
+  const segments = [];
+  for (let i = 1; i < validPoints.length; i += 1) {
+    const p1 = validPoints[i - 1];
+    const p2 = validPoints[i];
+    const dx = p2.xNum - p1.xNum;
+    const dy = p2.yNum - p1.yNum;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    segments.push({
+      id: `${p1.id}-${p2.id}`,
+      left: `${Math.round(p1.xNum * 10) / 10}rpx`,
+      top: `${Math.round(p1.yNum * 10) / 10}rpx`,
+      width: `${Math.round(length * 10) / 10}rpx`,
+      angle: `rotate(${angle}deg)`
+    });
+  }
+
+  const latest = valid.length ? valid[valid.length - 1] : null;
+  const earliest = valid.length > 1 ? valid[0] : latest;
+  const delta = latest != null && earliest != null ? latest - earliest : null;
+  const axisTicks = [];
+  for (let i = 0; i < 5; i += 1) {
+    const ratio = i / 4;
+    const value = max - (max - min) * ratio;
+    axisTicks.push({
+      id: `yt-${i}`,
+      text: Number(value).toFixed(1),
+      yPos: `${Math.round((yPaddingRpx + ratio * yUsable) * 10) / 10}rpx`
+    });
+  }
+
+  return {
+    renderMode: 'yearly',
+    points,
+    bars,
+    segments,
+    lineWidthRpx: `${chartWidthRpxNum}rpx`,
+    chartHeightRpx: `${chartHeightRpx}rpx`,
+    axisTicks,
+    latestText: latest == null ? '--' : `${Number(latest).toFixed(1)} ${unit}`,
+    deltaText: formatDelta(delta, unit),
+    hasTrendData: validPoints.length >= 2,
+    realDayCount: valid.length,
+    carriedDayCount: 0,
+    hasLeadingBlank: false
+  };
+}
+
 Page({
   data: {
     hasHealthData: false,
@@ -115,6 +484,33 @@ Page({
     evaluation: null,
     evaluationId: '',
     historyList: [],
+    historyRawList: [],
+    historyStats: {
+      weightDeltaText: '--',
+      bloodSugarDeltaText: '--',
+      heartRateDeltaText: '--',
+      recordCountText: '0条记录'
+    },
+    historyMetricTabs: [
+      { key: 'weight', label: '体重趋势' },
+      { key: 'bloodSugar', label: '血糖趋势' },
+      { key: 'heartRate', label: '心率趋势' }
+    ],
+    historyDayRanges: [7, 30, 365],
+    selectedHistoryDays: 7,
+    selectedHistoryMetric: 'weight',
+    historyChartPoints: [],
+    historyChartSegments: [],
+    historyLineWidth: '520rpx',
+    historyChartHeight: '130rpx',
+    historyAxisTicks: [],
+    historyLeadingHint: '',
+    historyRenderMode: 'daily',
+    historyYearlyBars: [],
+    historyMetricLatestText: '--',
+    historyMetricDeltaText: '--',
+    historyTrendHint: '样本不足（至少2次记录）',
+    showHistoryDetail: false,
     healthMainTab: 'data',
     heUserFilter: 'all',
     heUserListDisplay: [],
@@ -381,24 +777,173 @@ Page({
   loadHistory() {
     api.healthData.getHistory().then(res => {
       if (res.code === 200 && Array.isArray(res.data)) {
-        const historyList = res.data.slice(0, 8).map(item => ({
+        const historyRawList = res.data.slice(0, 180).map(item => ({
           id: item.history_id || item.data_id,
           date: item.snapshot_at ? String(item.snapshot_at).slice(0, 10) : (item.created_at ? String(item.created_at).slice(0, 10) : ''),
+          snapshotAt: item.snapshot_at || item.created_at || '',
           height: item.height || 0,
           weight: item.weight || 0,
           bloodSugar: item.blood_sugar || 0,
+          heartRate: item.heart_rate || 0,
           activityLevelText: activityLevelText(item.activity_level)
         }));
-        this.setData({ historyList });
-        wx.setStorageSync('healthHistory', historyList);
+        const historyDailyList = aggregateLatestByDay(historyRawList);
+        const recentRows = filterRowsByRecentDays(historyDailyList, this.data.selectedHistoryDays);
+        const historyList = recentRows.slice(0, 8);
+        const stats = this.buildHistoryStats(recentRows);
+        const visual = this.data.selectedHistoryDays === 365
+          ? buildYearlyVisualModel(historyDailyList, this.data.selectedHistoryMetric)
+          : buildHistoryVisualModel(historyDailyList, this.data.selectedHistoryMetric, this.data.selectedHistoryDays);
+        this.setData({
+          historyRawList,
+          historyList,
+          historyStats: stats,
+          historyChartPoints: visual.points,
+          historyChartSegments: visual.segments,
+          historyLineWidth: visual.lineWidthRpx,
+          historyChartHeight: visual.chartHeightRpx,
+          historyAxisTicks: visual.axisTicks,
+          historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
+          historyRenderMode: visual.renderMode || 'daily',
+          historyYearlyBars: visual.bars || [],
+          historyMetricLatestText: visual.latestText,
+          historyMetricDeltaText: visual.deltaText,
+          historyTrendHint: visual.hasTrendData
+            ? `最近${this.data.selectedHistoryDays}天（实测${visual.realDayCount}天，补值${visual.carriedDayCount}天）`
+            : `样本不足（最近${this.data.selectedHistoryDays}天至少2天有记录）`
+        });
+        wx.setStorageSync('healthHistory', historyRawList);
       } else {
-        this.setData({ historyList: [] });
+        this.setData({
+          historyRawList: [],
+          historyList: [],
+          historyChartPoints: [],
+          historyChartSegments: [],
+          historyLineWidth: '520rpx',
+          historyChartHeight: '130rpx',
+          historyAxisTicks: [],
+          historyLeadingHint: '',
+          historyRenderMode: 'daily',
+          historyYearlyBars: [],
+          historyMetricLatestText: '--',
+          historyMetricDeltaText: '--',
+          historyTrendHint: '暂无历史记录',
+          historyStats: {
+            weightDeltaText: '--',
+            bloodSugarDeltaText: '--',
+            heartRateDeltaText: '--',
+            recordCountText: '0条记录'
+          }
+        });
       }
     }).catch(err => {
       console.log('获取历史记录失败', err);
-      const history = wx.getStorageSync('healthHistory') || [];
-      this.setData({ historyList: history.slice(0, 8) });
+      const historyRawList = wx.getStorageSync('healthHistory') || [];
+      const historyDailyList = aggregateLatestByDay(historyRawList);
+      const recentRows = filterRowsByRecentDays(historyDailyList, this.data.selectedHistoryDays);
+      const historyList = recentRows.slice(0, 8);
+      const stats = this.buildHistoryStats(recentRows);
+      const visual = this.data.selectedHistoryDays === 365
+        ? buildYearlyVisualModel(historyDailyList, this.data.selectedHistoryMetric)
+        : buildHistoryVisualModel(historyDailyList, this.data.selectedHistoryMetric, this.data.selectedHistoryDays);
+      this.setData({
+        historyRawList,
+        historyList,
+        historyStats: stats,
+        historyChartPoints: visual.points,
+        historyChartSegments: visual.segments,
+        historyLineWidth: visual.lineWidthRpx,
+        historyChartHeight: visual.chartHeightRpx,
+        historyAxisTicks: visual.axisTicks,
+        historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
+        historyRenderMode: visual.renderMode || 'daily',
+        historyYearlyBars: visual.bars || [],
+        historyMetricLatestText: visual.latestText,
+        historyMetricDeltaText: visual.deltaText,
+        historyTrendHint: visual.hasTrendData
+          ? `最近${this.data.selectedHistoryDays}天（实测${visual.realDayCount}天，补值${visual.carriedDayCount}天）`
+          : `样本不足（最近${this.data.selectedHistoryDays}天至少2天有记录）`
+      });
     });
+  },
+
+  buildHistoryStats(historyRawList) {
+    const items = Array.isArray(historyRawList) ? historyRawList : [];
+    const count = items.length;
+    const latest = count ? items[0] : null;
+    const baseline = count > 1 ? items[count - 1] : latest;
+    const weightDelta = latest && baseline ? calcDelta(latest.weight, baseline.weight) : null;
+    const bloodSugarDelta = latest && baseline ? calcDelta(latest.bloodSugar, baseline.bloodSugar) : null;
+    const heartRateDelta = latest && baseline ? calcDelta(latest.heartRate, baseline.heartRate) : null;
+    return {
+      weightDeltaText: formatDelta(weightDelta, 'kg'),
+      bloodSugarDeltaText: formatDelta(bloodSugarDelta, 'mmol/L'),
+      heartRateDeltaText: formatDelta(heartRateDelta, '次/分'),
+      recordCountText: `${count}条记录`
+    };
+  },
+
+  switchHistoryMetric(e) {
+    const metric = e.currentTarget.dataset.metric;
+    if (!metric || metric === this.data.selectedHistoryMetric) {
+      return;
+    }
+    const historyDailyList = aggregateLatestByDay(this.data.historyRawList);
+    const visual = this.data.selectedHistoryDays === 365
+      ? buildYearlyVisualModel(historyDailyList, metric)
+      : buildHistoryVisualModel(historyDailyList, metric, this.data.selectedHistoryDays);
+    this.setData({
+      selectedHistoryMetric: metric,
+      historyChartPoints: visual.points,
+      historyChartSegments: visual.segments,
+      historyLineWidth: visual.lineWidthRpx,
+      historyChartHeight: visual.chartHeightRpx,
+      historyAxisTicks: visual.axisTicks,
+      historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
+      historyRenderMode: visual.renderMode || 'daily',
+      historyYearlyBars: visual.bars || [],
+      historyMetricLatestText: visual.latestText,
+      historyMetricDeltaText: visual.deltaText,
+      historyTrendHint: visual.hasTrendData
+        ? `最近${this.data.selectedHistoryDays}天（实测${visual.realDayCount}天，补值${visual.carriedDayCount}天）`
+        : `样本不足（最近${this.data.selectedHistoryDays}天至少2天有记录）`
+    });
+  },
+
+  switchHistoryDayRange(e) {
+    const days = Number(e.currentTarget.dataset.days);
+    if (!days || days === this.data.selectedHistoryDays) {
+      return;
+    }
+    const historyDailyList = aggregateLatestByDay(this.data.historyRawList);
+    const recentRows = filterRowsByRecentDays(historyDailyList, days);
+    const historyList = recentRows.slice(0, 8);
+    const stats = this.buildHistoryStats(recentRows);
+    const visual = days === 365
+      ? buildYearlyVisualModel(historyDailyList, this.data.selectedHistoryMetric)
+      : buildHistoryVisualModel(historyDailyList, this.data.selectedHistoryMetric, days);
+    this.setData({
+      selectedHistoryDays: days,
+      historyList,
+      historyStats: stats,
+      historyChartPoints: visual.points,
+      historyChartSegments: visual.segments,
+      historyLineWidth: visual.lineWidthRpx,
+      historyChartHeight: visual.chartHeightRpx,
+      historyAxisTicks: visual.axisTicks,
+      historyLeadingHint: visual.hasLeadingBlank ? '在此之前尚无记录' : '',
+      historyRenderMode: visual.renderMode || 'daily',
+      historyYearlyBars: visual.bars || [],
+      historyMetricLatestText: visual.latestText,
+      historyMetricDeltaText: visual.deltaText,
+      historyTrendHint: visual.hasTrendData
+        ? `最近${days}天（实测${visual.realDayCount}天，补值${visual.carriedDayCount}天）`
+        : `样本不足（最近${days}天至少2天有记录）`
+    });
+  },
+
+  toggleHistoryDetail() {
+    this.setData({ showHistoryDetail: !this.data.showHistoryDetail });
   },
 
   loadEvaluation() {

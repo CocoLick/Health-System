@@ -1072,6 +1072,260 @@
   color: #636366;
 }
 
+.history-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.history-overview-item {
+  background: var(--u-bg-soft);
+  border-radius: 12rpx;
+  padding: 14rpx 16rpx;
+}
+
+.history-overview-label {
+  display: block;
+  font-size: 22rpx;
+  color: var(--u-gray);
+  margin-bottom: 6rpx;
+}
+
+.history-overview-value {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1f1f1c;
+}
+
+.history-metric-tabs {
+  display: flex;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
+}
+
+.history-metric-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 23rpx;
+  color: var(--u-gray);
+  background: var(--u-bg-soft);
+  padding: 12rpx 0;
+  border-radius: 999rpx;
+}
+
+.history-metric-tab.active {
+  color: #0a5b34;
+  background: rgba(7, 193, 96, 0.16);
+  font-weight: 700;
+}
+
+.history-day-tabs {
+  display: flex;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
+}
+
+.history-day-tab {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: var(--u-gray);
+  background: #fff;
+  box-shadow: var(--u-shadow-sm);
+}
+
+.history-day-tab.active {
+  color: #0a5b34;
+  font-weight: 700;
+  background: rgba(7, 193, 96, 0.16);
+}
+
+.history-trend-card {
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 14rpx;
+  box-shadow: var(--u-shadow-sm);
+}
+
+.history-trend-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.history-trend-main {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1f1f1c;
+}
+
+.history-trend-delta {
+  font-size: 24rpx;
+  color: #0a5b34;
+  font-weight: 600;
+}
+
+.history-trend-hint {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--u-gray);
+}
+
+.history-trend-rule {
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: var(--u-gray);
+}
+
+.history-bars-scroll {
+  margin-top: 14rpx;
+  white-space: nowrap;
+}
+
+.history-line-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.history-y-axis {
+  position: relative;
+  width: 96rpx;
+  height: 130rpx;
+  margin-right: 10rpx;
+  flex: 0 0 auto;
+}
+
+.history-y-tick {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  transform: translateY(-50%);
+}
+
+.history-y-text {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 56rpx;
+  text-align: right;
+  font-size: 19rpx;
+  color: #8e8e93;
+}
+
+.history-y-grid {
+  position: absolute;
+  left: 62rpx;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 1rpx dashed rgba(142, 142, 147, 0.35);
+}
+
+.history-line-wrap {
+  position: relative;
+  display: inline-block;
+  min-width: max-content;
+  padding: 0 12rpx;
+}
+
+.history-line-chart {
+  position: relative;
+  width: 100%;
+  height: 130rpx;
+  border-radius: 8rpx;
+  background: var(--u-bg-soft);
+  border: 1rpx solid rgba(0, 0, 0, 0.03);
+}
+
+.history-leading-hint {
+  position: absolute;
+  left: 12rpx;
+  top: 10rpx;
+  font-size: 20rpx;
+  color: #b0b0b5;
+  z-index: 0;
+}
+
+.history-line-labels {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 8rpx;
+  width: 100%;
+}
+
+.history-point-item {
+  width: 58rpx;
+}
+
+.history-point-value {
+  font-size: 18rpx;
+  color: var(--u-gray);
+  text-align: center;
+  margin-bottom: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.history-line-dot {
+  position: absolute;
+  width: 12rpx;
+  height: 12rpx;
+  margin-left: -6rpx;
+  margin-top: -6rpx;
+  border-radius: 50%;
+  background: #07c160;
+  box-shadow: 0 0 0 4rpx rgba(7, 193, 96, 0.12);
+  z-index: 2;
+}
+
+.history-line-dot.carried {
+  background: #8e8e93;
+  box-shadow: 0 0 0 4rpx rgba(142, 142, 147, 0.12);
+}
+
+.history-line-segment {
+  position: absolute;
+  height: 3rpx;
+  background: #07c160;
+  transform-origin: left center;
+  z-index: 1;
+}
+
+.history-year-bar {
+  position: absolute;
+  bottom: 0;
+  width: 36rpx;
+  border-radius: 8rpx 8rpx 0 0;
+  background: rgba(7, 193, 96, 0.28);
+  z-index: 0;
+}
+
+.history-line-segment.carried {
+  background: #8e8e93;
+  opacity: 0.8;
+}
+
+.history-point-day {
+  margin-top: 8rpx;
+  text-align: center;
+  font-size: 20rpx;
+  color: var(--u-gray);
+}
+
+.history-detail-toggle {
+  margin-top: 14rpx;
+  margin-bottom: 10rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #0a5b34;
+  font-weight: 600;
+}
+
 .history-item {
   border: none;
   box-shadow: none;

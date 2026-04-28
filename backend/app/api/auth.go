@@ -35,7 +35,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, schemas.Response{
 			Code:    400,
-			Message: "请求参数错误",
+			Message: "请求参数错误：" + err.Error(),
 		})
 		return
 	}

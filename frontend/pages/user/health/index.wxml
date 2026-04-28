@@ -135,15 +135,98 @@
         <view class="section-header">
           <view class="section-title">历史记录</view>
         </view>
-        <view class="history-list" wx:if="{{historyList.length > 0}}">
-          <view class="history-item" wx:for="{{historyList}}" wx:key="id">
-            <view class="history-primary">
-              <view class="history-date">{{item.date}}</view>
-              <view class="history-tags">
-                <text class="history-tag">身高 {{item.height}}cm</text>
-                <text class="history-tag">体重 {{item.weight}}kg</text>
-                <text class="history-tag">血糖 {{item.bloodSugar || '--'}}mmol/L</text>
-                <text class="history-tag">活动 {{item.activityLevelText}}</text>
+        <view wx:if="{{historyRawList.length > 0}}">
+          <view class="history-overview-grid">
+            <view class="history-overview-item">
+              <text class="history-overview-label">体重变化</text>
+              <text class="history-overview-value">{{historyStats.weightDeltaText}}</text>
+            </view>
+            <view class="history-overview-item">
+              <text class="history-overview-label">血糖变化</text>
+              <text class="history-overview-value">{{historyStats.bloodSugarDeltaText}}</text>
+            </view>
+            <view class="history-overview-item">
+              <text class="history-overview-label">心率变化</text>
+              <text class="history-overview-value">{{historyStats.heartRateDeltaText}}</text>
+            </view>
+            <view class="history-overview-item">
+              <text class="history-overview-label">样本数量</text>
+              <text class="history-overview-value">{{historyStats.recordCountText}}</text>
+            </view>
+          </view>
+
+          <view class="history-metric-tabs">
+            <view
+              wx:for="{{historyMetricTabs}}"
+              wx:key="key"
+              class="history-metric-tab {{selectedHistoryMetric === item.key ? 'active' : ''}}"
+              data-metric="{{item.key}}"
+              bindtap="switchHistoryMetric"
+            >
+              {{item.label}}
+            </view>
+          </view>
+
+          <view class="history-day-tabs">
+            <view
+              wx:for="{{historyDayRanges}}"
+              wx:key="*this"
+              class="history-day-tab {{selectedHistoryDays === item ? 'active' : ''}}"
+              data-days="{{item}}"
+              bindtap="switchHistoryDayRange"
+            >
+              {{item}}天
+            </view>
+          </view>
+
+          <view class="history-trend-card">
+            <view class="history-trend-head">
+              <view class="history-trend-main">{{historyMetricLatestText}}</view>
+              <view class="history-trend-delta">{{historyMetricDeltaText}}</view>
+            </view>
+            <view class="history-trend-hint">{{historyTrendHint}}</view>
+            <view class="history-trend-rule">统计口径：按天展示，每天取最后一条记录</view>
+            <scroll-view class="history-bars-scroll" scroll-x="true" enhanced="true" show-scrollbar="false" wx:if="{{historyChartPoints.length > 0}}">
+              <view class="history-line-row">
+              <view class="history-y-axis">
+                <view class="history-y-tick" wx:for="{{historyAxisTicks}}" wx:key="id" style="top: {{item.yPos}};">
+                  <text class="history-y-text">{{item.text}}</text>
+                  <view class="history-y-grid"></view>
+                </view>
+              </view>
+              <view class="history-line-wrap" style="width: {{historyLineWidth}};">
+                <view class="history-line-chart" style="width: {{historyLineWidth}}; height: {{historyChartHeight}};">
+                  <view class="history-leading-hint" wx:if="{{historyLeadingHint}}">{{historyLeadingHint}}</view>
+                  <view class="history-year-bar" wx:if="{{historyRenderMode === 'yearly'}}" wx:for="{{historyYearlyBars}}" wx:key="id" hidden="{{item.isEmpty}}" style="left: {{item.left}}; height: {{item.height}};"></view>
+                  <view class="history-line-segment {{item.carried ? 'carried' : ''}}" wx:for="{{historyChartSegments}}" wx:key="id" style="left: {{item.left}}; top: {{item.top}}; width: {{item.width}}; transform: {{item.angle}};"></view>
+                  <view class="history-line-dot {{item.carried ? 'carried' : ''}}" wx:for="{{historyChartPoints}}" wx:key="id" hidden="{{item.isEmpty}}" style="left: {{item.xPos}}; top: {{item.yPos}};"></view>
+                </view>
+                <view class="history-line-labels" style="width: {{historyLineWidth}};">
+                  <view class="history-point-item" wx:for="{{historyChartPoints}}" wx:key="id">
+                    <view class="history-point-value">{{item.valueText}}</view>
+                    <view class="history-point-day">{{item.day}}</view>
+                  </view>
+                </view>
+              </view>
+              </view>
+            </scroll-view>
+          </view>
+
+          <view class="history-detail-toggle" bindtap="toggleHistoryDetail">
+            {{showHistoryDetail ? '收起历史明细' : '展开历史明细'}}
+          </view>
+
+          <view class="history-list" wx:if="{{showHistoryDetail}}">
+            <view class="history-item" wx:for="{{historyList}}" wx:key="id">
+              <view class="history-primary">
+                <view class="history-date">{{item.date}}</view>
+                <view class="history-tags">
+                  <text class="history-tag">身高 {{item.height}}cm</text>
+                  <text class="history-tag">体重 {{item.weight}}kg</text>
+                  <text class="history-tag">血糖 {{item.bloodSugar || '--'}}mmol/L</text>
+                  <text class="history-tag">心率 {{item.heartRate || '--'}}次/分</text>
+                  <text class="history-tag">活动 {{item.activityLevelText}}</text>
+                </view>
               </view>
             </view>
           </view>

@@ -30,8 +30,8 @@ func (s *AuthService) Register(req schemas.RegisterRequest) (*models.User, error
 		return nil, errors.New("用户名已存在")
 	}
 
-	// 生成用户ID
-	userID := fmt.Sprintf("U%s%03d", time.Now().Format("20060102"), 1)
+	// 生成用户ID（同日期多条注册时自增后缀，避免主键重复）
+	userID := s.generateUserID()
 
 	// 创建用户
 	user := &models.User{
@@ -43,6 +43,7 @@ func (s *AuthService) Register(req schemas.RegisterRequest) (*models.User, error
 		Age:       req.Age,
 		Email:     req.Email,
 		RoleType:  "user",
+		Status:    "启用",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -215,6 +216,28 @@ func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*mode
 	}
 
 	return user, nil
+}
+
+// generateUserID 普通用户 U + yyyymmdd + 3 位序号，与当日已有 user_id 不重复
+func (s *AuthService) generateUserID() string {
+	today := time.Now().Format("20060102")
+	prefix := "U" + today
+
+	var userIDs []string
+	config.DB.Model(&models.User{}).
+		Where("user_id LIKE ?", prefix+"%").
+		Select("user_id").
+		Find(&userIDs)
+
+	maxSuffix := 0
+	for _, id := range userIDs {
+		suffixStr := strings.TrimPrefix(id, prefix)
+		suffix, err := strconv.Atoi(suffixStr)
+		if err == nil && suffix > maxSuffix {
+			maxSuffix = suffix
+		}
+	}
+	return fmt.Sprintf("%s%03d", prefix, maxSuffix+1)
 }
 
 // generateDietitianID 生成规划师ID（查询最大后缀）
