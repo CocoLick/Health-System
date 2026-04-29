@@ -737,27 +737,81 @@
   gap: 24rpx;
 }
 
+.chart-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
 .chart-bars {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   height: 160rpx;
   padding: 0 10rpx;
+  position: relative;
+}
+
+.chart-bars.range-30 {
+  justify-content: flex-start;
+  gap: 10rpx;
 }
 
 .chart-bar-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
   flex: 1;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.chart-grid-line {
+  position: absolute;
+  left: 8rpx;
+  right: 8rpx;
+  border-top: 2rpx dashed rgba(0, 0, 0, 0.08);
+}
+
+.chart-grid-line.line-mid {
+  bottom: 50%;
+}
+
+.chart-grid-line.line-top {
+  bottom: 100%;
+}
+
+.bar-value {
+  font-size: 18rpx;
+  color: #7b7f86;
+  margin-bottom: 6rpx;
+  line-height: 1;
 }
 
 .bar {
-  width: 32rpx;
+  width: 100%;
   background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
   border-radius: 4rpx 4rpx 0 0;
   transition: height 0.3s ease;
-  min-height: 4rpx;
+  box-shadow: 0 4rpx 8rpx rgba(7, 193, 96, 0.18);
+}
+
+.bar-track {
+  width: 32rpx;
+  height: 120rpx;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar.peak {
+  opacity: 1;
+  box-shadow: 0 6rpx 14rpx rgba(7, 193, 96, 0.28);
+}
+
+.bar.zero {
+  height: 0 !important;
+  box-shadow: none;
 }
 
 .bar-label {

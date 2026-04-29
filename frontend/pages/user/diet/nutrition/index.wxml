@@ -268,12 +268,22 @@
             <text class="chart-text">暂无趋势数据</text>
           </view>
           <view class="chart-content" wx:else>
-            <view class="chart-bars">
-              <view class="chart-bar-item" wx:for="{{trendData}}" wx:key="date">
-                <view class="bar" style="height: {{item.height}}%"></view>
-                <view class="bar-label">{{item.day}}</view>
+            <scroll-view
+              class="chart-scroll"
+              scroll-x="true"
+            >
+              <view class="chart-bars {{trendTimeRange === '30' ? 'range-30' : ''}}" style="{{trendChartWidth ? 'width: ' + trendChartWidth + 'rpx;' : ''}}">
+                <view class="chart-grid-line line-mid"></view>
+                <view class="chart-grid-line line-top"></view>
+                <view class="chart-bar-item" wx:for="{{trendData}}" wx:key="date">
+                  <view class="bar-value">{{item.calories}}</view>
+                  <view class="bar-track">
+                    <view class="bar {{item.isPeak ? 'peak' : ''}} {{item.calories <= 0 ? 'zero' : ''}}" style="height: {{item.height}}%"></view>
+                  </view>
+                  <view class="bar-label">{{item.day}}</view>
+                </view>
               </view>
-            </view>
+            </scroll-view>
             <view class="chart-summary">
               <text class="summary-item">平均摄入：{{trendAvgCalories}}kcal</text>
               <text class="summary-item">最高摄入：{{trendMaxCalories}}kcal</text>

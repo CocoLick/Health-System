@@ -111,13 +111,22 @@ function parseBloodPressure(v) {
   if (!text) {
     return { ok: true, text: '' };
   }
-  const m = text.match(/^(\d{2,3})\s*\/\s*(\d{2,3})$/);
+  // 兼容常见输入：120/80、120／80、120 / 80、120/80mmHg
+  const normalized = text
+    .replace(/\s+/g, '')
+    .replace(/mmhg/ig, '')
+    .replace(/毫米汞柱/g, '')
+    .replace(/[／\\]/g, '/');
+  const m = normalized.match(/^(\d{2,3})\/(\d{2,3})$/);
   if (!m) {
-    return { ok: false, message: '血压请按120/80填写（各2-3位数字）' };
+    return { ok: false, message: '血压请按120/80填写（支持120／80）' };
   }
   const systolic = Number(m[1]);
   const diastolic = Number(m[2]);
-  if (systolic < 70 || systolic > 250 || diastolic < 40 || diastolic > 150 || systolic <= diastolic) {
+  if (systolic <= diastolic) {
+    return { ok: false, message: '血压填写异常：收缩压应大于舒张压' };
+  }
+  if (systolic < 70 || systolic > 250 || diastolic < 40 || diastolic > 150) {
     return { ok: false, message: '血压超出合理范围（收缩压70-250，舒张压40-150）' };
   }
   return { ok: true, text: `${systolic}/${diastolic}` };

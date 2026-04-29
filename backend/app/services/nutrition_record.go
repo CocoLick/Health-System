@@ -26,15 +26,15 @@ func (s *NutritionRecordService) CreateNutritionRecord(userID string, req schema
 	record := &models.NutritionRecord{
 		RecordID:          recordID,
 		UserID:            userID,
-		MealDate:         time.Now().Format("2006-01-02"),
-		MealType:         req.MealType,
-		TotalCalories:    req.TotalNutrition.Calories,
-		TotalProtein:     req.TotalNutrition.Protein,
+		MealDate:          time.Now().Format("2006-01-02"),
+		MealType:          req.MealType,
+		TotalCalories:     req.TotalNutrition.Calories,
+		TotalProtein:      req.TotalNutrition.Protein,
 		TotalCarbohydrate: req.TotalNutrition.Carbohydrate,
-		TotalFat:         req.TotalNutrition.Fat,
-		TotalFiber:       req.TotalNutrition.Fiber,
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		TotalFat:          req.TotalNutrition.Fat,
+		TotalFiber:        req.TotalNutrition.Fiber,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	// 开启事务
@@ -50,17 +50,17 @@ func (s *NutritionRecordService) CreateNutritionRecord(userID string, req schema
 	for i, item := range req.Foods {
 		itemID := fmt.Sprintf("NI%s%s%d", time.Now().Format("20060102"), time.Now().Format("1504")[1:], i+1)
 		recordItem := models.NutritionRecordItem{
-			ItemID:     itemID,
-			RecordID:   recordID,
-			FoodName:   item.FoodName,
-			Amount:     item.Amount,
-			Unit:       item.Unit,
-			GramPerUnit: item.GramPerUnit,
-			Calories:   item.Calories,
-			Protein:    item.Protein,
+			ItemID:       itemID,
+			RecordID:     recordID,
+			FoodName:     item.FoodName,
+			Amount:       item.Amount,
+			Unit:         item.Unit,
+			GramPerUnit:  item.GramPerUnit,
+			Calories:     item.Calories,
+			Protein:      item.Protein,
 			Carbohydrate: item.Carbohydrate,
-			Fat:        item.Fat,
-			Fiber:      item.Fiber,
+			Fat:          item.Fat,
+			Fiber:        item.Fiber,
 		}
 
 		if err := tx.Create(&recordItem).Error; err != nil {
@@ -146,7 +146,7 @@ func (s *NutritionRecordService) GetNutritionTrendData(userID string, days int) 
 
 	// 按日期分组查询
 	type DailyTotal struct {
-		Date     string
+		Date     time.Time
 		Calories float64
 	}
 
@@ -169,9 +169,9 @@ func (s *NutritionRecordService) GetNutritionTrendData(userID string, days int) 
 	result := make([]map[string]interface{}, 0)
 	dateMap := make(map[string]float64)
 
-	// 先将查询结果存入map
+	// 先将查询结果存入map（统一转 yyyy-mm-dd，避免时区/格式差异导致键不匹配）
 	for _, dt := range dailyTotals {
-		dateMap[dt.Date] = dt.Calories
+		dateMap[dt.Date.Format("2006-01-02")] = dt.Calories
 	}
 
 	// 填充所有日期
@@ -207,8 +207,8 @@ func (s *NutritionRecordService) GetNutritionTrendData(userID string, days int) 
 	}
 
 	return map[string]interface{}{
-		"trendData":    result,
-		"avgCalories":  avgCalories,
-		"maxCalories":  maxCalories,
+		"trendData":   result,
+		"avgCalories": avgCalories,
+		"maxCalories": maxCalories,
 	}, nil
 }

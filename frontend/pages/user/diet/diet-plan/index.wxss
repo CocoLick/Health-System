@@ -1259,13 +1259,13 @@
 .plan-detail-view .metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  gap: 10px;
 }
 
 .plan-detail-view .metric-card {
-  padding: 8px;
-  min-height: 68px;
-  background: rgba(255, 255, 255, 0.8);
+  padding: 12px 12px 10px;
+  min-height: 96px;
+  background: #f9fafb;
   border-radius: 16px;
   box-shadow: none;
 }
@@ -1273,29 +1273,49 @@
 .plan-detail-view .metric-main {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  margin-bottom: 1px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .plan-detail-view .metric-value {
   display: inline;
-  font-size: 19px;
+  font-size: 22px;
   line-height: 1;
   font-weight: 800;
-  color: #111827;
+  color: #1a1a1a;
   font-family: "DIN Alternate", "Inter", "PingFang SC", sans-serif;
 }
 
 .plan-detail-view .metric-unit {
   display: inline;
-  font-size: 9px;
-  color: #9ca3af;
+  font-size: 11px;
+  color: #8e8e93;
 }
 
 .plan-detail-view .metric-label {
   display: block;
-  font-size: 9px;
-  color: #4b5563;
+  font-size: 12px;
+  color: #3a3a3a;
+  font-weight: 600;
+}
+
+.plan-detail-view .metric-progress {
+  margin-top: 8px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e6e8eb;
+  overflow: hidden;
+}
+
+.plan-detail-view .metric-progress-fill {
+  height: 100%;
+  width: 68%;
+  border-radius: 999px;
+  background: #07c160;
+}
+
+.plan-detail-view .metric-calories .metric-value {
+  color: #07c160;
 }
 
 .plan-detail-view .detail-picker {

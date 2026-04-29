@@ -34,6 +34,7 @@ Page({
     trendData: [],
     trendAvgCalories: 0,
     trendMaxCalories: 0,
+    trendChartWidth: 0,
     // 食物详情弹窗
     showFoodDetailsModal: false,
     selectedMealName: '',
@@ -192,13 +193,33 @@ Page({
         carbohydrate: parseFloat(this.formatNumber(currentPlan.carbohydrate)),
         fat: parseFloat(this.formatNumber(currentPlan.fat))
       };
+      const cachedRecommendation = wx.getStorageSync('nutritionRecommendation');
+      let cachedBmr = 0;
+      if (cachedRecommendation && cachedRecommendation.bmr != null) {
+        cachedBmr = parseFloat(this.formatNumber(cachedRecommendation.bmr));
+      }
       
       this.setData({
         targetIntake: formattedNutrients,
-        bmr: 0, // 膳食计划模式下不使用BMR
+        bmr: cachedBmr > 0 ? cachedBmr : this.data.bmr,
         isLoading: false
       });
       
+      // 有膳食计划时目标值用计划，但 BMR 仍可通过推荐接口刷新显示
+      api.nutrition.getRecommendation()
+        .then(res => {
+          if (res.code === 200 && res.data) {
+            const recommendation = res.data;
+            const nextBmr = parseFloat(this.formatNumber(recommendation.bmr));
+            this.setData({ bmr: nextBmr });
+            wx.setStorageSync('nutritionRecommendation', {
+              ...recommendation,
+              bmr: nextBmr
+            });
+          }
+        })
+        .catch(() => {});
+
       console.log('使用膳食计划的营养目标');
       return;
     }
@@ -632,17 +653,29 @@ Page({
           const avgCalories = res.data.avgCalories || 0;
           const maxCalories = res.data.maxCalories || 0;
           
-          // 计算图表高度百分比
+          // 计算图表高度百分比（增加最小可见高度，避免有值时柱体几乎贴地）
           const maxHeight = maxCalories || 1;
-          const processedTrendData = trendData.map(item => ({
-            ...item,
-            height: (item.calories / maxHeight * 100).toFixed(1)
-          }));
+          const minVisiblePercent = 6;
+          const maxVisiblePercent = 96;
+          const processedTrendData = trendData.map(item => {
+            const calories = Number(item.calories) || 0;
+            const rawPercent = maxHeight > 0 ? (calories / maxHeight) * 100 : 0;
+            const heightPercent = calories <= 0
+              ? 0
+              : Math.max(minVisiblePercent, Math.min(maxVisiblePercent, rawPercent));
+            return {
+              ...item,
+              calories: parseFloat(this.formatNumber(calories)),
+              height: heightPercent.toFixed(1),
+              isPeak: calories === maxCalories && maxCalories > 0
+            };
+          });
           
           this.setData({
             trendData: processedTrendData,
             trendAvgCalories: parseFloat(this.formatNumber(avgCalories)),
-            trendMaxCalories: parseFloat(this.formatNumber(maxCalories))
+            trendMaxCalories: parseFloat(this.formatNumber(maxCalories)),
+            trendChartWidth: processedTrendData.length > 10 ? processedTrendData.length * 56 : 0
           });
         } else {
           wx.showToast({ title: '加载失败', icon: 'none' });

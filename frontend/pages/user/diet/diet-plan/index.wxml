@@ -29,7 +29,7 @@
 
     <view class="metrics-wrap">
       <view class="metrics-grid">
-        <view class="metric-card detail-card">
+        <view class="metric-card detail-card metric-calories">
           <view class="metric-main">
             <text class="metric-value">{{currentPlan.calories}}</text>
             <text class="metric-unit">kcal</text>
