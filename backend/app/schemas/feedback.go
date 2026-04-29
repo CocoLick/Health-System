@@ -4,12 +4,22 @@ import "time"
 
 // FeedbackCreate 用户提交反馈（用户端接口，供后续接入；也可用于联调）
 type FeedbackCreate struct {
-	Category           string `json:"category" binding:"required"` // diet_plan | dietitian_service | system
+	Category           string `json:"category" binding:"required"` // diet_plan | dietitian_service | dietitian_review | system
 	Title              string `json:"title" binding:"required"`
 	Content            string `json:"content" binding:"required"`
 	Rating             *int   `json:"rating"`
 	RelatedPlanID      string `json:"related_plan_id"`
 	TargetDietitianID  string `json:"target_dietitian_id"` // dietitian_service 时必填
+}
+
+// FeedbackDietitianReviewItem 用户端规划师详情中的评价项
+type FeedbackDietitianReviewItem struct {
+	FeedbackID string    `json:"feedback_id"`
+	UserID     string    `json:"user_id"`
+	Username   string    `json:"username"`
+	Rating     int       `json:"rating"`
+	Content    string    `json:"content"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 // FeedbackDietitianListQuery 规划师列表筛选

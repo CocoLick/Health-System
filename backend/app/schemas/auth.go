@@ -35,6 +35,7 @@ type CreateDietitianRequest struct {
 	Password  string `json:"password" binding:"required,min=6"`
 	Title     string `json:"title" binding:"required"`
 	Specialty string `json:"specialty" binding:"required"`
+	Introduction string `json:"introduction"`
 	Contact   string `json:"contact" binding:"required"`
 	Status    string `json:"status" binding:"required"`
 }
@@ -47,6 +48,14 @@ type UpdateDietitianStatusRequest struct {
 // UserStatusUpdateRequest 管理员更新用户账号状态
 type UserStatusUpdateRequest struct {
 	Status string `json:"status" binding:"required"`
+}
+
+// DietitianListQuery 用户端规划师列表筛选参数
+type DietitianListQuery struct {
+	Specialty                     string `form:"specialty"`
+	MaxCurrentServiceUserCount    int    `form:"max_current_service_user_count"`
+	MinHistoricalServiceUserCount int    `form:"min_historical_service_user_count"`
+	MinHistoricalAvgRating        float64 `form:"min_historical_avg_rating"`
 }
 
 // LoginResponse 登录响应

@@ -4,6 +4,12 @@ Page({
   data: {
     searchKeyword: '',
     filterType: 'all',
+    maxCurrentService: 0,
+    minHistoryService: 0,
+    minRating: 0,
+    currentServiceOptions: [0, 5, 10, 20],
+    historyServiceOptions: [0, 20, 50, 100],
+    ratingOptions: [0, 3.5, 4.0, 4.5],
     dietitians: [],
     isLoading: false
   },
@@ -21,8 +27,22 @@ Page({
 
   loadDietitians() {
     this.setData({ isLoading: true });
-    
-    api.dietitian.getList()
+
+    const specialtyMap = {
+      'weight_loss': '减脂',
+      'diabetes': '控糖',
+      'nutrition': '营养'
+    };
+    const params = {
+      max_current_service_user_count: this.data.maxCurrentService,
+      min_historical_service_user_count: this.data.minHistoryService,
+      min_historical_avg_rating: this.data.minRating
+    };
+    if (this.data.filterType !== 'all') {
+      params.specialty = specialtyMap[this.data.filterType];
+    }
+
+    api.dietitian.getList(params)
       .then(res => {
         this.setData({ isLoading: false });
         if (res.code === 200) {
@@ -36,10 +56,13 @@ Page({
             title: item.title || '营养师',
             specialty: item.specialty || '',
             specialtyArr: item.specialty ? item.specialty.split(',') : [],
-            rating: 4.5, // 默认评分
-            serviceCount: 0, // 默认服务次数
+            introduction: (item.introduction && String(item.introduction).trim()) || '暂未填写简介',
+            rating: Number(item.historical_avg_rating || 0),
+            ratingText: (item.rating_count || 0) > 0 ? Number(item.historical_avg_rating || 0).toFixed(1) : '暂无评分',
+            ratingCount: item.rating_count || 0,
+            serviceCount: item.current_service_user_count || 0,
+            historyServiceCount: item.historical_service_user_count || 0,
             experience: '5年', // 默认经验
-            introduction: '专业营养师，为您提供个性化的营养指导', // 默认介绍
             cases: [
               { title: '营养咨询', description: '为客户提供专业的营养咨询服务' }
             ],
@@ -47,18 +70,6 @@ Page({
               { user: '用户', content: '专业服务，值得推荐', rating: 5 }
             ]
           }));
-
-          if (this.data.filterType !== 'all') {
-            const filterMap = {
-              'weight_loss': '减脂',
-              'diabetes': '控糖',
-              'nutrition': '营养'
-            };
-            const filterText = filterMap[this.data.filterType];
-            dietitians = dietitians.filter(item =>
-              item.specialty.includes(filterText)
-            );
-          }
 
           if (this.data.searchKeyword) {
             const keyword = this.data.searchKeyword.toLowerCase();
@@ -94,6 +105,24 @@ Page({
     this.setData({
       filterType: filter
     });
+    this.loadDietitians();
+  },
+
+  setCurrentServiceFilter(e) {
+    const value = Number(e.currentTarget.dataset.value || 0);
+    this.setData({ maxCurrentService: value });
+    this.loadDietitians();
+  },
+
+  setHistoryServiceFilter(e) {
+    const value = Number(e.currentTarget.dataset.value || 0);
+    this.setData({ minHistoryService: value });
+    this.loadDietitians();
+  },
+
+  setRatingFilter(e) {
+    const value = Number(e.currentTarget.dataset.value || 0);
+    this.setData({ minRating: value });
     this.loadDietitians();
   },
 

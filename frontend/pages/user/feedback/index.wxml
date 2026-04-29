@@ -52,6 +52,11 @@
             data-f="dietitian_service"
             bindtap="onPrimaryTypeTap"
           >规划服务</view>
+          <view
+            class="type-tab {{primaryTypeFilter === 'dietitian_review' ? 'on' : ''}}"
+            data-f="dietitian_review"
+            bindtap="onPrimaryTypeTap"
+          >规划师评价</view>
         </view>
         <view class="advanced-head">
           <view class="advanced-toggle" bindtap="toggleAdvancedFilters">
@@ -186,7 +191,7 @@
       </block>
     </view>
 
-    <view wx:if="{{category === 'dietitian_service'}}" class="card block">
+    <view wx:if="{{category === 'dietitian_service' || category === 'dietitian_review'}}" class="card block">
       <view class="label">关联规划师</view>
       <picker
         wx:if="{{dietitianPickerLabels.length}}"
@@ -197,7 +202,7 @@
       >
         <view class="picker-line">{{dietitianPickerLabels[dietitianIndex]}}</view>
       </picker>
-      <view wx:else class="empty">{{dietitiansLoading ? '加载中…' : '暂无已通过的服务关系，需先申请并通过规划师服务'}}</view>
+      <view wx:else class="empty">{{dietitiansLoading ? '加载中…' : '暂无可评价规划师，需先申请并通过/完成规划师服务'}}</view>
     </view>
 
     <view wx:if="{{category === 'system'}}" class="hint card muted">
@@ -222,7 +227,7 @@
     </view>
 
     <view class="card block">
-      <view class="label">满意度（选填）</view>
+      <view class="label">满意度{{category === 'dietitian_review' ? '（必填）' : '（选填）'}}</view>
       <view class="stars">
         <text
           wx:for="{{[1,2,3,4,5]}}"

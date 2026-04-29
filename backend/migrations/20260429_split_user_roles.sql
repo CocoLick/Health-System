@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS `dietitian` (
     `role_type` VARCHAR(20) NOT NULL,
     `title` VARCHAR(100) NULL,
     `specialty` VARCHAR(100) NULL,
+    `introduction` TEXT NULL,
     `contact` VARCHAR(50) NULL,
     `status` VARCHAR(20) NOT NULL DEFAULT '启用',
     `created_at` DATETIME NOT NULL,
@@ -16,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `dietitian` (
 
 INSERT INTO `dietitian` (
     `account_id`, `username`, `name`, `password`, `role_type`,
-    `title`, `specialty`, `contact`, `status`, `created_at`, `updated_at`
+    `title`, `specialty`, `introduction`, `contact`, `status`, `created_at`, `updated_at`
 )
 SELECT
     u.user_id,
@@ -26,6 +27,7 @@ SELECT
     u.role_type,
     u.title,
     u.specialty,
+    NULL,
     COALESCE(NULLIF(u.contact, ''), u.phone),
     COALESCE(NULLIF(u.status, ''), '启用'),
     u.created_at,

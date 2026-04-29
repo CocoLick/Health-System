@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -280,6 +281,7 @@ func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*mode
 		RoleType:  "dietitian",
 		Title:     req.Title,
 		Specialty: req.Specialty,
+		Introduction: strings.TrimSpace(req.Introduction),
 		Contact:   req.Contact,
 		Status:    req.Status,
 		CreatedAt: time.Now(),
@@ -300,6 +302,7 @@ func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*mode
 		RoleType:  dietitian.RoleType,
 		Title:     dietitian.Title,
 		Specialty: dietitian.Specialty,
+		Introduction: dietitian.Introduction,
 		Contact:   dietitian.Contact,
 		Status:    dietitian.Status,
 		CreatedAt: dietitian.CreatedAt,
@@ -366,15 +369,97 @@ func (s *AuthService) generateDietitianID() string {
 	return fmt.Sprintf("%s%03d", prefix, newSuffix)
 }
 
-// GetAllDietitians 获取所有规划师
+// GetAllDietitians 获取所有规划师（管理员场景）
 func (s *AuthService) GetAllDietitians() ([]models.User, error) {
+	return s.GetDietitians(schemas.DietitianListQuery{})
+}
+
+// GetDietitians 获取规划师列表（用户端，支持筛选）
+func (s *AuthService) GetDietitians(q schemas.DietitianListQuery) ([]models.User, error) {
 	var rows []models.Dietitian
-	if err := config.DB.Where("role_type = ?", "dietitian").Order("created_at DESC").Find(&rows).Error; err != nil {
+	db := config.DB.Where("role_type = ?", "dietitian")
+	if strings.TrimSpace(q.Specialty) != "" {
+		db = db.Where("specialty LIKE ?", "%"+strings.TrimSpace(q.Specialty)+"%")
+	}
+	if err := db.Order("created_at DESC").Find(&rows).Error; err != nil {
 		return nil, err
 	}
+
+	dietitianIDs := make([]string, 0, len(rows))
+	for _, d := range rows {
+		dietitianIDs = append(dietitianIDs, d.AccountID)
+	}
+	currentCounts := make(map[string]int)
+	historyCounts := make(map[string]int)
+	avgRatings := make(map[string]float64)
+	ratingCounts := make(map[string]int)
+	if len(dietitianIDs) > 0 {
+		type countRow struct {
+			DietitianID string `gorm:"column:dietitian_id"`
+			Cnt         int    `gorm:"column:cnt"`
+		}
+		var currentRows []countRow
+		if err := config.DB.
+			Model(&models.ServiceRequest{}).
+			Select("dietitian_id, COUNT(DISTINCT user_id) AS cnt").
+			Where("dietitian_id IN ? AND status IN ?", dietitianIDs, []string{"approved", "pending"}).
+			Group("dietitian_id").
+			Find(&currentRows).Error; err != nil {
+			return nil, err
+		}
+		for _, row := range currentRows {
+			currentCounts[row.DietitianID] = row.Cnt
+		}
+
+		var historyRows []countRow
+		if err := config.DB.
+			Model(&models.ServiceRequest{}).
+			Select("dietitian_id, COUNT(DISTINCT user_id) AS cnt").
+			Where("dietitian_id IN ?", dietitianIDs).
+			Group("dietitian_id").
+			Find(&historyRows).Error; err != nil {
+			return nil, err
+		}
+		for _, row := range historyRows {
+			historyCounts[row.DietitianID] = row.Cnt
+		}
+
+		type ratingRow struct {
+			DietitianID string  `gorm:"column:target_dietitian_id"`
+			AvgRating   float64 `gorm:"column:avg_rating"`
+			RatingCount int     `gorm:"column:rating_count"`
+		}
+		var ratingRows []ratingRow
+		if err := config.DB.
+			Model(&models.UserFeedback{}).
+			Select("target_dietitian_id, AVG(rating) AS avg_rating, COUNT(rating) AS rating_count").
+			Where("target_dietitian_id IN ? AND category = ? AND rating IS NOT NULL", dietitianIDs, "dietitian_review").
+			Group("target_dietitian_id").
+			Find(&ratingRows).Error; err != nil {
+			return nil, err
+		}
+		for _, row := range ratingRows {
+			avgRatings[row.DietitianID] = math.Round(row.AvgRating*10) / 10
+			ratingCounts[row.DietitianID] = row.RatingCount
+		}
+	}
+
 	dietitians := make([]models.User, 0, len(rows))
 	seen := make(map[string]bool)
 	for _, d := range rows {
+		currentCount := currentCounts[d.AccountID]
+		historyCount := historyCounts[d.AccountID]
+		avgRating := avgRatings[d.AccountID]
+		ratingCount := ratingCounts[d.AccountID]
+		if q.MaxCurrentServiceUserCount > 0 && currentCount >= q.MaxCurrentServiceUserCount {
+			continue
+		}
+		if historyCount < q.MinHistoricalServiceUserCount {
+			continue
+		}
+		if avgRating < q.MinHistoricalAvgRating {
+			continue
+		}
 		seen[d.AccountID] = true
 		dietitians = append(dietitians, models.User{
 			UserID:    d.AccountID,
@@ -384,7 +469,12 @@ func (s *AuthService) GetAllDietitians() ([]models.User, error) {
 			RoleType:  d.RoleType,
 			Title:     d.Title,
 			Specialty: d.Specialty,
+			Introduction: d.Introduction,
 			Contact:   d.Contact,
+			CurrentServiceUserCount:    currentCount,
+			HistoricalServiceUserCount: historyCount,
+			HistoricalAvgRating:        avgRating,
+			RatingCount:                ratingCount,
 			Status:    d.Status,
 			CreatedAt: d.CreatedAt,
 			UpdatedAt: d.UpdatedAt,
@@ -396,6 +486,12 @@ func (s *AuthService) GetAllDietitians() ([]models.User, error) {
 	if legacyAuthFallbackEnabled() && config.DB.Where("role_type = ?", "dietitian").Order("created_at DESC").Find(&legacyRows).Error == nil {
 		for _, u := range legacyRows {
 			if seen[u.UserID] {
+				continue
+			}
+			if q.MaxCurrentServiceUserCount > 0 || q.MinHistoricalServiceUserCount > 0 || q.MinHistoricalAvgRating > 0 {
+				continue
+			}
+			if strings.TrimSpace(q.Specialty) != "" && !strings.Contains(strings.ToLower(u.Specialty), strings.ToLower(strings.TrimSpace(q.Specialty))) {
 				continue
 			}
 			seen[u.UserID] = true
@@ -492,6 +588,7 @@ func (s *AuthService) GetUserByID(userID string) (*models.User, error) {
 		RoleType:  d.RoleType,
 		Title:     d.Title,
 		Specialty: d.Specialty,
+		Introduction: d.Introduction,
 		Contact:   d.Contact,
 		Status:    d.Status,
 		CreatedAt: d.CreatedAt,

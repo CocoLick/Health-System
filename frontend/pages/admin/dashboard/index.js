@@ -36,6 +36,7 @@ Page({
       name: '',
       title: '',
       specialty: '',
+      introduction: '',
       contact: '',
       password: ''
     },
@@ -464,6 +465,7 @@ Page({
         name: '',
         title: '',
         specialty: '',
+        introduction: '',
         contact: '',
         password: ''
       },
@@ -522,6 +524,12 @@ Page({
     });
   },
 
+  bindDietitianIntroduction(e) {
+    this.setData({
+      'newDietitian.introduction': e.detail.value
+    });
+  },
+
   bindDietitianPassword(e) {
     this.setData({
       'newDietitian.password': e.detail.value
@@ -535,7 +543,7 @@ Page({
   },
 
   confirmAddDietitian() {
-    const { username, name, title, specialty, contact, password } = this.data.newDietitian;
+    const { username, name, title, specialty, introduction, contact, password } = this.data.newDietitian;
     const status = this.data.statusOptions[this.data.statusIndex];
 
     if (!username) {
@@ -568,6 +576,7 @@ Page({
       name: name,
       title: title,
       specialty: specialty,
+      introduction: introduction,
       contact: contact,
       password: password,
       status: status

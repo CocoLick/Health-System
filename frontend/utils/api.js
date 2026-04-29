@@ -350,6 +350,9 @@ const feedback = {
   detail: function(id) {
     return get(`/api/feedback/${encodeURIComponent(id)}`);
   },
+  listDietitianReviewsForUser: function(dietitianId) {
+    return get(`/api/feedback/dietitian/${encodeURIComponent(dietitianId)}/reviews`);
+  },
   reply: function(id, data) {
     return post(`/api/feedback/${encodeURIComponent(id)}/replies`, data);
   }

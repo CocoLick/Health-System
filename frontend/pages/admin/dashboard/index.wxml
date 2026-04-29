@@ -737,6 +737,10 @@
           <input class="form-input" placeholder="如：临床营养" bindinput="bindDietitianSpecialty" value="{{newDietitian.specialty}}"/>
         </view>
         <view class="form-item">
+          <text class="form-label">个人简介</text>
+          <textarea class="form-input form-textarea" maxlength="500" placeholder="请输入规划师简介（选填）" bindinput="bindDietitianIntroduction" value="{{newDietitian.introduction}}"/>
+        </view>
+        <view class="form-item">
           <text class="form-label">联系方式</text>
           <input class="form-input" placeholder="手机号或邮箱" bindinput="bindDietitianContact" value="{{newDietitian.contact}}"/>
         </view>

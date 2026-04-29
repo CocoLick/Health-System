@@ -132,7 +132,7 @@ func newReplyID() string {
 func normalizeFeedbackCategory(c string) string {
 	c = strings.ToLower(strings.TrimSpace(c))
 	switch c {
-	case "diet_plan", "dietitian_service", "system":
+	case "diet_plan", "dietitian_service", "dietitian_review", "system":
 		return c
 	default:
 		return ""
@@ -145,6 +145,8 @@ func categoryLabel(c string) string {
 		return "膳食计划"
 	case "dietitian_service":
 		return "规划服务"
+	case "dietitian_review":
+		return "规划师评价"
 	case "system":
 		return "系统功能"
 	default:
@@ -187,7 +189,7 @@ func (s *FeedbackService) userServesDietitian(userID, dietitianID string) bool {
 	}
 	var n int64
 	s.db.Model(&models.ServiceRequest{}).
-		Where("user_id = ? AND dietitian_id = ? AND status = ?", userID, dietitianID, "approved").
+		Where("user_id = ? AND dietitian_id = ? AND status IN ?", userID, dietitianID, []string{"approved", "completed"}).
 		Count(&n)
 	return n > 0
 }
@@ -244,6 +246,18 @@ func (s *FeedbackService) CreateUserFeedback(userID string, req schemas.Feedback
 			return nil, fmt.Errorf("%w: 未与该规划师建立已批准的服务关系", ErrFeedbackValidation)
 		}
 		row.TargetDietitianID = did
+	case "dietitian_review":
+		did := strings.TrimSpace(req.TargetDietitianID)
+		if did == "" {
+			return nil, fmt.Errorf("%w: 规划师评价需指定 target_dietitian_id", ErrFeedbackValidation)
+		}
+		if req.Rating == nil || *req.Rating < 1 || *req.Rating > 5 {
+			return nil, fmt.Errorf("%w: 规划师评价 rating 必填且范围为 1-5", ErrFeedbackValidation)
+		}
+		if !s.userServesDietitian(userID, did) {
+			return nil, fmt.Errorf("%w: 未与该规划师建立已通过/已完成的服务关系", ErrFeedbackValidation)
+		}
+		row.TargetDietitianID = did
 	case "system":
 		row.TargetDietitianID = ""
 	}
@@ -252,6 +266,50 @@ func (s *FeedbackService) CreateUserFeedback(userID string, req schemas.Feedback
 		return nil, err
 	}
 	return row, nil
+}
+
+// ListDietitianReviewsForUser 用户端查看规划师评价列表
+func (s *FeedbackService) ListDietitianReviewsForUser(dietitianID string, limit int) ([]schemas.FeedbackDietitianReviewItem, error) {
+	dietitianID = strings.TrimSpace(dietitianID)
+	if dietitianID == "" {
+		return []schemas.FeedbackDietitianReviewItem{}, nil
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	var rows []models.UserFeedback
+	if err := s.db.
+		Where("target_dietitian_id = ? AND category = ? AND rating IS NOT NULL", dietitianID, "dietitian_review").
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	userIDs := make([]string, 0, len(rows))
+	for _, r := range rows {
+		userIDs = append(userIDs, r.UserID)
+	}
+	names := s.userNamesByIDs(userIDs)
+	out := make([]schemas.FeedbackDietitianReviewItem, 0, len(rows))
+	for _, r := range rows {
+		rating := 0
+		if r.Rating != nil {
+			rating = *r.Rating
+		}
+		username := strings.TrimSpace(names[r.UserID])
+		if username == "" {
+			username = r.UserID
+		}
+		out = append(out, schemas.FeedbackDietitianReviewItem{
+			FeedbackID: r.FeedbackID,
+			UserID:     r.UserID,
+			Username:   username,
+			Rating:     rating,
+			Content:    strings.TrimSpace(r.Content),
+			CreatedAt:  r.CreatedAt,
+		})
+	}
+	return out, nil
 }
 
 func (s *FeedbackService) getFeedback(feedbackID string) (*models.UserFeedback, error) {

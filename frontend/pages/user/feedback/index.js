@@ -12,6 +12,7 @@ function safeDecode(s) {
 const CATEGORIES = [
   { id: 'diet_plan', name: '膳食计划' },
   { id: 'dietitian_service', name: '规划服务' },
+  { id: 'dietitian_review', name: '规划师评价' },
   { id: 'system', name: '系统功能' }
 ];
 
@@ -106,7 +107,7 @@ Page({
       planTitle = '';
     }
 
-    const valid = ['diet_plan', 'dietitian_service', 'system'].indexOf(qCat) >= 0;
+    const valid = ['diet_plan', 'dietitian_service', 'dietitian_review', 'system'].indexOf(qCat) >= 0;
     let category = valid ? qCat : 'system';
     const planLocked = !!planId;
 
@@ -141,7 +142,7 @@ Page({
     if (category === 'diet_plan' && !planLocked) {
       this.loadPlans();
     }
-    if (category === 'dietitian_service') {
+    if (category === 'dietitian_service' || category === 'dietitian_review') {
       this.loadDietitians();
     }
     if (token) {
@@ -514,7 +515,7 @@ Page({
     if (cat === 'diet_plan' && !this.data.planLocked && !this.data.planOptions.length && !this.data.plansLoading) {
       this.loadPlans();
     }
-    if (cat === 'dietitian_service' && !this.data.dietitianOptions.length && !this.data.dietitiansLoading) {
+    if ((cat === 'dietitian_service' || cat === 'dietitian_review') && !this.data.dietitianOptions.length && !this.data.dietitiansLoading) {
       this.loadDietitians();
     }
   },
@@ -568,7 +569,8 @@ Page({
         const list = res.data || [];
         const map = {};
         list.forEach((r) => {
-          if (!r || String(r.status).toLowerCase() !== 'approved') return;
+          const st = String(r.status).toLowerCase();
+          if (!r || (st !== 'approved' && st !== 'completed')) return;
           const did = r.dietitian_id;
           if (!did || map[did]) return;
           const name = (r.dietitian_name && String(r.dietitian_name).trim()) || did;
@@ -654,13 +656,18 @@ Page({
         return;
       }
       payload.related_plan_id = pid;
-    } else if (cat === 'dietitian_service') {
+    } else if (cat === 'dietitian_service' || cat === 'dietitian_review') {
       const d = this.data.dietitianOptions[this.data.dietitianIndex];
       if (!d || !d.dietitian_id) {
         wx.showToast({ title: '请选择规划师', icon: 'none' });
         return;
       }
       payload.target_dietitian_id = d.dietitian_id;
+    }
+
+    if (cat === 'dietitian_review' && this.data.rating <= 0) {
+      wx.showToast({ title: '请为规划师打分（1-5星）', icon: 'none' });
+      return;
     }
 
     this.setData({ submitting: true });

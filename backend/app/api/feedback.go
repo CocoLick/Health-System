@@ -24,6 +24,7 @@ func RegisterFeedbackRoutes(router *gin.RouterGroup) {
 	{
 		g.GET("/dietitian/pending-count", h.PendingCount)
 		g.GET("/dietitian", h.ListDietitian)
+		g.GET("/dietitian/:id/reviews", h.ListDietitianReviewsForUser)
 		// 用户端列表/详情须注册在 /:id 之前，避免 "user" 被当作 feedback_id
 		g.GET("/user", h.ListUser)
 		g.GET("/user/:id", h.DetailUser)
@@ -32,6 +33,26 @@ func RegisterFeedbackRoutes(router *gin.RouterGroup) {
 		g.GET("/:id", h.DetailDietitian)
 		g.POST("", h.CreateUser)
 	}
+}
+
+// ListDietitianReviewsForUser GET /api/feedback/dietitian/:id/reviews
+func (h *FeedbackHandler) ListDietitianReviewsForUser(c *gin.Context) {
+	role := strings.TrimSpace(c.GetString("roleType"))
+	if role != "user" && role != "dietitian" && role != "admin" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "无权访问"})
+		return
+	}
+	dietitianID := strings.TrimSpace(c.Param("id"))
+	if dietitianID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "规划师ID不能为空"})
+		return
+	}
+	list, err := h.svc.ListDietitianReviewsForUser(dietitianID, 20)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "ok", Data: list})
 }
 
 // ListDietitian GET /api/feedback/dietitian?status=pending|replied|all

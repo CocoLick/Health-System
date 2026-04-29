@@ -298,7 +298,16 @@ func (h *AuthHandler) DeleteDietitian(c *gin.Context) {
 // @Failure 400 {object} schemas.Response
 // @Router /api/auth/dietitians [get]
 func (h *AuthHandler) GetDietitians(c *gin.Context) {
-	dietitians, err := h.authService.GetAllDietitians()
+	var query schemas.DietitianListQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "筛选参数错误",
+		})
+		return
+	}
+
+	dietitians, err := h.authService.GetDietitians(query)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, schemas.Response{
 			Code:    400,

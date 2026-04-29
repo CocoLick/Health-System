@@ -22,7 +22,12 @@ type User struct {
 	// 这里保留 JSON 字段以兼容既有前端结构，但不再映射到 user 表列。
 	Title     string    `gorm:"-" json:"title,omitempty"`
 	Specialty string    `gorm:"-" json:"specialty,omitempty"`
+	Introduction string `gorm:"-" json:"introduction,omitempty"`
 	Contact   string    `gorm:"-" json:"contact,omitempty"`
+	CurrentServiceUserCount    int     `gorm:"-" json:"current_service_user_count,omitempty"`
+	HistoricalServiceUserCount int     `gorm:"-" json:"historical_service_user_count,omitempty"`
+	HistoricalAvgRating        float64 `gorm:"-" json:"historical_avg_rating,omitempty"`
+	RatingCount                int     `gorm:"-" json:"rating_count,omitempty"`
 	Status    string    `gorm:"column:status" json:"status"`
 	CreatedAt time.Time `gorm:"column:created_at;not null" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at;not null" json:"updated_at"`

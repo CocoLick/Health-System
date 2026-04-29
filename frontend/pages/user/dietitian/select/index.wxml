@@ -13,6 +13,33 @@
     <view class="filter-tab {{filterType === 'nutrition' ? 'active' : ''}}" bindtap="switchFilter" data-filter="nutrition">营养</view>
   </view>
 
+  <view class="metric-filters">
+    <view class="metric-filter-row">
+      <text class="metric-filter-label">当前服务人数</text>
+      <view class="metric-filter-options">
+        <view class="metric-option {{maxCurrentService === item ? 'active' : ''}}" wx:for="{{currentServiceOptions}}" wx:key="item" data-value="{{item}}" bindtap="setCurrentServiceFilter">
+          {{item === 0 ? '不限' : ('<' + item)}}
+        </view>
+      </view>
+    </view>
+    <view class="metric-filter-row">
+      <text class="metric-filter-label">历史服务人数</text>
+      <view class="metric-filter-options">
+        <view class="metric-option {{minHistoryService === item ? 'active' : ''}}" wx:for="{{historyServiceOptions}}" wx:key="item" data-value="{{item}}" bindtap="setHistoryServiceFilter">
+          {{item === 0 ? '不限' : ('≥' + item)}}
+        </view>
+      </view>
+    </view>
+    <view class="metric-filter-row">
+      <text class="metric-filter-label">历史平均评分</text>
+      <view class="metric-filter-options">
+        <view class="metric-option {{minRating === item ? 'active' : ''}}" wx:for="{{ratingOptions}}" wx:key="item" data-value="{{item}}" bindtap="setRatingFilter">
+          {{item === 0 ? '不限' : ('≥' + item)}}
+        </view>
+      </view>
+    </view>
+  </view>
+
   <view class="dietitian-list">
     <view class="dietitian-card" wx:for="{{dietitians}}" wx:key="id" bindtap="viewDetail" data-id="{{item.id}}">
       <view class="card-left">
@@ -30,9 +57,11 @@
       <view class="card-right">
         <view class="rating">
           <text class="rating-star">⭐</text>
-          <text class="rating-value">{{item.rating}}</text>
+          <text class="rating-value">{{item.ratingText}}</text>
         </view>
-        <view class="service-count">{{item.serviceCount}}人服务</view>
+        <view class="service-count">当前服务 {{item.serviceCount}} 人</view>
+        <view class="service-count">累计服务 {{item.historyServiceCount}} 人</view>
+        <view class="service-count" wx:if="{{item.ratingCount > 0}}">{{item.ratingCount}} 条评分</view>
         <view class="select-btn">选择</view>
       </view>
     </view>

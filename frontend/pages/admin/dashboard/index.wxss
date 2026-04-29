@@ -880,6 +880,12 @@
   transition: all 0.3s ease;
 }
 
+.form-textarea {
+  height: 180rpx;
+  padding-top: 16rpx;
+  line-height: 1.5;
+}
+
 .form-input:focus {
   border-color: #4caf50;
   background: white;

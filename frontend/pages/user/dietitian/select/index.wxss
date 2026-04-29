@@ -214,6 +214,44 @@
   padding: 10rpx;
 }
 
+.metric-filters {
+  margin: 0 24rpx 16rpx;
+  padding: 16rpx;
+  border-radius: var(--u-radius);
+  background: var(--u-surface);
+  box-shadow: var(--u-shadow);
+}
+
+.metric-filter-row + .metric-filter-row {
+  margin-top: 14rpx;
+}
+
+.metric-filter-label {
+  display: block;
+  font-size: 24rpx;
+  color: var(--u-sub);
+  margin-bottom: 8rpx;
+}
+
+.metric-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.metric-option {
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: var(--u-soft);
+  color: var(--u-sub);
+  font-size: 22rpx;
+}
+
+.metric-option.active {
+  background: rgba(7, 193, 96, 0.16);
+  color: #06693a;
+}
+
 .filter-tab {
   background: var(--u-soft);
   color: var(--u-sub);

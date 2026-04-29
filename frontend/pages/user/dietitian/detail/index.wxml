@@ -18,7 +18,7 @@
       <view class="stat-divider"></view>
       <view class="stat-item">
         <view class="stat-value">{{dietitian.serviceCount}}</view>
-        <view class="stat-label">服务人数</view>
+        <view class="stat-label">当前服务人数</view>
       </view>
     </view>
   </view>
@@ -32,23 +32,14 @@
 
   <view class="section">
     <view class="section-title">个人简介</view>
-    <view class="introduction">{{dietitian.introduction}}</view>
-  </view>
-
-  <view class="section">
-    <view class="section-title">服务案例</view>
-    <view class="case-list">
-      <view class="case-item" wx:for="{{dietitian.cases}}" wx:key="title">
-        <view class="case-title">{{item.title}}</view>
-        <view class="case-desc">{{item.description}}</view>
-      </view>
-    </view>
+    <view class="introduction">{{dietitian.introduction || '暂未填写简介'}}</view>
   </view>
 
   <view class="section">
     <view class="section-title">用户评价</view>
     <view class="review-list">
-      <view class="review-item" wx:for="{{dietitian.reviews}}" wx:key="user">
+      <view wx:if="{{!dietitian.reviews || dietitian.reviews.length === 0}}" class="review-content">暂无用户评价</view>
+      <view class="review-item" wx:for="{{dietitian.reviews}}" wx:key="index">
         <view class="review-header">
           <view class="reviewer">{{item.user}}</view>
           <view class="review-rating">
