@@ -445,6 +445,10 @@ const nutrition = {
   addRecord: function(data) {
     return post('/api/nutrition/record', data);
   },
+  // 拍照识别食物
+  photoRecognize: function(data) {
+    return post('/api/nutrition/record/photo-recognize', data);
+  },
   // 获取饮食记录列表
   getRecords: function(params) {
     return get('/api/nutrition/record', params);

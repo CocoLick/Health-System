@@ -401,11 +401,90 @@ Page({
   },
 
   takePhoto() {
-    wx.showModal({
-      title: '拍照识别',
-      content: '此功能正在开发中，敬请期待',
-      showCancel: false
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['camera', 'album'],
+      success: (res) => {
+        const filePath = res.tempFilePaths && res.tempFilePaths[0];
+        if (!filePath) {
+          wx.showToast({ title: '未获取到图片', icon: 'none' });
+          return;
+        }
+        this.recognizeFoodsFromImage(filePath);
+      },
+      fail: () => {
+        wx.showToast({ title: '已取消选择', icon: 'none' });
+      }
     });
+  },
+
+  recognizeFoodsFromImage(filePath) {
+    wx.showLoading({ title: '识别中...', mask: true });
+    this.readFileAsBase64(filePath)
+      .then((base64) => api.nutrition.photoRecognize({
+        image_base64: base64,
+        meal_type: this.data.mealType
+      }))
+      .then((res) => {
+        wx.hideLoading();
+        if (res.code !== 200 || !res.data || !Array.isArray(res.data.recognized_foods)) {
+          wx.showToast({ title: '识别失败，请重试', icon: 'none' });
+          return;
+        }
+        this.importRecognizedFoods(res.data.recognized_foods);
+      })
+      .catch((err) => {
+        wx.hideLoading();
+        const msg = (err && err.data && err.data.message) || (err && err.message) || '识别失败，请重试';
+        wx.showToast({ title: msg, icon: 'none' });
+      });
+  },
+
+  readFileAsBase64(filePath) {
+    return new Promise((resolve, reject) => {
+      wx.getFileSystemManager().readFile({
+        filePath,
+        encoding: 'base64',
+        success: (res) => resolve(res.data),
+        fail: reject
+      });
+    });
+  },
+
+  importRecognizedFoods(recognizedFoods) {
+    const importedFoods = recognizedFoods
+      .filter(item => item && item.name)
+      .map(item => ({
+        name: item.name,
+        amount: Number(item.amount) > 0 ? Number(item.amount) : 1,
+        unit: item.unit || '份',
+        gramPerUnit: Number(item.gram_per_unit) > 0 ? Number(item.gram_per_unit) : 100,
+        nutrition: {
+          calories: Number((item.nutrition && item.nutrition.calories) || 0),
+          protein: Number((item.nutrition && item.nutrition.protein) || 0),
+          carbohydrate: Number((item.nutrition && item.nutrition.carbohydrate) || 0),
+          fat: Number((item.nutrition && item.nutrition.fat) || 0),
+          fiber: Number((item.nutrition && item.nutrition.fiber) || 0)
+        }
+      }))
+      .filter(item => item.nutrition.calories > 0);
+
+    if (importedFoods.length === 0) {
+      wx.showToast({ title: '未识别到可导入食物', icon: 'none' });
+      return;
+    }
+
+    const foods = [...this.data.foods, ...importedFoods];
+    this.setData({
+      foods,
+      showAddForm: false,
+      searchResults: [],
+      showSearchResults: false,
+      currentIngredient: null
+    });
+    this.calculateTotalNutrition(foods);
+    wx.showToast({ title: `已导入${importedFoods.length}项`, icon: 'success' });
   },
 
   submitRecord() {

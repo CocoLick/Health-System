@@ -13,12 +13,14 @@ import (
 // NutritionRecordHandler 营养记录处理器
 type NutritionRecordHandler struct {
 	nutritionRecordService *services.NutritionRecordService
+	photoService           *services.NutritionPhotoRecognitionService
 }
 
 // NewNutritionRecordHandler 创建营养记录处理器实例
 func NewNutritionRecordHandler() *NutritionRecordHandler {
 	return &NutritionRecordHandler{
 		nutritionRecordService: services.NewNutritionRecordService(),
+		photoService:           services.NewNutritionPhotoRecognitionService(),
 	}
 }
 
@@ -125,9 +127,9 @@ func (h *NutritionRecordHandler) GetNutritionRecords(c *gin.Context) {
 		Code:    200,
 		Message: "获取成功",
 		Data: gin.H{
-			"records": records,
-			"total":   total,
-			"page":    page,
+			"records":  records,
+			"total":    total,
+			"page":     page,
 			"pageSize": pageSize,
 		},
 	})
@@ -305,6 +307,42 @@ func (h *NutritionRecordHandler) GetNutritionTrendData(c *gin.Context) {
 	})
 }
 
+// RecognizeNutritionFromPhoto 拍照识别食物
+func (h *NutritionRecordHandler) RecognizeNutritionFromPhoto(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "用户未登录",
+		})
+		return
+	}
+
+	var req schemas.NutritionPhotoRecognizeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "请求参数错误",
+		})
+		return
+	}
+
+	result, err := h.photoService.Recognize(userID, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "识别成功",
+		Data:    result,
+	})
+}
+
 // RegisterNutritionRecordRoutes 注册营养记录路由
 func RegisterNutritionRecordRoutes(router *gin.RouterGroup) {
 	handler := NewNutritionRecordHandler()
@@ -316,6 +354,7 @@ func RegisterNutritionRecordRoutes(router *gin.RouterGroup) {
 		nutritionRecordGroup.GET("/today", handler.GetTodayNutritionRecords)
 		nutritionRecordGroup.GET("/date", handler.GetNutritionRecordsByDate)
 		nutritionRecordGroup.GET("/trend", handler.GetNutritionTrendData)
+		nutritionRecordGroup.POST("/photo-recognize", handler.RecognizeNutritionFromPhoto)
 		nutritionRecordGroup.GET("/:record_id", handler.GetNutritionRecordByID)
 		nutritionRecordGroup.DELETE("/:record_id", handler.DeleteNutritionRecord)
 	}
