@@ -51,5 +51,6 @@ type DietitianServiceUser struct {
 	HasProfile      bool   `json:"has_profile"`
 	HasEvaluation   bool   `json:"has_evaluation"`
 	HasPlan         bool   `json:"has_plan"`
+	PlanAuditStatus string `json:"plan_audit_status"`
 	LastServiceTime string `json:"last_service_time"`
 }

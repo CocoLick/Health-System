@@ -160,6 +160,9 @@ Page({
       this.setData({ _skipEvalSummaryOnFirstShow: false });
       return;
     }
+    // 从计划编辑页返回时，需刷新计划状态，避免卡片仍展示旧值（如“无计划”）。
+    this.loadDietPlanInfo(uid);
+    this.loadServiceContext(uid);
     this.loadEvaluationSummary(uid);
     this.loadChangeSummary(uid);
   },
@@ -302,6 +305,8 @@ Page({
         if (res.code === 200 && res.data && res.data.length > 0) {
           const plans = res.data.sort((a, b) => new Date(b.update_time) - new Date(a.update_time));
           const latestPlan = plans[0];
+          const auditStatus = latestPlan.audit_status || latestPlan.auditStatus || latestPlan.status || '';
+          const planTitle = latestPlan.plan_title || latestPlan.planTitle || latestPlan.title || '未命名计划';
           const planStatusText = {
             pending_review: '⏳ 待审核',
             approved: '✅ 已通过',
@@ -316,10 +321,10 @@ Page({
             userInfo: {
               ...this.data.userInfo,
               hasPlan: true,
-              planTitle: latestPlan.title || '未命名计划',
-              planStatus: planStatusText[latestPlan.status] || '❓ 未知状态',
-              planStatusClass: planStatusClassMap[latestPlan.status] || 'status-warning',
-              planRejectReason: latestPlan.status === 'rejected' ? (latestPlan.audit_note || '') : ''
+              planTitle: planTitle,
+              planStatus: planStatusText[auditStatus] || '❓ 未知状态',
+              planStatusClass: planStatusClassMap[auditStatus] || 'status-warning',
+              planRejectReason: auditStatus === 'rejected' ? (latestPlan.audit_note || latestPlan.auditNote || '') : ''
             }
           });
         } else {

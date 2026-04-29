@@ -234,7 +234,7 @@
                 <view class="user-status">
                   <text class="status-tag {{item.hasProfile ? 'status-ok' : 'status-warning'}}">{{item.hasProfile ? '档案 已完善' : '档案 待完善'}}</text>
                   <text class="status-tag {{item.hasEvaluation ? 'status-ok' : 'status-warning'}}">{{item.hasEvaluation ? '评估 已完成' : '评估 待完成'}}</text>
-                  <text class="status-tag {{item.hasPlan ? 'status-ok' : 'status-warning'}}">{{item.hasPlan ? '计划 已生成' : '计划 待生成'}}</text>
+                  <text class="status-tag {{item.planStatusClass || (item.hasPlan ? 'status-ok' : 'status-warning')}}">{{item.planStatusText || (item.hasPlan ? '计划 已生成' : '计划 待生成')}}</text>
                 </view>
                 <text class="user-last-service">最后服务：{{item.lastServiceTime}}</text>
               </view>

@@ -18,9 +18,60 @@ type ServiceRequestService struct {
 	db *gorm.DB
 }
 
+func derivePlanAuditStatus(plan models.DietPlan) string {
+	s := strings.TrimSpace(strings.ToLower(plan.AuditStatus))
+	if s != "" {
+		return s
+	}
+	// 兜底推断：历史数据可能未写 audit_status
+	if plan.AuditedAt != nil {
+		if strings.TrimSpace(plan.AuditNote) != "" {
+			return "rejected"
+		}
+		return "approved"
+	}
+	// 有发布时间通常意味着已通过并可见
+	if !plan.PublishedAt.IsZero() {
+		return "approved"
+	}
+	return "pending_review"
+}
+
+func legacyFallbackEnabled() bool {
+	v := strings.ToLower(strings.TrimSpace(config.GetEnv("AUTH_LEGACY_FALLBACK", "true")))
+	switch v {
+	case "0", "false", "off", "no":
+		return false
+	default:
+		return true
+	}
+}
+
 // NewServiceRequestService 创建服务请求服务实例
 func NewServiceRequestService() *ServiceRequestService {
 	return &ServiceRequestService{db: config.DB}
+}
+
+func (s *ServiceRequestService) dietitianExists(dietitianID string) bool {
+	dietitianID = strings.TrimSpace(dietitianID)
+	if dietitianID == "" {
+		return false
+	}
+	var n int64
+	if err := s.db.Model(&models.Dietitian{}).
+		Where("account_id = ? AND role_type = ? AND status = ?", dietitianID, "dietitian", "启用").
+		Count(&n).Error; err == nil && n > 0 {
+		return true
+	}
+	if legacyFallbackEnabled() {
+		// 兼容旧结构
+		if err := s.db.Model(&models.User{}).
+			Where("user_id = ? AND role_type = ? AND status = ?", dietitianID, "dietitian", "启用").
+			Count(&n).Error; err == nil && n > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // DietitianNamesByIDs 批量查询规划师展示名（优先 name，否则 username）
@@ -39,22 +90,56 @@ func (s *ServiceRequestService) DietitianNamesByIDs(ids []string) map[string]str
 	if len(uniq) == 0 {
 		return out
 	}
-	var users []models.User
-	if err := s.db.Select("user_id", "name", "username").Where("user_id IN ?", uniq).Find(&users).Error; err != nil {
+
+	// 新结构：优先从 dietitian 表读取（account_id -> 展示名）
+	var dietitians []models.Dietitian
+	if err := s.db.Select("account_id", "name", "username").Where("account_id IN ?", uniq).Find(&dietitians).Error; err == nil {
+		for _, d := range dietitians {
+			n := strings.TrimSpace(d.Name)
+			if n == "" {
+				n = strings.TrimSpace(d.Username)
+			}
+			if n != "" {
+				out[d.AccountID] = n
+			}
+		}
+	}
+
+	// 兼容旧数据：未命中的 ID 再回退到 user(role_type=dietitian)
+	var missed []string
+	for _, id := range uniq {
+		if _, ok := out[id]; !ok {
+			missed = append(missed, id)
+		}
+	}
+	if len(missed) == 0 {
 		return out
 	}
-	for _, u := range users {
-		n := strings.TrimSpace(u.Name)
-		if n == "" {
-			n = strings.TrimSpace(u.Username)
+
+	if legacyFallbackEnabled() {
+		var users []models.User
+		if err := s.db.Select("user_id", "name", "username").Where("user_id IN ? AND role_type = ?", missed, "dietitian").Find(&users).Error; err != nil {
+			return out
 		}
-		out[u.UserID] = n
+		for _, u := range users {
+			n := strings.TrimSpace(u.Name)
+			if n == "" {
+				n = strings.TrimSpace(u.Username)
+			}
+			if n != "" {
+				out[u.UserID] = n
+			}
+		}
 	}
 	return out
 }
 
 // CreateServiceRequest 创建服务请求
 func (s *ServiceRequestService) CreateServiceRequest(userID string, req schemas.CreateServiceRequestRequest) (*models.ServiceRequest, error) {
+	if !s.dietitianExists(req.DietitianID) {
+		return nil, fmt.Errorf("规划师不存在或未启用")
+	}
+
 	// 生成请求ID
 	requestID := fmt.Sprintf("SR%d%s", time.Now().Unix(), userID[len(userID)-4:])
 
@@ -247,9 +332,13 @@ func (s *ServiceRequestService) GetDietitianServiceUsers(dietitianID string) ([]
 
 		// 查询本规划师是否已为该用户创建过膳食计划（同用户多规划师时须按 dietitian_id 区分）
 		var hasPlan bool
+		planAuditStatus := ""
 		var dietPlan models.DietPlan
-		dietPlanErr := s.db.Where("user_id = ? AND dietitian_id = ?", userID, dietitianID).First(&dietPlan).Error
+		dietPlanErr := s.db.Where("user_id = ? AND dietitian_id = ?", userID, dietitianID).Order("updated_at DESC").First(&dietPlan).Error
 		hasPlan = dietPlanErr == nil
+		if hasPlan {
+			planAuditStatus = derivePlanAuditStatus(dietPlan)
+		}
 
 		evalSvc := NewNutritionEvaluationService()
 		hasEvaluation := evalSvc.UserHasEvaluationFromDietitian(dietitianID, userID)
@@ -269,6 +358,7 @@ func (s *ServiceRequestService) GetDietitianServiceUsers(dietitianID string) ([]
 			HasProfile:      hasProfile,
 			HasEvaluation:   hasEvaluation,
 			HasPlan:         hasPlan,
+			PlanAuditStatus: planAuditStatus,
 			LastServiceTime: lastServiceTime,
 		}
 

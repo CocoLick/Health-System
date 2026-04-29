@@ -16,6 +16,32 @@ import (
 // AuthService 认证服务
 type AuthService struct{}
 
+type loginAccount struct {
+	UserID    string
+	Username  string
+	Name      string
+	Password  string
+	Phone     string
+	Gender    string
+	Age       int
+	Email     string
+	RoleType  string
+	Title     string
+	Specialty string
+	Contact   string
+	Status    string
+}
+
+func legacyAuthFallbackEnabled() bool {
+	v := strings.ToLower(strings.TrimSpace(config.GetEnv("AUTH_LEGACY_FALLBACK", "true")))
+	switch v {
+	case "0", "false", "off", "no":
+		return false
+	default:
+		return true
+	}
+}
+
 // NewAuthService 创建认证服务实例
 func NewAuthService() *AuthService {
 	return &AuthService{}
@@ -26,6 +52,11 @@ func (s *AuthService) Register(req schemas.RegisterRequest) (*models.User, error
 	// 检查用户名是否已存在
 	var existingUser models.User
 	result := config.DB.Where("username = ?", req.Username).First(&existingUser)
+	if result.RowsAffected > 0 {
+		return nil, errors.New("用户名已存在")
+	}
+	var existingDietitian models.Dietitian
+	result = config.DB.Where("username = ?", req.Username).First(&existingDietitian)
 	if result.RowsAffected > 0 {
 		return nil, errors.New("用户名已存在")
 	}
@@ -58,25 +89,23 @@ func (s *AuthService) Register(req schemas.RegisterRequest) (*models.User, error
 
 // Login 用户登录（统一登录接口）
 func (s *AuthService) Login(req schemas.LoginRequest) (*schemas.LoginResponse, error) {
-	// 在用户表中查找
-	var user models.User
-	result := config.DB.Where("username = ?", req.Username).First(&user)
-	if result.RowsAffected == 0 {
+	account, err := s.getLoginAccountByUsername(req.Username)
+	if err != nil {
 		return nil, errors.New("用户名或密码错误")
 	}
 
 	// 检查密码
-	if !user.CheckPassword(req.Password) {
+	if !checkPassword(req.Password, account.Password) {
 		return nil, errors.New("用户名或密码错误")
 	}
 
 	// 检查用户状态（管理员不检查）
-	if user.RoleType != "admin" && user.Status == "禁用" {
+	if account.RoleType != "admin" && account.Status == "禁用" {
 		return nil, errors.New("账号已被禁用，请联系管理员")
 	}
 
 	// 生成JWT令牌
-	token, err := utils.GenerateToken(user.UserID, user.Username, user.RoleType)
+	token, err := utils.GenerateToken(account.UserID, account.Username, account.RoleType)
 	if err != nil {
 		return nil, err
 	}
@@ -85,18 +114,18 @@ func (s *AuthService) Login(req schemas.LoginRequest) (*schemas.LoginResponse, e
 	response := &schemas.LoginResponse{
 		Token: token,
 		UserInfo: map[string]interface{}{
-			"user_id":   user.UserID,
-			"username":  user.Username,
-			"name":      user.Name,
-			"phone":     user.Phone,
-			"gender":    user.Gender,
-			"age":       user.Age,
-			"email":     user.Email,
-			"role_type": user.RoleType,
-			"title":     user.Title,
-			"specialty": user.Specialty,
-			"contact":   user.Contact,
-			"status":    user.Status,
+			"user_id":   account.UserID,
+			"username":  account.Username,
+			"name":      account.Name,
+			"phone":     account.Phone,
+			"gender":    account.Gender,
+			"age":       account.Age,
+			"email":     account.Email,
+			"role_type": account.RoleType,
+			"title":     account.Title,
+			"specialty": account.Specialty,
+			"contact":   account.Contact,
+			"status":    account.Status,
 		},
 	}
 
@@ -105,20 +134,44 @@ func (s *AuthService) Login(req schemas.LoginRequest) (*schemas.LoginResponse, e
 
 // DietitianLogin 规划师登录（保留，兼容旧版）
 func (s *AuthService) DietitianLogin(req schemas.DietitianLoginRequest) (*schemas.LoginResponse, error) {
-	// 查找规划师（现在存储在用户表中），并且状态必须是启用
-	var user models.User
-	result := config.DB.Where("username = ? AND role_type = ? AND status = ?", req.DietitianID, "dietitian", "启用").First(&user)
-	if result.RowsAffected == 0 {
-		return nil, errors.New("规划师ID或密码错误")
+	var dietitian models.Dietitian
+	result := config.DB.Where("username = ? AND role_type = ? AND status = ?", req.DietitianID, "dietitian", "启用").First(&dietitian)
+	if result.RowsAffected == 0 && legacyAuthFallbackEnabled() {
+		// 兼容旧结构：未迁移时回退 user 表
+		var legacy models.User
+		result = config.DB.Where("username = ? AND role_type = ? AND status = ?", req.DietitianID, "dietitian", "启用").First(&legacy)
+		if result.RowsAffected == 0 {
+			return nil, errors.New("规划师ID或密码错误")
+		}
+		if !legacy.CheckPassword(req.Password) {
+			return nil, errors.New("规划师ID或密码错误")
+		}
+		token, err := utils.GenerateToken(legacy.UserID, legacy.Username, legacy.RoleType)
+		if err != nil {
+			return nil, err
+		}
+		return &schemas.LoginResponse{
+			Token: token,
+			UserInfo: map[string]interface{}{
+				"user_id":   legacy.UserID,
+				"username":  legacy.Username,
+				"name":      legacy.Name,
+				"title":     legacy.Title,
+				"specialty": legacy.Specialty,
+				"contact":   legacy.Contact,
+				"status":    legacy.Status,
+				"role_type": legacy.RoleType,
+			},
+		}, nil
 	}
 
 	// 检查密码
-	if !user.CheckPassword(req.Password) {
+	if !dietitian.CheckPassword(req.Password) {
 		return nil, errors.New("规划师ID或密码错误")
 	}
 
 	// 生成JWT令牌
-	token, err := utils.GenerateToken(user.UserID, user.Username, user.RoleType)
+	token, err := utils.GenerateToken(dietitian.AccountID, dietitian.Username, dietitian.RoleType)
 	if err != nil {
 		return nil, err
 	}
@@ -127,14 +180,14 @@ func (s *AuthService) DietitianLogin(req schemas.DietitianLoginRequest) (*schema
 	response := &schemas.LoginResponse{
 		Token: token,
 		UserInfo: map[string]interface{}{
-			"user_id":   user.UserID,
-			"username":  user.Username,
-			"name":      user.Name,
-			"title":     user.Title,
-			"specialty": user.Specialty,
-			"contact":   user.Contact,
-			"status":    user.Status,
-			"role_type": user.RoleType,
+			"user_id":   dietitian.AccountID,
+			"username":  dietitian.Username,
+			"name":      dietitian.Name,
+			"title":     dietitian.Title,
+			"specialty": dietitian.Specialty,
+			"contact":   dietitian.Contact,
+			"status":    dietitian.Status,
+			"role_type": dietitian.RoleType,
 		},
 	}
 
@@ -143,20 +196,44 @@ func (s *AuthService) DietitianLogin(req schemas.DietitianLoginRequest) (*schema
 
 // AdminLogin 管理员登录
 func (s *AuthService) AdminLogin(req schemas.AdminLoginRequest) (*schemas.LoginResponse, error) {
-	// 查找管理员（这里假设管理员也是用户表中的用户，role_type为admin）
-	var user models.User
-	result := config.DB.Where("username = ? AND role_type = ?", req.Username, "admin").First(&user)
-	if result.RowsAffected == 0 {
-		return nil, errors.New("管理员用户名或密码错误")
+	var admin models.Dietitian
+	result := config.DB.Where("username = ? AND role_type = ?", req.Username, "admin").First(&admin)
+	if result.RowsAffected == 0 && legacyAuthFallbackEnabled() {
+		// 兼容旧结构：未迁移时回退 user 表
+		var legacy models.User
+		result = config.DB.Where("username = ? AND role_type = ?", req.Username, "admin").First(&legacy)
+		if result.RowsAffected == 0 {
+			return nil, errors.New("管理员用户名或密码错误")
+		}
+		if !legacy.CheckPassword(req.Password) {
+			return nil, errors.New("管理员用户名或密码错误")
+		}
+		token, err := utils.GenerateToken(legacy.UserID, legacy.Username, legacy.RoleType)
+		if err != nil {
+			return nil, err
+		}
+		return &schemas.LoginResponse{
+			Token: token,
+			UserInfo: map[string]interface{}{
+				"user_id":   legacy.UserID,
+				"username":  legacy.Username,
+				"name":      legacy.Name,
+				"phone":     legacy.Phone,
+				"gender":    legacy.Gender,
+				"age":       legacy.Age,
+				"email":     legacy.Email,
+				"role_type": legacy.RoleType,
+			},
+		}, nil
 	}
 
 	// 检查密码
-	if !user.CheckPassword(req.Password) {
+	if !admin.CheckPassword(req.Password) {
 		return nil, errors.New("管理员用户名或密码错误")
 	}
 
 	// 生成JWT令牌
-	token, err := utils.GenerateToken(user.UserID, user.Username, user.RoleType)
+	token, err := utils.GenerateToken(admin.AccountID, admin.Username, admin.RoleType)
 	if err != nil {
 		return nil, err
 	}
@@ -165,14 +242,12 @@ func (s *AuthService) AdminLogin(req schemas.AdminLoginRequest) (*schemas.LoginR
 	response := &schemas.LoginResponse{
 		Token: token,
 		UserInfo: map[string]interface{}{
-			"user_id":   user.UserID,
-			"username":  user.Username,
-			"name":      user.Name,
-			"phone":     user.Phone,
-			"gender":    user.Gender,
-			"age":       user.Age,
-			"email":     user.Email,
-			"role_type": user.RoleType,
+			"user_id":   admin.AccountID,
+			"username":  admin.Username,
+			"name":      admin.Name,
+			"contact":   admin.Contact,
+			"status":    admin.Status,
+			"role_type": admin.RoleType,
 		},
 	}
 
@@ -187,20 +262,21 @@ func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*mode
 	if result.RowsAffected > 0 {
 		return nil, errors.New("用户名已存在")
 	}
+	var existingDietitian models.Dietitian
+	result = config.DB.Where("username = ?", req.Username).First(&existingDietitian)
+	if result.RowsAffected > 0 {
+		return nil, errors.New("用户名已存在")
+	}
 
-	// 生成用户ID（查询最大后缀，确保唯一）
-	userID := s.generateDietitianID()
+	// 生成账号ID（查询最大后缀，确保唯一）
+	accountID := s.generateDietitianID()
 
-	// 创建规划师（作为用户）
-	user := &models.User{
-		UserID:    userID,
+	// 创建规划师（写入 dietitian 表）
+	dietitian := &models.Dietitian{
+		AccountID: accountID,
 		Username:  req.Username,
 		Name:      req.Name,
 		Password:  req.Password,
-		Phone:     req.Contact,
-		Gender:    "",
-		Age:       0,
-		Email:     "",
 		RoleType:  "dietitian",
 		Title:     req.Title,
 		Specialty: req.Specialty,
@@ -210,12 +286,25 @@ func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*mode
 		UpdatedAt: time.Now(),
 	}
 
-	// 保存用户
-	if err := config.DB.Create(user).Error; err != nil {
+	// 保存账号
+	if err := config.DB.Create(dietitian).Error; err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	// 兼容现有前端字段结构
+	return &models.User{
+		UserID:    dietitian.AccountID,
+		Username:  dietitian.Username,
+		Name:      dietitian.Name,
+		Phone:     dietitian.Contact,
+		RoleType:  dietitian.RoleType,
+		Title:     dietitian.Title,
+		Specialty: dietitian.Specialty,
+		Contact:   dietitian.Contact,
+		Status:    dietitian.Status,
+		CreatedAt: dietitian.CreatedAt,
+		UpdatedAt: dietitian.UpdatedAt,
+	}, nil
 }
 
 // generateUserID 普通用户 U + yyyymmdd + 3 位序号，与当日已有 user_id 不重复
@@ -228,6 +317,15 @@ func (s *AuthService) generateUserID() string {
 		Where("user_id LIKE ?", prefix+"%").
 		Select("user_id").
 		Find(&userIDs)
+
+	// 兼容角色拆表：历史迁移后 dietitian.account_id 里可能仍存在 U 前缀 ID。
+	// 这里合并两张表，避免普通用户新注册撞号。
+	var accountIDs []string
+	config.DB.Model(&models.Dietitian{}).
+		Where("account_id LIKE ?", prefix+"%").
+		Select("account_id").
+		Find(&accountIDs)
+	userIDs = append(userIDs, accountIDs...)
 
 	maxSuffix := 0
 	for _, id := range userIDs {
@@ -245,16 +343,16 @@ func (s *AuthService) generateDietitianID() string {
 	today := time.Now().Format("20060102")
 	prefix := "D" + today
 
-	// 查询当天所有规划师的user_id
-	var userIDs []string
-	config.DB.Model(&models.User{}).
-		Where("user_id LIKE ?", prefix+"%").
-		Select("user_id").
-		Find(&userIDs)
+	// 查询当天所有规划师的 account_id
+	var accountIDs []string
+	config.DB.Model(&models.Dietitian{}).
+		Where("account_id LIKE ? AND role_type = ?", prefix+"%", "dietitian").
+		Select("account_id").
+		Find(&accountIDs)
 
 	// 找出最大后缀
 	maxSuffix := 0
-	for _, id := range userIDs {
+	for _, id := range accountIDs {
 		// 去掉前缀，转换为数字
 		suffixStr := strings.TrimPrefix(id, prefix)
 		suffix, err := strconv.Atoi(suffixStr)
@@ -270,10 +368,39 @@ func (s *AuthService) generateDietitianID() string {
 
 // GetAllDietitians 获取所有规划师
 func (s *AuthService) GetAllDietitians() ([]models.User, error) {
-	var dietitians []models.User
-	result := config.DB.Where("role_type = ?", "dietitian").Find(&dietitians)
-	if result.Error != nil {
-		return nil, result.Error
+	var rows []models.Dietitian
+	if err := config.DB.Where("role_type = ?", "dietitian").Order("created_at DESC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	dietitians := make([]models.User, 0, len(rows))
+	seen := make(map[string]bool)
+	for _, d := range rows {
+		seen[d.AccountID] = true
+		dietitians = append(dietitians, models.User{
+			UserID:    d.AccountID,
+			Username:  d.Username,
+			Name:      d.Name,
+			Phone:     d.Contact,
+			RoleType:  d.RoleType,
+			Title:     d.Title,
+			Specialty: d.Specialty,
+			Contact:   d.Contact,
+			Status:    d.Status,
+			CreatedAt: d.CreatedAt,
+			UpdatedAt: d.UpdatedAt,
+		})
+	}
+
+	// 兼容旧结构：补齐仍在 user 表中的规划师
+	var legacyRows []models.User
+	if legacyAuthFallbackEnabled() && config.DB.Where("role_type = ?", "dietitian").Order("created_at DESC").Find(&legacyRows).Error == nil {
+		for _, u := range legacyRows {
+			if seen[u.UserID] {
+				continue
+			}
+			seen[u.UserID] = true
+			dietitians = append(dietitians, u)
+		}
 	}
 	return dietitians, nil
 }
@@ -305,24 +432,38 @@ func (s *AuthService) UpdateUserStatusByAdmin(userID, status string) error {
 
 // UpdateDietitianStatus 更新规划师状态
 func (s *AuthService) UpdateDietitianStatus(userID string, status string) error {
-	result := config.DB.Model(&models.User{}).Where("user_id = ? AND role_type = ?", userID, "dietitian").Update("status", status)
+	result := config.DB.Model(&models.Dietitian{}).Where("account_id = ? AND role_type = ?", userID, "dietitian").Update("status", status)
 	if result.Error != nil {
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return errors.New("规划师不存在")
+	if result.RowsAffected == 0 && legacyAuthFallbackEnabled() {
+		// 兼容旧结构：回退更新 user 表
+		legacy := config.DB.Model(&models.User{}).Where("user_id = ? AND role_type = ?", userID, "dietitian").Update("status", status)
+		if legacy.Error != nil {
+			return legacy.Error
+		}
+		if legacy.RowsAffected == 0 {
+			return errors.New("规划师不存在")
+		}
 	}
 	return nil
 }
 
 // DeleteDietitian 删除规划师
 func (s *AuthService) DeleteDietitian(userID string) error {
-	result := config.DB.Where("user_id = ? AND role_type = ?", userID, "dietitian").Delete(&models.User{})
+	result := config.DB.Where("account_id = ? AND role_type = ?", userID, "dietitian").Delete(&models.Dietitian{})
 	if result.Error != nil {
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return errors.New("规划师不存在")
+	if result.RowsAffected == 0 && legacyAuthFallbackEnabled() {
+		// 兼容旧结构：回退删除 user 表
+		legacy := config.DB.Where("user_id = ? AND role_type = ?", userID, "dietitian").Delete(&models.User{})
+		if legacy.Error != nil {
+			return legacy.Error
+		}
+		if legacy.RowsAffected == 0 {
+			return errors.New("规划师不存在")
+		}
 	}
 	return nil
 }
@@ -331,8 +472,76 @@ func (s *AuthService) DeleteDietitian(userID string) error {
 func (s *AuthService) GetUserByID(userID string) (*models.User, error) {
 	var user models.User
 	result := config.DB.Where("user_id = ?", userID).First(&user)
-	if result.Error != nil {
+	if result.Error == nil {
+		return &user, nil
+	}
+
+	// 兼容角色拆表：若 user 表没有，再到 dietitian 表查并映射旧结构返回
+	var d models.Dietitian
+	if !legacyAuthFallbackEnabled() {
 		return nil, result.Error
 	}
-	return &user, nil
+	if err := config.DB.Where("account_id = ?", userID).First(&d).Error; err != nil {
+		return nil, result.Error
+	}
+	return &models.User{
+		UserID:    d.AccountID,
+		Username:  d.Username,
+		Name:      d.Name,
+		Phone:     d.Contact,
+		RoleType:  d.RoleType,
+		Title:     d.Title,
+		Specialty: d.Specialty,
+		Contact:   d.Contact,
+		Status:    d.Status,
+		CreatedAt: d.CreatedAt,
+		UpdatedAt: d.UpdatedAt,
+	}, nil
+}
+
+func (s *AuthService) getLoginAccountByUsername(username string) (*loginAccount, error) {
+	name := strings.TrimSpace(username)
+	if name == "" {
+		return nil, errors.New("用户名不能为空")
+	}
+
+	var user models.User
+	if err := config.DB.Where("username = ?", name).First(&user).Error; err == nil {
+		return &loginAccount{
+			UserID:    user.UserID,
+			Username:  user.Username,
+			Name:      user.Name,
+			Password:  user.Password,
+			Phone:     user.Phone,
+			Gender:    user.Gender,
+			Age:       user.Age,
+			Email:     user.Email,
+			RoleType:  user.RoleType,
+			Title:     user.Title,
+			Specialty: user.Specialty,
+			Contact:   user.Contact,
+			Status:    user.Status,
+		}, nil
+	}
+
+	var dietitian models.Dietitian
+	if err := config.DB.Where("username = ?", name).First(&dietitian).Error; err == nil {
+		return &loginAccount{
+			UserID:    dietitian.AccountID,
+			Username:  dietitian.Username,
+			Name:      dietitian.Name,
+			Password:  dietitian.Password,
+			RoleType:  dietitian.RoleType,
+			Title:     dietitian.Title,
+			Specialty: dietitian.Specialty,
+			Contact:   dietitian.Contact,
+			Status:    dietitian.Status,
+		}, nil
+	}
+
+	return nil, errors.New("账号不存在")
+}
+
+func checkPassword(raw, hash string) bool {
+	return (&models.User{Password: hash}).CheckPassword(raw)
 }

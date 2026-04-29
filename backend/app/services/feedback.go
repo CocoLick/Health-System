@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	ErrFeedbackNotFound    = errors.New("反馈不存在")
-	ErrFeedbackForbidden   = errors.New("无权操作该反馈")
-	ErrFeedbackValidation  = errors.New("参数错误")
+	ErrFeedbackNotFound   = errors.New("反馈不存在")
+	ErrFeedbackForbidden  = errors.New("无权操作该反馈")
+	ErrFeedbackValidation = errors.New("参数错误")
 )
 
 type FeedbackService struct {
@@ -26,6 +26,99 @@ type FeedbackService struct {
 
 func NewFeedbackService() *FeedbackService {
 	return &FeedbackService{db: config.DB}
+}
+
+func (s *FeedbackService) userNamesByIDs(ids []string) map[string]string {
+	out := make(map[string]string)
+	if len(ids) == 0 {
+		return out
+	}
+	seen := make(map[string]bool)
+	uniq := make([]string, 0, len(ids))
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		uniq = append(uniq, id)
+	}
+	if len(uniq) == 0 {
+		return out
+	}
+	var users []models.User
+	if err := s.db.Select("user_id", "username", "name").Where("user_id IN ?", uniq).Find(&users).Error; err != nil {
+		return out
+	}
+	for _, u := range users {
+		n := strings.TrimSpace(u.Name)
+		if n == "" {
+			n = strings.TrimSpace(u.Username)
+		}
+		if n != "" {
+			out[u.UserID] = n
+		}
+	}
+	return out
+}
+
+func (s *FeedbackService) accountNamesByIDs(ids []string) map[string]string {
+	out := make(map[string]string)
+	if len(ids) == 0 {
+		return out
+	}
+	seen := make(map[string]bool)
+	uniq := make([]string, 0, len(ids))
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		uniq = append(uniq, id)
+	}
+	if len(uniq) == 0 {
+		return out
+	}
+
+	// 先查普通用户
+	var users []models.User
+	if err := s.db.Select("user_id", "username", "name").Where("user_id IN ?", uniq).Find(&users).Error; err == nil {
+		for _, u := range users {
+			n := strings.TrimSpace(u.Name)
+			if n == "" {
+				n = strings.TrimSpace(u.Username)
+			}
+			if n != "" {
+				out[u.UserID] = n
+			}
+		}
+	}
+
+	// 再查 dietitian/admin 账号
+	var missed []string
+	for _, id := range uniq {
+		if _, ok := out[id]; !ok {
+			missed = append(missed, id)
+		}
+	}
+	if len(missed) == 0 {
+		return out
+	}
+	var staffs []models.Dietitian
+	if err := s.db.Select("account_id", "username", "name").Where("account_id IN ?", missed).Find(&staffs).Error; err != nil {
+		return out
+	}
+	for _, st := range staffs {
+		n := strings.TrimSpace(st.Name)
+		if n == "" {
+			n = strings.TrimSpace(st.Username)
+		}
+		if n != "" {
+			out[st.AccountID] = n
+		}
+	}
+	return out
 }
 
 func newFeedbackID() string {
@@ -113,15 +206,15 @@ func (s *FeedbackService) CreateUserFeedback(userID string, req schemas.Feedback
 	}
 
 	row := &models.UserFeedback{
-		FeedbackID:        newFeedbackID(),
-		UserID:            userID,
-		Category:          cat,
-		Title:             title,
-		Content:           content,
-		Rating:            req.Rating,
-		Status:            "pending",
-		CreatedAt:         time.Now(),
-		UpdatedAt:         time.Now(),
+		FeedbackID: newFeedbackID(),
+		UserID:     userID,
+		Category:   cat,
+		Title:      title,
+		Content:    content,
+		Rating:     req.Rating,
+		Status:     "pending",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	switch cat {
@@ -213,7 +306,7 @@ func (s *FeedbackService) ListForDietitian(dietitianID string, q schemas.Feedbac
 			userIDs = append(userIDs, r.UserID)
 		}
 	}
-	names := NewServiceRequestService().DietitianNamesByIDs(userIDs)
+	names := s.userNamesByIDs(userIDs)
 
 	// 规划师列表内容预览优先展示「用户最新一条追问」，
 	// 若暂无用户追问（仅初始提单），则回退为反馈主内容摘要。
@@ -274,12 +367,7 @@ func (s *FeedbackService) CountPendingForDietitian(dietitianID string) (int64, e
 
 // buildFeedbackDetail 构造详情（含回复与展示名）
 func (s *FeedbackService) buildFeedbackDetail(fb *models.UserFeedback) (*schemas.FeedbackDetailResponse, error) {
-	var u models.User
-	_ = s.db.Select("user_id", "username", "name").Where("user_id = ?", fb.UserID).First(&u).Error
-	un := strings.TrimSpace(u.Name)
-	if un == "" {
-		un = strings.TrimSpace(u.Username)
-	}
+	un := strings.TrimSpace(s.userNamesByIDs([]string{fb.UserID})[fb.UserID])
 	if un == "" {
 		un = fb.UserID
 	}
@@ -301,20 +389,11 @@ func (s *FeedbackService) buildFeedbackDetail(fb *models.UserFeedback) (*schemas
 	for _, rp := range replies {
 		replySenderIDs = append(replySenderIDs, rp.SenderUserID)
 	}
-	senderNames := NewServiceRequestService().DietitianNamesByIDs(replySenderIDs)
+	senderNames := s.accountNamesByIDs(replySenderIDs)
 
 	repOut := make([]schemas.FeedbackReplyItem, 0, len(replies))
 	for _, rp := range replies {
 		nm := strings.TrimSpace(senderNames[rp.SenderUserID])
-		if nm == "" {
-			var su models.User
-			if err := s.db.Select("username", "name").Where("user_id = ?", rp.SenderUserID).First(&su).Error; err == nil {
-				nm = strings.TrimSpace(su.Name)
-				if nm == "" {
-					nm = strings.TrimSpace(su.Username)
-				}
-			}
-		}
 		if nm == "" {
 			nm = rp.SenderUserID
 		}
@@ -433,18 +512,18 @@ func (s *FeedbackService) ListForUser(userID string) ([]schemas.FeedbackUserList
 			targetDid = strings.TrimSpace(planDietitianByPlanID[strings.TrimSpace(r.RelatedPlanID)])
 		}
 		item := schemas.FeedbackUserListItem{
-			FeedbackID:         r.FeedbackID,
-			Category:           r.Category,
-			CategoryLabel:      categoryLabel(r.Category),
-			Title:              r.Title,
-			ContentPreview:     previewContent(r.Content, 80),
-			Status:             r.Status,
-			StatusLabel:        statusLabel(r.Status),
-			RelatedPlanID:      r.RelatedPlanID,
-			TargetDietitianID:  targetDid,
-			RepliesCount:       countBy[r.FeedbackID],
-			CreatedAt:          r.CreatedAt,
-			UpdatedAt:          r.UpdatedAt,
+			FeedbackID:        r.FeedbackID,
+			Category:          r.Category,
+			CategoryLabel:     categoryLabel(r.Category),
+			Title:             r.Title,
+			ContentPreview:    previewContent(r.Content, 80),
+			Status:            r.Status,
+			StatusLabel:       statusLabel(r.Status),
+			RelatedPlanID:     r.RelatedPlanID,
+			TargetDietitianID: targetDid,
+			RepliesCount:      countBy[r.FeedbackID],
+			CreatedAt:         r.CreatedAt,
+			UpdatedAt:         r.UpdatedAt,
 		}
 		if lr, ok := lastDietitian[r.FeedbackID]; ok {
 			item.LastReplyPreview = previewContent(lr.Body, 120)

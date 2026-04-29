@@ -84,6 +84,7 @@ func autoMigrate() error {
 	// 自动迁移
 	return DB.AutoMigrate(
 		&models.User{},
+		&models.Dietitian{},
 		&models.HealthData{},
 		&models.HealthDataHistory{},
 		&models.Ingredient{},
@@ -106,23 +107,22 @@ func autoMigrate() error {
 // initTestData 初始化测试数据
 func initTestData() error {
 	// 检查是否已有数据
-	var count int64
-	DB.Model(&models.User{}).Count(&count)
-	if count > 0 {
+	var userCount int64
+	var dietitianCount int64
+	DB.Model(&models.User{}).Count(&userCount)
+	DB.Model(&models.Dietitian{}).Count(&dietitianCount)
+	if userCount > 0 || dietitianCount > 0 {
 		// 已有数据，跳过初始化
 		return nil
 	}
 
-	// 插入管理员用户
-	adminUser := models.User{
-		UserID:    "U20260325001",
+	// 插入管理员账号
+	adminUser := models.Dietitian{
+		AccountID: "A20260325001",
 		Username:  "admin",
 		Password:  "password",
-		Phone:     "13800138000",
-		Gender:    "男",
-		Age:       30,
-		Email:     "admin@example.com",
 		RoleType:  "admin",
+		Status:    "启用",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -148,15 +148,11 @@ func initTestData() error {
 	}
 
 	// 插入测试规划师
-	dietitianUser := models.User{
-		UserID:    "D20260325001",
+	dietitianUser := models.Dietitian{
+		AccountID: "D20260325001",
 		Username:  "D20260325001",
 		Name:      "张医生",
 		Password:  "password",
-		Phone:     "13800138002",
-		Gender:    "",
-		Age:       0,
-		Email:     "",
 		RoleType:  "dietitian",
 		Title:     "营养师",
 		Specialty: "临床营养",

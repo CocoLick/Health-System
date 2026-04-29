@@ -584,26 +584,13 @@ Page({
           this.setData({ formError: res.message || '添加失败' });
         }
       })
-      .catch(() => {
-        const newDietitian = {
-          dietitian_id: 'D' + Date.now(),
-          username: username,
-          name: name,
-          displayName: name,
-          nameInitial: name.charAt(0),
-          title: title,
-          specialty: specialty,
-          contact: contact,
-          status: status
-        };
-        this.setData({
-          dietitians: [...this.data.dietitians, newDietitian]
-        });
+      .catch((err) => {
+        const msg = (err && err.data && err.data.message) || '添加失败，请稍后重试';
+        this.setData({ formError: msg });
         wx.showToast({
-          title: '添加成功（模拟）',
-          icon: 'success'
+          title: msg,
+          icon: 'none'
         });
-        this.hideAddDietitianForm();
       });
   },
 
@@ -659,15 +646,11 @@ Page({
                 });
               }
             })
-            .catch(() => {
-              dietitians.splice(index, 1);
-              this.setData({
-                dietitians: dietitians,
-                'stats.dietitianCount': dietitians.length
-              });
+            .catch((err) => {
+              const msg = (err && err.data && err.data.message) || '删除失败';
               wx.showToast({
-                title: '已删除（模拟）',
-                icon: 'success'
+                title: msg,
+                icon: 'none'
               });
             });
         }

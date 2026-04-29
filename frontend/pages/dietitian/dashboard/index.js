@@ -86,10 +86,13 @@ Page({
             hasProfile: user.has_profile,
             hasEvaluation: user.has_evaluation,
             hasPlan: user.has_plan,
+            planAuditStatus: user.plan_audit_status || '',
+            planStatusText: this.getPlanStatusText(user.has_plan, user.plan_audit_status),
+            planStatusClass: this.getPlanStatusClass(user.has_plan, user.plan_audit_status),
             lastServiceTime: user.last_service_time
           }));
           // 待制定计划 = 已建立服务关系但本规划师尚未创建膳食计划的用户数（与「计划 待生成」列一致）
-          const pendingPlans = processedUsers.filter((u) => !u.hasPlan).length;
+          const pendingPlans = processedUsers.filter((u) => !u.hasPlan || u.planAuditStatus === 'rejected').length;
           this.setData({
             users: processedUsers,
             'stats.serviceUsers': users.length,
@@ -328,6 +331,22 @@ Page({
       'pregnancy': '孕期营养'
     };
     return goalMap[goal] || goal;
+  },
+
+  getPlanStatusText(hasPlan, auditStatus) {
+    const s = String(auditStatus || '').trim().toLowerCase();
+    if (!hasPlan) return '计划 待生成';
+    if (s === 'rejected' || s === '已驳回') return '计划 已驳回';
+    if (s === 'pending_review' || s === '待审核') return '计划 待审核';
+    if (s === 'approved' || s === '已通过' || s === '已发布') return '计划 已发布';
+    return '计划 已生成';
+  },
+
+  getPlanStatusClass(hasPlan, auditStatus) {
+    const s = String(auditStatus || '').trim().toLowerCase();
+    if (!hasPlan) return 'status-warning';
+    if (s === 'approved' || s === '已通过' || s === '已发布') return 'status-ok';
+    return 'status-warning';
   },
 
   // 格式化日期
