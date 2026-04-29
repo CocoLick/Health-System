@@ -39,6 +39,18 @@ type HealthEducationReaderQuery struct {
 	Visibility string `form:"visibility"` // all | public | assigned
 }
 
+// HealthEducationAdminListQuery 管理员审核列表筛选
+type HealthEducationAdminListQuery struct {
+	Visibility  string `form:"visibility"`   // all | public | assigned
+	AuditStatus string `form:"audit_status"` // pending_review | approved | rejected
+}
+
+// HealthEducationAdminReview 管理员审核
+type HealthEducationAdminReview struct {
+	Action     string `json:"action" binding:"required"` // approve | reject
+	ReviewNote string `json:"review_note"`
+}
+
 // HealthEducationResponse 列表/详情返回
 type HealthEducationResponse struct {
 	HEID            string        `json:"he_id"`
@@ -53,6 +65,7 @@ type HealthEducationResponse struct {
 	TargetUsers     []HEUserBrief `json:"target_users,omitempty"`
 	ContentStatus   string        `json:"content_status"`
 	AuditStatus     string        `json:"audit_status"`
+	ReviewNote      string        `json:"review_note,omitempty"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
 }

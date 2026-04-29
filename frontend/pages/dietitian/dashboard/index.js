@@ -39,7 +39,7 @@ Page({
     heList: [],
     heFilteredList: [],
     heDraftCount: 0,
-    heStatusLabels: ['全部', '草稿', '已发布'],
+    heStatusLabels: ['全部', '草稿', '待审核', '已驳回', '已发布'],
     heStatusIndex: 0,
     heVisLabels: ['全部', '公开', '指派'],
     heVisIndex: 0,
@@ -424,22 +424,53 @@ Page({
       const s = String(raw.updated_at);
       timeText = s.length >= 16 ? s.slice(0, 16).replace('T', ' ') : s;
     }
+    const displayStatus = this.resolveHeDisplayStatus(raw);
     return Object.assign({}, raw, {
       targetNamesText: names.length ? names.join('、') : '',
-      updated_at: timeText
+      updated_at: timeText,
+      display_status_key: displayStatus.key,
+      display_status_text: displayStatus.text,
+      reject_reason: (raw.review_note || '').trim()
     });
+  },
+
+  ensureHeDisplayStatusFields(item) {
+    const row = item || {};
+    const status = this.resolveHeDisplayStatus(row);
+    return Object.assign({}, row, {
+      display_status_key: row.display_status_key || status.key,
+      display_status_text: row.display_status_text || status.text
+    });
+  },
+
+  resolveHeDisplayStatus(raw) {
+    const cs = (raw && raw.content_status) || '';
+    const as = (raw && raw.audit_status) || '';
+    if (cs === 'draft') {
+      return { key: 'draft', text: '草稿' };
+    }
+    if (cs === 'published' && as === 'pending_review') {
+      return { key: 'pending_review', text: '待审核' };
+    }
+    if (cs === 'published' && as === 'rejected') {
+      return { key: 'rejected', text: '已驳回' };
+    }
+    if (cs === 'published' && as === 'approved') {
+      return { key: 'published', text: '已发布' };
+    }
+    return { key: 'draft', text: '草稿' };
   },
 
   loadHealthEducationList() {
     api.healthEducation
       .list({})
       .then((res) => {
-        if (res.code !== 200) {
+        if (res.code !== 200 && res.code !== '200') {
           return;
         }
         const raw = res.data || [];
         const list = raw.map((x) => this.formatHeItem(x));
-        const draftCount = list.filter((x) => x.content_status === 'draft').length;
+        const draftCount = list.filter((x) => x.display_status_key === 'draft').length;
         this.setData({ heList: list, heDraftCount: draftCount });
         this.applyHeFilters();
       })
@@ -448,11 +479,15 @@ Page({
 
   applyHeFilters() {
     const { heList, heStatusIndex, heVisIndex } = this.data;
-    let rows = heList.slice();
+    let rows = heList.map((x) => this.ensureHeDisplayStatusFields(x));
     if (heStatusIndex === 1) {
-      rows = rows.filter((x) => x.content_status === 'draft');
+      rows = rows.filter((x) => x.display_status_key === 'draft');
     } else if (heStatusIndex === 2) {
-      rows = rows.filter((x) => x.content_status === 'published');
+      rows = rows.filter((x) => x.display_status_key === 'pending_review');
+    } else if (heStatusIndex === 3) {
+      rows = rows.filter((x) => x.display_status_key === 'rejected');
+    } else if (heStatusIndex === 4) {
+      rows = rows.filter((x) => x.display_status_key === 'published');
     }
     if (heVisIndex === 1) {
       rows = rows.filter((x) => x.visibility === 'public');

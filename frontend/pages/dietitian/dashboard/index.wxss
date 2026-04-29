@@ -617,6 +617,16 @@
   color: #8d4d27;
 }
 
+.he-badge.status-pending_review {
+  background: rgba(87, 107, 149, 0.16);
+  color: #3d4f74;
+}
+
+.he-badge.status-rejected {
+  background: rgba(180, 35, 24, 0.16);
+  color: #b42318;
+}
+
 .request-status-corner {
   position: absolute;
   top: 16rpx;
@@ -1177,6 +1187,11 @@
 
 .he-item {
   padding: 18rpx 18rpx 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.he-item:last-child {
+  margin-bottom: 0;
 }
 
 .he-item-top {
@@ -1231,6 +1246,28 @@
   padding: 10rpx 12rpx;
   background: rgba(192, 123, 79, 0.08);
   border-radius: 10rpx;
+}
+
+.he-reject-reason {
+  margin-top: 2rpx;
+  margin-bottom: 10rpx;
+  padding: 10rpx 12rpx;
+  background: rgba(180, 35, 24, 0.08);
+  border-radius: 10rpx;
+}
+
+.he-reject-label {
+  display: block;
+  font-size: 22rpx;
+  color: #b42318;
+  margin-bottom: 4rpx;
+}
+
+.he-reject-text {
+  display: block;
+  font-size: 24rpx;
+  color: var(--c-text-2);
+  line-height: 1.45;
 }
 
 .he-targets-label {

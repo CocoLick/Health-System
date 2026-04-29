@@ -239,10 +239,6 @@
     </view>
 
     <view wx:else class="edu-tab-panel">
-      <view class="edu-intro">
-        <text class="edu-intro-title">健康教育</text>
-        <text class="edu-intro-desc">查看公开科普与规划师指派给您的内容</text>
-      </view>
       <view class="edu-toolbar">
         <view class="edu-filter {{heUserFilter === 'all' ? 'on' : ''}}" bindtap="setHeUserFilter" data-v="all">全部</view>
         <view class="edu-filter {{heUserFilter === 'public' ? 'on' : ''}}" bindtap="setHeUserFilter" data-v="public">公开</view>
@@ -344,7 +340,7 @@
           </view>
           <view class="form-item">
             <view class="form-label">血压 (mmHg)</view>
-            <input class="form-input" type="text" placeholder="如：120/80" value="{{formData.bloodPressure}}" bindinput="bindBloodPressureInput" />
+            <input class="form-input" type="text" placeholder="格式120/80（收缩压70-250，舒张压40-150）" value="{{formData.bloodPressure}}" bindinput="bindBloodPressureInput" />
           </view>
           <view class="form-item">
             <view class="form-label">血糖 (mmol/L)</view>

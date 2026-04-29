@@ -307,6 +307,22 @@ const healthEducation = {
   },
   readerDetail: function(id) {
     return get(`/api/health-education/reader/${encodeURIComponent(id)}`);
+  },
+  // 管理员：待审核健康文章
+  adminPendingList: function(params) {
+    return get('/api/health-education/admin/pending', params || {});
+  },
+  // 管理员：健康文章审核列表（按状态）
+  adminList: function(params) {
+    return get('/api/health-education/admin/list', params || {});
+  },
+  // 管理员：健康文章详情
+  adminDetail: function(id) {
+    return get(`/api/health-education/admin/${encodeURIComponent(id)}`);
+  },
+  // 管理员：审核健康文章
+  adminReview: function(id, data) {
+    return post(`/api/health-education/admin/${encodeURIComponent(id)}/review`, data || {});
   }
 };
 

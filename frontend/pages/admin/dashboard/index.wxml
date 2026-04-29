@@ -146,10 +146,15 @@
         </view>
 
         <view wx:if="{{auditSubTab === 'articles'}}">
+          <view class="article-audit-subtabs">
+            <view class="article-audit-subtab {{articleAuditTab === 'pending' ? 'active' : ''}}" bindtap="switchArticleAuditTab" data-tab="pending">待审核</view>
+            <view class="article-audit-subtab {{articleAuditTab === 'approved' ? 'active' : ''}}" bindtap="switchArticleAuditTab" data-tab="approved">已通过</view>
+            <view class="article-audit-subtab {{articleAuditTab === 'rejected' ? 'active' : ''}}" bindtap="switchArticleAuditTab" data-tab="rejected">已驳回</view>
+          </view>
           <view wx:for="{{pendingArticles}}" wx:key="index" class="audit-item">
             <view class="item-header">
               <text class="item-title">{{item.title}}</text>
-              <text class="item-status">待审核</text>
+              <text class="item-status">{{item.statusLabel || '待审核'}}</text>
             </view>
             <view class="item-body">
               <view class="item-info">
@@ -160,13 +165,18 @@
                 <text class="info-label">分类：</text>
                 <text class="info-value">{{item.category}}</text>
               </view>
+              <view class="item-info item-info--singleline">
+                <text class="info-label">提交时间：</text>
+                <text class="info-value info-value--singleline">{{item.submitTime}}</text>
+              </view>
               <view class="article-preview">
                 <text class="preview-text">{{item.preview}}</text>
               </view>
             </view>
             <view class="item-footer">
-              <view class="btn-primary" bindtap="approveArticle" data-index="{{index}}">通过</view>
-              <view class="btn-secondary" bindtap="rejectArticle" data-index="{{index}}">驳回</view>
+              <view wx:if="{{articleAuditTab === 'pending'}}" class="btn-primary" bindtap="approveArticle" data-id="{{item.he_id}}">通过</view>
+              <view wx:if="{{articleAuditTab === 'pending'}}" class="btn-secondary" bindtap="rejectArticle" data-id="{{item.he_id}}">驳回</view>
+              <view class="btn-text" bindtap="viewArticleDetail" data-id="{{item.he_id}}">查看详情</view>
             </view>
           </view>
           <view wx:if="{{pendingArticles.length === 0}}" class="empty-state">
@@ -238,6 +248,50 @@
             <text class="empty-icon">📋</text>
             <text class="empty-text">暂无审核历史</text>
           </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{showArticleDetailModal}}" class="modal-mask" bindtap="hideArticleDetailModal">
+      <view class="modal-content" catchtap="stopPropagation">
+        <view class="modal-header">
+          <text class="modal-title">健康文章详情</text>
+          <view class="modal-close" bindtap="hideArticleDetailModal">×</view>
+        </view>
+        <view class="modal-body" bindscroll="onArticleDetailScroll">
+          <view wx:if="{{!articleDetailScrolled}}" class="article-detail-head">
+            <view class="article-detail-title">{{selectedArticle.title || '—'}}</view>
+            <view class="article-detail-author">
+              <text class="article-detail-author-label">作者：</text>
+              <text class="article-detail-author-value">{{selectedArticle.dietitian || '—'}}</text>
+            </view>
+          </view>
+          <view wx:if="{{!articleDetailScrolled}}" class="article-detail-extra">
+            <view class="article-detail-extra-toggle" bindtap="toggleArticleInfoExpand">
+              <text class="article-detail-extra-title">文章信息</text>
+              <text class="article-detail-extra-arrow">{{articleInfoExpanded ? '收起' : '展开'}}</text>
+            </view>
+            <view wx:if="{{articleInfoExpanded}}" class="article-detail-extra-body">
+              <view class="item-info"><text class="info-label">状态：</text><text class="info-value">{{selectedArticle.statusLabel || '—'}}</text></view>
+              <view class="item-info"><text class="info-label">分类：</text><text class="info-value">{{selectedArticle.category || '—'}}</text></view>
+              <view class="item-info"><text class="info-label">范围：</text><text class="info-value">{{selectedArticle.visibilityLabel || '—'}}</text></view>
+              <view class="item-info"><text class="info-label">时间：</text><text class="info-value">{{selectedArticle.submitTime || '—'}}</text></view>
+              <view class="item-info"><text class="info-label">摘要：</text><text class="info-value">{{selectedArticle.summary || '—'}}</text></view>
+            </view>
+          </view>
+          <view wx:if="{{selectedArticle.review_note && !articleDetailScrolled}}" class="article-detail-review-note">
+            <text class="article-detail-review-note-label">驳回原因</text>
+            <text class="article-detail-review-note-text">{{selectedArticle.review_note}}</text>
+          </view>
+          <view class="article-detail-body-block">
+            <text class="article-detail-body-title">正文内容</text>
+            <view class="article-detail-body-content">
+              <text class="article-detail-body-text">{{selectedArticle.body || '—'}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="modal-footer">
+          <view class="btn-cancel" bindtap="hideArticleDetailModal">关闭</view>
         </view>
       </view>
     </view>

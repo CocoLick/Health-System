@@ -188,13 +188,17 @@
           <view wx:for="{{heFilteredList}}" wx:key="he_id" class="he-item" bindtap="openHealthEducationEdit" data-id="{{item.he_id}}">
             <view class="he-item-top">
               <text class="he-title">{{item.title}}</text>
-              <text class="he-badge status-{{item.content_status}}">{{item.content_status === 'published' ? '已发布' : '草稿'}}</text>
+              <text class="he-badge status-{{item.display_status_key || (item.content_status === 'draft' ? 'draft' : (item.audit_status === 'pending_review' ? 'pending_review' : (item.audit_status === 'rejected' ? 'rejected' : 'published')))}}">{{item.display_status_text || (item.content_status === 'draft' ? '草稿' : (item.audit_status === 'pending_review' ? '待审核' : (item.audit_status === 'rejected' ? '已驳回' : '已发布')))}}</text>
             </view>
             <view class="he-item-subline">
               <text class="he-time">更新于 {{item.updated_at}}</text>
               <text class="he-tag">{{item.visibility === 'assigned' ? '仅指派用户可见' : '公开可见'}}</text>
             </view>
             <text class="he-summary" wx:if="{{item.summary}}">{{item.summary}}</text>
+            <view class="he-reject-reason" wx:if="{{item.display_status_key === 'rejected' || item.audit_status === 'rejected'}}">
+              <text class="he-reject-label">驳回原因</text>
+              <text class="he-reject-text">{{item.reject_reason || item.review_note || '管理员未填写具体驳回原因，请修改后重新提交审核。'}}</text>
+            </view>
             <view class="he-targets" wx:if="{{item.targetNamesText}}">
               <text class="he-targets-label">推送对象</text>
               <text class="he-targets-text">{{item.targetNamesText}}</text>

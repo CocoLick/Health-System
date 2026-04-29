@@ -138,6 +138,7 @@ func (s *HealthEducationService) toResponse(row *models.HealthEducation, withBod
 		TargetUserIDs: ids,
 		ContentStatus: row.ContentStatus,
 		AuditStatus:   row.AuditStatus,
+		ReviewNote:    strings.TrimSpace(row.ReviewNote),
 		CreatedAt:     row.CreatedAt,
 		UpdatedAt:     row.UpdatedAt,
 	}
@@ -278,12 +279,89 @@ func (s *HealthEducationService) Publish(dietitianID, heID string, req schemas.H
 		return nil, fmt.Errorf("%w: 发布前请填写正文", ErrHealthEducationValidation)
 	}
 	row.ContentStatus = "published"
-	row.AuditStatus = "approved"
+	row.AuditStatus = "pending_review"
+	row.ReviewNote = ""
 	row.UpdatedAt = time.Now()
 	if err := s.db.Save(row).Error; err != nil {
 		return nil, err
 	}
 	return row, nil
+}
+
+// ListForAdmin 管理员审核列表
+func (s *HealthEducationService) ListForAdmin(q schemas.HealthEducationAdminListQuery) ([]schemas.HealthEducationResponse, error) {
+	tx := s.db.Model(&models.HealthEducation{}).
+		Where("content_status = ?", "published").
+		Order("updated_at DESC")
+	as := strings.TrimSpace(strings.ToLower(q.AuditStatus))
+	if as != "pending_review" && as != "approved" && as != "rejected" {
+		as = "pending_review"
+	}
+	tx = tx.Where("audit_status = ?", as)
+	v := strings.TrimSpace(strings.ToLower(q.Visibility))
+	if v == "public" || v == "assigned" {
+		tx = tx.Where("visibility = ?", v)
+	}
+	var rows []models.HealthEducation
+	if err := tx.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]schemas.HealthEducationResponse, 0, len(rows))
+	for i := range rows {
+		resp := s.toResponse(&rows[i], false)
+		names := NewServiceRequestService().DietitianNamesByIDs([]string{rows[i].DietitianID})
+		if n := strings.TrimSpace(names[rows[i].DietitianID]); n != "" {
+			resp.DietitianName = n
+		} else {
+			resp.DietitianName = rows[i].DietitianID
+		}
+		out = append(out, resp)
+	}
+	return out, nil
+}
+
+// GetForAdmin 管理员查看健康文章详情
+func (s *HealthEducationService) GetForAdmin(heID string) (schemas.HealthEducationResponse, error) {
+	var row models.HealthEducation
+	if err := s.db.Where("he_id = ?", strings.TrimSpace(heID)).First(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.HealthEducationResponse{}, ErrHealthEducationNotFound
+		}
+		return schemas.HealthEducationResponse{}, err
+	}
+	return s.toResponse(&row, true), nil
+}
+
+// ReviewByAdmin 管理员审核
+func (s *HealthEducationService) ReviewByAdmin(heID, action, reviewNote string) (*models.HealthEducation, error) {
+	var row models.HealthEducation
+	if err := s.db.Where("he_id = ?", strings.TrimSpace(heID)).First(&row).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrHealthEducationNotFound
+		}
+		return nil, err
+	}
+	if row.ContentStatus != "published" {
+		return nil, fmt.Errorf("%w: 仅可审核已发布内容", ErrHealthEducationValidation)
+	}
+	if row.AuditStatus != "pending_review" {
+		return nil, fmt.Errorf("%w: 当前状态不可审核", ErrHealthEducationValidation)
+	}
+	a := strings.TrimSpace(strings.ToLower(action))
+	if a == "approve" {
+		row.AuditStatus = "approved"
+		row.ReviewNote = ""
+	} else if a == "reject" {
+		row.AuditStatus = "rejected"
+		row.ReviewNote = strings.TrimSpace(reviewNote)
+	} else {
+		return nil, fmt.Errorf("%w: action 仅支持 approve/reject", ErrHealthEducationValidation)
+	}
+	row.UpdatedAt = time.Now()
+	if err := s.db.Save(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
 }
 
 // List 规划师自己的列表
@@ -321,7 +399,7 @@ func (s *HealthEducationService) Get(dietitianID, heID string) (schemas.HealthEd
 func (s *HealthEducationService) listPublishedAssignedForUser(userID string) ([]models.HealthEducation, error) {
 	userID = strings.TrimSpace(userID)
 	var assigned []models.HealthEducation
-	if err := s.db.Where("content_status = ? AND visibility = ?", "published", "assigned").Order("updated_at DESC").Find(&assigned).Error; err != nil {
+	if err := s.db.Where("content_status = ? AND audit_status = ? AND visibility = ?", "published", "approved", "assigned").Order("updated_at DESC").Find(&assigned).Error; err != nil {
 		return nil, err
 	}
 	var out []models.HealthEducation
@@ -349,7 +427,7 @@ func (s *HealthEducationService) ListForReader(userID string, q schemas.HealthEd
 
 	var public []models.HealthEducation
 	if vis == "all" || vis == "public" {
-		if err := s.db.Where("content_status = ? AND visibility = ?", "published", "public").Order("updated_at DESC").Find(&public).Error; err != nil {
+		if err := s.db.Where("content_status = ? AND audit_status = ? AND visibility = ?", "published", "approved", "public").Order("updated_at DESC").Find(&public).Error; err != nil {
 			return nil, err
 		}
 	}
@@ -395,6 +473,9 @@ func (s *HealthEducationService) ListForReader(userID string, q schemas.HealthEd
 func (s *HealthEducationService) userCanReadPublished(row *models.HealthEducation, userID string) bool {
 	userID = strings.TrimSpace(userID)
 	if row.ContentStatus != "published" {
+		return false
+	}
+	if row.AuditStatus != "approved" {
 		return false
 	}
 	if row.Visibility == "public" {

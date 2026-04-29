@@ -81,6 +81,48 @@ function safeNumber(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+function cleanText(v) {
+  return String(v == null ? '' : v).trim();
+}
+
+function parseInteger(v) {
+  const text = cleanText(v);
+  if (!text) {
+    return null;
+  }
+  if (!/^-?\d+$/.test(text)) {
+    return null;
+  }
+  const n = Number(text);
+  return Number.isInteger(n) ? n : null;
+}
+
+function parseDecimal(v) {
+  const text = cleanText(v);
+  if (!text) {
+    return null;
+  }
+  const n = Number(text);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseBloodPressure(v) {
+  const text = cleanText(v);
+  if (!text) {
+    return { ok: true, text: '' };
+  }
+  const m = text.match(/^(\d{2,3})\s*\/\s*(\d{2,3})$/);
+  if (!m) {
+    return { ok: false, message: '血压请按120/80填写（各2-3位数字）' };
+  }
+  const systolic = Number(m[1]);
+  const diastolic = Number(m[2]);
+  if (systolic < 70 || systolic > 250 || diastolic < 40 || diastolic > 150 || systolic <= diastolic) {
+    return { ok: false, message: '血压超出合理范围（收缩压70-250，舒张压40-150）' };
+  }
+  return { ok: true, text: `${systolic}/${diastolic}` };
+}
+
 function formatDelta(value, unit) {
   if (value == null || !Number.isFinite(value)) {
     return '--';
@@ -1079,13 +1121,23 @@ Page({
 
   saveBasicInfo() {
     const { gender, age, activityLevel, nutritionGoal } = this.data.formData;
+    const ageNum = parseInteger(age);
+    const genderText = cleanText(gender);
 
-    if (!gender) {
+    if (!genderText) {
       wx.showToast({ title: '请选择性别', icon: 'none' });
       return;
     }
-    if (!age) {
-      wx.showToast({ title: '请输入年龄', icon: 'none' });
+    if (genderText !== '男' && genderText !== '女') {
+      wx.showToast({ title: '性别仅支持男/女', icon: 'none' });
+      return;
+    }
+    if (ageNum == null) {
+      wx.showToast({ title: '年龄需为整数', icon: 'none' });
+      return;
+    }
+    if (ageNum < 1 || ageNum > 120) {
+      wx.showToast({ title: '年龄需在1-120岁', icon: 'none' });
       return;
     }
     if (!activityLevel) {
@@ -1100,8 +1152,8 @@ Page({
     // 构建完整的请求数据，包含所有字段
     const requestData = {
       ...this.data.healthData,
-      gender: backendGender(gender),
-      age: parseInt(age),
+      gender: backendGender(genderText),
+      age: ageNum,
       activity_level: activityLevel,
       nutrition_goal: nutritionGoal
     };
@@ -1142,26 +1194,74 @@ Page({
 
   saveHealthMetrics() {
     const { height, weight, heartRate, bloodPressure, bloodSugar, allergyHistory } = this.data.formData;
+    const heightNum = parseDecimal(height);
+    const weightNum = parseDecimal(weight);
+    const heartRateText = cleanText(heartRate);
+    const bloodSugarText = cleanText(bloodSugar);
+    const allergyText = cleanText(allergyHistory);
+    const heartRateNum = heartRateText ? parseInteger(heartRateText) : null;
+    const bloodSugarNum = bloodSugarText ? parseDecimal(bloodSugarText) : null;
+    const bp = parseBloodPressure(bloodPressure);
+    const baseGender = backendGender(this.data.healthData.gender);
+    const baseAge = parseInteger(this.data.healthData.age);
 
-    if (!height) {
-      wx.showToast({ title: '请输入身高', icon: 'none' });
+    if (heightNum == null) {
+      wx.showToast({ title: '请输入有效身高', icon: 'none' });
       return;
     }
-    if (!weight) {
-      wx.showToast({ title: '请输入体重', icon: 'none' });
+    if (heightNum < 50 || heightNum > 250) {
+      wx.showToast({ title: '身高需在50-250cm', icon: 'none' });
+      return;
+    }
+    if (weightNum == null) {
+      wx.showToast({ title: '请输入有效体重', icon: 'none' });
+      return;
+    }
+    if (weightNum < 20 || weightNum > 300) {
+      wx.showToast({ title: '体重需在20-300kg', icon: 'none' });
+      return;
+    }
+    if (heartRateText && heartRateNum == null) {
+      wx.showToast({ title: '心率需为整数', icon: 'none' });
+      return;
+    }
+    if (heartRateNum != null && (heartRateNum < 30 || heartRateNum > 220)) {
+      wx.showToast({ title: '心率需在30-220次/分', icon: 'none' });
+      return;
+    }
+    if (!bp.ok) {
+      wx.showToast({ title: bp.message, icon: 'none' });
+      return;
+    }
+    if (bloodSugarText && bloodSugarNum == null) {
+      wx.showToast({ title: '血糖需为数字', icon: 'none' });
+      return;
+    }
+    if (bloodSugarNum != null && (bloodSugarNum < 2 || bloodSugarNum > 33.3)) {
+      wx.showToast({ title: '血糖值请填写在2-33.3', icon: 'none' });
+      return;
+    }
+    if (allergyText.length > 200) {
+      wx.showToast({ title: '过敏病史最多200字', icon: 'none' });
+      return;
+    }
+
+    if (!baseGender || baseAge == null || baseAge < 1) {
+      wx.showToast({ title: '请先完善基本信息', icon: 'none' });
       return;
     }
 
     // 构建完整的请求数据，包含所有字段
     const requestData = {
       ...this.data.healthData,
-      gender: backendGender(this.data.healthData.gender),
-      height: parseFloat(height),
-      weight: parseFloat(weight),
-      heart_rate: parseInt(heartRate) || 0,
-      blood_pressure: bloodPressure || '',
-      blood_sugar: parseFloat(bloodSugar) || 0,
-      allergy_history: allergyHistory || ''
+      gender: baseGender,
+      age: baseAge,
+      height: heightNum,
+      weight: weightNum,
+      heart_rate: heartRateNum || 0,
+      blood_pressure: bp.text,
+      blood_sugar: bloodSugarNum || 0,
+      allergy_history: allergyText
     };
 
     // 移除不需要的字段

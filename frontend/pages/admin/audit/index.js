@@ -32,24 +32,11 @@ Page({
         submitTime: '2026-04-18 11:00'
       }
     ],
-    pendingArticles: [
-      {
-        id: 1,
-        title: '科学饮食与健康生活',
-        dietitian: '张医生',
-        category: '饮食健康',
-        submitTime: '2026-04-18 08:45',
-        preview: '本文将介绍科学饮食的重要性，以及如何通过合理的饮食搭配来维持身体健康...'
-      },
-      {
-        id: 2,
-        title: '营养素的重要作用',
-        dietitian: '王医生',
-        category: '营养知识',
-        submitTime: '2026-04-18 09:20',
-        preview: '营养素是人体必需的物质，本文将详细介绍各种营养素的功能和食物来源...'
-      }
-    ],
+    pendingArticles: [],
+    articleLoading: false,
+    articleHint: '',
+    showArticleDetailModal: false,
+    selectedArticle: null,
     auditHistory: [
       {
         id: 1,
@@ -78,10 +65,14 @@ Page({
   onLoad() {
     // 加载待审核数据
     this.loadPendingData();
+    this.loadPendingArticles();
     this.loadIngredientSubmissions();
   },
 
   onShow() {
+    if (this.data.activeTab === 'articles') {
+      this.loadPendingArticles();
+    }
     if (this.data.activeTab === 'ingredients') {
       this.loadIngredientSubmissions();
     }
@@ -100,8 +91,59 @@ Page({
     });
     if (tab === 'ingredients') {
       this.loadIngredientSubmissions();
+      return;
+    }
+    if (tab === 'articles') {
+      this.loadPendingArticles();
     }
   },
+  formatDateTimeText(v) {
+    const s = v ? String(v) : '';
+    if (!s) return '-';
+    return s.length >= 19 ? s.slice(0, 19).replace('T', ' ') : s.replace('T', ' ');
+  },
+
+  formatPendingArticle(item) {
+    const vis = item.visibility === 'assigned' ? 'assigned' : 'public';
+    const status = item.audit_status || 'pending_review';
+    return {
+      ...item,
+      he_id: item.he_id,
+      dietitian: item.dietitian_name || item.dietitian_id || '-',
+      category: item.category || '未分类',
+      submitTime: this.formatDateTimeText(item.updated_at || item.created_at),
+      preview: item.summary || (item.body ? String(item.body).slice(0, 120) : '暂无摘要'),
+      visibilityLabel: vis === 'assigned' ? '指派' : '公开',
+      statusLabel: status === 'pending_review' ? '待审核' : status
+    };
+  },
+
+  loadPendingArticles() {
+    this.setData({ articleLoading: true, articleHint: '' });
+    api.healthEducation
+      .adminPendingList()
+      .then((res) => {
+        if (res.code === 200) {
+          const list = Array.isArray(res.data) ? res.data.map((x) => this.formatPendingArticle(x)) : [];
+          this.setData({ pendingArticles: list });
+          return;
+        }
+        this.setData({
+          pendingArticles: [],
+          articleHint: res.message || '加载待审文章失败'
+        });
+      })
+      .catch(() => {
+        this.setData({
+          pendingArticles: [],
+          articleHint: '网络错误，请稍后重试'
+        });
+      })
+      .finally(() => {
+        this.setData({ articleLoading: false });
+      });
+  },
+
 
   noop() {},
 
@@ -161,46 +203,58 @@ Page({
   },
 
   approveArticle(e) {
-    const index = e.currentTarget.dataset.index;
-    const articles = [...this.data.pendingArticles];
-    const article = articles[index];
-    
-    // 模拟审核通过
-    console.log('通过健康文章:', article.title);
-    
-    // 从待审核列表中移除
-    articles.splice(index, 1);
-    this.setData({
-      pendingArticles: articles
-    });
-    
-    // 显示成功提示
-    wx.showToast({
-      title: '审核通过',
-      icon: 'success'
-    });
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    api.healthEducation
+      .adminReview(id, { action: 'approve' })
+      .then((res) => {
+        if (res.code === 200) {
+          wx.showToast({ title: '审核通过', icon: 'success' });
+          this.loadPendingArticles();
+          return;
+        }
+        wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
   },
 
   rejectArticle(e) {
-    const index = e.currentTarget.dataset.index;
-    const articles = [...this.data.pendingArticles];
-    const article = articles[index];
-    
-    // 模拟审核驳回
-    console.log('驳回健康文章:', article.title);
-    
-    // 从待审核列表中移除
-    articles.splice(index, 1);
-    this.setData({
-      pendingArticles: articles
-    });
-    
-    // 显示成功提示
-    wx.showToast({
-      title: '审核驳回',
-      icon: 'success'
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    wx.showModal({
+      title: '驳回健康文章',
+      editable: true,
+      placeholderText: '请输入驳回原因（可选）',
+      success: (r) => {
+        if (!r.confirm) {
+          return;
+        }
+        api.healthEducation
+          .adminReview(id, {
+            action: 'reject',
+            review_note: (r.content || '').trim()
+          })
+          .then((res) => {
+            if (res.code === 200) {
+              wx.showToast({ title: '已驳回', icon: 'success' });
+              this.loadPendingArticles();
+              return;
+            }
+            wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
     });
   },
+
 
   viewPlanDetail(e) {
     const index = e.currentTarget.dataset.index;
@@ -210,10 +264,33 @@ Page({
   },
 
   viewArticleDetail(e) {
-    const index = e.currentTarget.dataset.index;
-    const article = this.data.pendingArticles[index];
-    console.log('查看健康文章详情:', article);
-    // 跳转到详情页面
+    const item = e.currentTarget.dataset.item;
+    if (!item || !item.he_id) {
+      return;
+    }
+    api.healthEducation
+      .getDetail(item.he_id)
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          const article = this.formatPendingArticle(res.data);
+          this.setData({
+            selectedArticle: article,
+            showArticleDetailModal: true
+          });
+          return;
+        }
+        wx.showToast({ title: res.message || '加载详情失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '加载详情失败', icon: 'none' });
+      });
+  },
+
+  hideArticleDetailModal() {
+    this.setData({
+      showArticleDetailModal: false,
+      selectedArticle: null
+    });
   },
 
   viewAuditDetail(e) {

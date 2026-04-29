@@ -101,21 +101,13 @@ Page({
       }
     ],
     pendingArticles: [
-      {
-        id: 1,
-        title: '科学饮食与健康生活',
-        dietitian: '张医生',
-        category: '饮食健康',
-        preview: '本文将介绍科学饮食的重要性...'
-      },
-      {
-        id: 2,
-        title: '营养素的重要作用',
-        dietitian: '王医生',
-        category: '营养知识',
-        preview: '营养素是人体必需的物质...'
-      }
+      
     ],
+    articleAuditTab: 'pending',
+    showArticleDetailModal: false,
+    selectedArticle: null,
+    articleInfoExpanded: false,
+    articleDetailScrolled: false,
     pendingPlansCount: 2,
     pendingArticlesCount: 2,
     pendingIngredientsCount: 0,
@@ -173,6 +165,7 @@ Page({
     this.loadNutritionItems();
     this.loadRecentActivities();
     this.loadIngredientSubmissions();
+    this.loadPendingArticles();
 
     // 检查是否首次访问管理中心
     this.checkFirstVisit();
@@ -181,6 +174,9 @@ Page({
   onShow() {
     this.loadUsers();
     this.loadRecentActivities();
+    if (this.data.activeTab === 'audit' && this.data.auditSubTab === 'articles') {
+      this.loadPendingArticles();
+    }
   },
 
   checkFirstVisit() {
@@ -650,7 +646,127 @@ Page({
     });
     if (subtab === 'ingredients') {
       this.loadIngredientSubmissions();
+      return;
     }
+    if (subtab === 'articles') {
+      this.loadPendingArticles();
+    }
+  },
+
+  switchArticleAuditTab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    if (!tab || tab === this.data.articleAuditTab) {
+      return;
+    }
+    this.setData({ articleAuditTab: tab });
+    this.loadPendingArticles();
+  },
+
+  formatDateTimeText(v) {
+    const s = v ? String(v) : '';
+    if (!s) return '-';
+    return s.length >= 19 ? s.slice(0, 19).replace('T', ' ') : s.replace('T', ' ');
+  },
+
+  formatPendingArticle(item) {
+    const vis = item.visibility === 'assigned' ? 'assigned' : 'public';
+    const status = item.audit_status || 'pending_review';
+    const statusMap = {
+      pending_review: '待审核',
+      approved: '已通过',
+      rejected: '已驳回',
+      none: '未提交'
+    };
+    return {
+      ...item,
+      he_id: item.he_id,
+      dietitian: item.dietitian_name || item.dietitian_id || '-',
+      category: item.category || '未分类',
+      submitTime: this.formatDateTimeText(item.updated_at || item.created_at),
+      preview: item.summary || (item.body ? String(item.body).slice(0, 120) : '暂无摘要'),
+      visibilityLabel: vis === 'assigned' ? '指派' : '公开',
+      statusLabel: statusMap[status] || status
+    };
+  },
+
+  viewArticleDetail(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    api.healthEducation
+      .adminDetail(id)
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          this.setData({
+            selectedArticle: this.formatPendingArticle(res.data),
+            showArticleDetailModal: true,
+            articleInfoExpanded: false,
+            articleDetailScrolled: false
+          });
+          return;
+        }
+        wx.showToast({ title: res.message || '加载详情失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '加载详情失败', icon: 'none' });
+      });
+  },
+
+  hideArticleDetailModal() {
+    this.setData({
+      showArticleDetailModal: false,
+      selectedArticle: null,
+      articleInfoExpanded: false,
+      articleDetailScrolled: false
+    });
+  },
+
+  toggleArticleInfoExpand() {
+    this.setData({
+      articleInfoExpanded: !this.data.articleInfoExpanded
+    });
+  },
+
+  onArticleDetailScroll(e) {
+    const top = e && e.detail ? Number(e.detail.scrollTop || 0) : 0;
+    const shouldHideTopInfo = top > 24;
+    if (shouldHideTopInfo !== this.data.articleDetailScrolled) {
+      this.setData({ articleDetailScrolled: shouldHideTopInfo });
+    }
+  },
+
+  loadPendingArticles() {
+    const statusMap = {
+      pending: 'pending_review',
+      approved: 'approved',
+      rejected: 'rejected'
+    };
+    const auditStatus = statusMap[this.data.articleAuditTab] || 'pending_review';
+    api.healthEducation
+      .adminList({ audit_status: auditStatus })
+      .then((res) => {
+        if (res.code === 200) {
+          const list = Array.isArray(res.data) ? res.data.map((x) => this.formatPendingArticle(x)) : [];
+          const pendingCount = this.data.articleAuditTab === 'pending' ? list.length : this.data.pendingArticlesCount;
+          this.setData({
+            pendingArticles: list,
+            pendingArticlesCount: pendingCount,
+            'stats.pendingArticles': pendingCount
+          });
+          return;
+        }
+        this.setData({
+          pendingArticles: [],
+          pendingArticlesCount: this.data.articleAuditTab === 'pending' ? 0 : this.data.pendingArticlesCount,
+          'stats.pendingArticles': this.data.articleAuditTab === 'pending' ? 0 : this.data.stats.pendingArticles
+        });
+      })
+      .catch(() => {
+        this.setData({
+          pendingArticles: [],
+          pendingArticlesCount: this.data.articleAuditTab === 'pending' ? 0 : this.data.pendingArticlesCount,
+          'stats.pendingArticles': this.data.articleAuditTab === 'pending' ? 0 : this.data.stats.pendingArticles
+        });
+      });
   },
 
   loadIngredientSubmissions() {
@@ -849,30 +965,61 @@ Page({
   },
 
   approveArticle(e) {
-    const index = e.currentTarget.dataset.index;
-    const articles = [...this.data.pendingArticles];
-    articles.splice(index, 1);
-    this.setData({
-      pendingArticles: articles,
-      pendingArticlesCount: articles.length
-    });
-    wx.showToast({
-      title: '审核通过',
-      icon: 'success'
-    });
+    if (this.data.articleAuditTab !== 'pending') {
+      return;
+    }
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    api.healthEducation
+      .adminReview(id, { action: 'approve' })
+      .then((res) => {
+        if (res.code === 200) {
+          wx.showToast({ title: '审核通过', icon: 'success' });
+          this.loadPendingArticles();
+          return;
+        }
+        wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
   },
 
   rejectArticle(e) {
-    const index = e.currentTarget.dataset.index;
-    const articles = [...this.data.pendingArticles];
-    articles.splice(index, 1);
-    this.setData({
-      pendingArticles: articles,
-      pendingArticlesCount: articles.length
-    });
-    wx.showToast({
-      title: '审核驳回',
-      icon: 'success'
+    if (this.data.articleAuditTab !== 'pending') {
+      return;
+    }
+    const id = e.currentTarget.dataset.id;
+    if (!id) {
+      return;
+    }
+    wx.showModal({
+      title: '驳回健康文章',
+      editable: true,
+      placeholderText: '请输入驳回原因（可选）',
+      success: (r) => {
+        if (!r.confirm) {
+          return;
+        }
+        api.healthEducation
+          .adminReview(id, {
+            action: 'reject',
+            review_note: (r.content || '').trim()
+          })
+          .then((res) => {
+            if (res.code === 200) {
+              wx.showToast({ title: '已驳回', icon: 'success' });
+              this.loadPendingArticles();
+              return;
+            }
+            wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
     });
   },
 

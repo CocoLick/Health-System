@@ -53,10 +53,13 @@
 
   <!-- 健康文章审核 -->
   <view wx:if="{{activeTab === 'articles'}}" class="audit-content">
+    <view wx:if="{{articleLoading}}" class="empty-state">
+      <text class="empty-text">加载中...</text>
+    </view>
     <view wx:for="{{pendingArticles}}" wx:key="index" class="audit-item">
       <view class="item-header">
         <text class="item-title">{{item.title}}</text>
-        <text class="item-status">待审核</text>
+        <text class="item-status">{{item.statusLabel}}</text>
       </view>
       <view class="item-body">
         <view class="item-info">
@@ -71,17 +74,24 @@
           <text class="info-label">提交时间：</text>
           <text class="info-value">{{item.submitTime}}</text>
         </view>
+        <view class="item-info">
+          <text class="info-label">可见范围：</text>
+          <text class="info-value">{{item.visibilityLabel}}</text>
+        </view>
         <view class="article-preview">
           <text class="preview-text">{{item.preview}}</text>
         </view>
       </view>
       <view class="item-footer">
-        <view class="btn-primary" bindtap="approveArticle" data-index="{{index}}">通过</view>
-        <view class="btn-secondary" bindtap="rejectArticle" data-index="{{index}}">驳回</view>
-        <view class="btn-text" bindtap="viewArticleDetail" data-index="{{index}}">查看详情</view>
+        <view class="btn-primary" bindtap="approveArticle" data-id="{{item.he_id}}">通过</view>
+        <view class="btn-secondary" bindtap="rejectArticle" data-id="{{item.he_id}}">驳回</view>
+        <view class="btn-text" bindtap="viewArticleDetail" data-item="{{item}}">查看详情</view>
       </view>
     </view>
-    <view wx:if="{{pendingArticles.length === 0}}" class="empty-state">
+    <view wx:if="{{articleHint}}" class="empty-state">
+      <text class="empty-text">{{articleHint}}</text>
+    </view>
+    <view wx:if="{{!articleLoading && !articleHint && pendingArticles.length === 0}}" class="empty-state">
       <text class="empty-icon">📄</text>
       <text class="empty-text">暂无待审核的健康文章</text>
     </view>
@@ -191,6 +201,27 @@
       </view>
       <view class="item-footer">
         <view class="btn-secondary" bindtap="hideIngredientDetailModal">关闭</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showArticleDetailModal}}" class="audit-modal-mask" bindtap="hideArticleDetailModal">
+    <view class="audit-modal-card" catchtap="noop">
+      <view class="audit-modal-head">
+        <text class="audit-modal-title">健康文章详情</text>
+        <view class="audit-modal-close" bindtap="hideArticleDetailModal">×</view>
+      </view>
+      <view class="audit-modal-body">
+        <view class="item-info"><text class="info-label">标题：</text><text class="info-value">{{selectedArticle.title}}</text></view>
+        <view class="item-info"><text class="info-label">规划师：</text><text class="info-value">{{selectedArticle.dietitian}}</text></view>
+        <view class="item-info"><text class="info-label">分类：</text><text class="info-value">{{selectedArticle.category}}</text></view>
+        <view class="item-info"><text class="info-label">范围：</text><text class="info-value">{{selectedArticle.visibilityLabel}}</text></view>
+        <view class="item-info"><text class="info-label">提交时间：</text><text class="info-value">{{selectedArticle.submitTime}}</text></view>
+        <view class="item-info"><text class="info-label">摘要：</text><text class="info-value">{{selectedArticle.summary}}</text></view>
+        <view class="item-info"><text class="info-label">正文：</text><text class="info-value">{{selectedArticle.body}}</text></view>
+      </view>
+      <view class="item-footer">
+        <view class="btn-secondary" bindtap="hideArticleDetailModal">关闭</view>
       </view>
     </view>
   </view>
