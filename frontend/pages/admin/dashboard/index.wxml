@@ -115,6 +115,9 @@
 
       <view class="audit-list">
         <view wx:if="{{auditSubTab === 'plans'}}">
+          <view wx:if="{{planLoading}}" class="empty-state">
+            <text class="empty-text">加载中...</text>
+          </view>
           <view wx:for="{{pendingPlans}}" wx:key="index" class="audit-item">
             <view class="item-header">
               <text class="item-title">{{item.title}}</text>
@@ -135,11 +138,15 @@
               </view>
             </view>
             <view class="item-footer">
-              <view class="btn-primary" bindtap="approvePlan" data-index="{{index}}">通过</view>
-              <view class="btn-secondary" bindtap="rejectPlan" data-index="{{index}}">驳回</view>
+              <view class="btn-primary" bindtap="approvePlan" data-id="{{item.id}}">通过</view>
+              <view class="btn-secondary" bindtap="rejectPlan" data-id="{{item.id}}">驳回</view>
+              <view class="btn-text" bindtap="viewPlanDetail" data-item="{{item}}">查看详情</view>
             </view>
           </view>
-          <view wx:if="{{pendingPlans.length === 0}}" class="empty-state">
+          <view wx:if="{{planHint}}" class="empty-state">
+            <text class="empty-text">{{planHint}}</text>
+          </view>
+          <view wx:if="{{!planLoading && !planHint && pendingPlans.length === 0}}" class="empty-state">
             <text class="empty-icon">📋</text>
             <text class="empty-text">暂无待审核的膳食计划</text>
           </view>
@@ -292,6 +299,81 @@
         </view>
         <view class="modal-footer">
           <view class="btn-cancel" bindtap="hideArticleDetailModal">关闭</view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{showPlanDetailModal}}" class="modal-mask" bindtap="hidePlanDetailModal">
+      <view class="modal-content" catchtap="stopPropagation">
+        <view class="modal-header">
+          <text class="modal-title">膳食计划详情</text>
+          <view class="modal-close" bindtap="hidePlanDetailModal">×</view>
+        </view>
+        <scroll-view class="modal-body" scroll-y="true" bindscroll="onPlanDetailScroll">
+          <view wx:if="{{!planDetailScrolled}}" class="plan-detail-head">
+            <view class="plan-detail-title">{{selectedPlanDetail.title || '—'}}</view>
+            <view class="plan-detail-owner">
+              <text class="plan-detail-owner-label">用户：</text>
+              <text class="plan-detail-owner-value">{{selectedPlanDetail.user_id || '—'}}</text>
+              <text class="plan-detail-owner-split">·</text>
+              <text class="plan-detail-owner-label">规划师：</text>
+              <text class="plan-detail-owner-value">{{selectedPlanDetail.dietitian_name || selectedPlanDetail.dietitian_id || '—'}}</text>
+            </view>
+          </view>
+
+          <view wx:if="{{!planDetailScrolled}}" class="plan-detail-extra">
+            <view class="plan-detail-extra-toggle" bindtap="togglePlanInfoExpand">
+              <text class="plan-detail-extra-title">计划信息</text>
+              <text class="plan-detail-extra-arrow">{{planInfoExpanded ? '收起' : '展开'}}</text>
+            </view>
+            <view wx:if="{{planInfoExpanded}}" class="plan-detail-extra-body">
+              <view class="item-info item-info--singleline"><text class="info-label">饮食目标：</text><text class="info-value info-value--singleline">{{selectedPlanDetail.goal_text || '—'}}</text></view>
+              <view class="item-info item-info--singleline"><text class="info-label">执行周期：</text><text class="info-value info-value--singleline">{{selectedPlanDetail.cycle_days || 0}} 天</text></view>
+              <view class="item-info item-info--singleline"><text class="info-label">提交时间：</text><text class="info-value info-value--singleline">{{selectedPlanDetail.update_time_text || '—'}}</text></view>
+            </view>
+          </view>
+
+          <view wx:if="{{selectedPlanDetail.audit_note}}" class="plan-detail-review-note">
+            <text class="plan-detail-review-note-label">驳回原因</text>
+            <text class="plan-detail-review-note-text">{{selectedPlanDetail.audit_note}}</text>
+          </view>
+
+          <view class="plan-detail-body-block">
+            <text class="plan-detail-body-title">每日膳食安排</text>
+            <view class="plan-detail-body-content">
+              <view class="plan-detail-date-selector">
+                <text class="plan-detail-date-label">查看日期</text>
+                <picker mode="date" value="{{planDetailSelectedDate}}" bindchange="onPlanDetailDateChange">
+                  <view class="plan-detail-date-value-wrap">
+                    <text class="plan-detail-date-value">{{planDetailSelectedDateText || '请选择日期'}}</text>
+                    <text class="plan-detail-date-arrow">▾</text>
+                  </view>
+                </picker>
+              </view>
+
+              <view wx:if="{{planDetailCurrentDay}}" class="plan-day-card">
+                <view class="plan-day-header">
+                  <text class="plan-day-title">第{{planDetailCurrentDay.day_index}}天</text>
+                  <text class="plan-day-meta">{{planDetailSelectedDateText}} · {{planDetailCurrentDay.calories}} kcal</text>
+                </view>
+                <view wx:for="{{planDetailCurrentDay.meals}}" wx:key="id" class="plan-meal-card">
+                  <view class="plan-meal-head">
+                    <text class="plan-meal-type">{{item.type}}</text>
+                    <text class="plan-meal-meta">{{item.time}} · {{item.calories}} kcal</text>
+                  </view>
+                  <view class="plan-food-list">
+                    <text wx:for="{{item.foods}}" wx:key="id" wx:for-item="food" class="plan-food-item">{{food.name}} {{food.amount}}（{{food.calories}}kcal）</text>
+                  </view>
+                </view>
+              </view>
+              <view wx:else class="empty-state">
+                <text class="empty-text">暂无当日膳食明细</text>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="modal-footer">
+          <view class="btn-secondary" bindtap="hidePlanDetailModal">关闭</view>
         </view>
       </view>
     </view>

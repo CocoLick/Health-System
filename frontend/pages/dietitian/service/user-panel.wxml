@@ -131,11 +131,15 @@
       <view class="card-header">
         <text class="card-icon">📋</text>
         <text class="card-title">膳食计划</text>
-        <text class="card-status {{userInfo.hasPlan ? 'status-ok' : 'status-warning'}}">{{userInfo.planStatus}}</text>
+        <text class="card-status {{userInfo.planStatusClass || (userInfo.hasPlan ? 'status-ok' : 'status-warning')}}">{{userInfo.planStatus}}</text>
       </view>
       <view class="card-body" wx:if="{{userInfo.hasPlan}}">
         <view class="plan-info">
           <text class="plan-title">{{userInfo.planTitle}}</text>
+        </view>
+        <view class="plan-reject-reason" wx:if="{{userInfo.planRejectReason}}">
+          <text class="plan-reject-label">驳回原因：</text>
+          <text class="plan-reject-text">{{userInfo.planRejectReason}}</text>
         </view>
       </view>
       <view class="card-footer">

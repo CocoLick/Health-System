@@ -84,28 +84,22 @@ Page({
         time: '昨天 15:45'
       }
     ],
-    pendingPlans: [
-      {
-        id: 1,
-        title: '减脂膳食计划',
-        user: '张三',
-        dietitian: '张医生',
-        submitTime: '2026-04-18 09:30'
-      },
-      {
-        id: 2,
-        title: '控糖膳食计划',
-        user: '李四',
-        dietitian: '王医生',
-        submitTime: '2026-04-18 10:15'
-      }
-    ],
+    pendingPlans: [],
+    planLoading: false,
+    planHint: '',
     pendingArticles: [
       
     ],
     articleAuditTab: 'pending',
     showArticleDetailModal: false,
     selectedArticle: null,
+    showPlanDetailModal: false,
+    selectedPlanDetail: null,
+    planInfoExpanded: false,
+    planDetailScrolled: false,
+    planDetailSelectedDate: '',
+    planDetailSelectedDateText: '',
+    planDetailCurrentDay: null,
     articleInfoExpanded: false,
     articleDetailScrolled: false,
     pendingPlansCount: 2,
@@ -166,6 +160,7 @@ Page({
     this.loadRecentActivities();
     this.loadIngredientSubmissions();
     this.loadPendingArticles();
+    this.loadPendingPlans();
 
     // 检查是否首次访问管理中心
     this.checkFirstVisit();
@@ -177,7 +172,55 @@ Page({
     if (this.data.activeTab === 'audit' && this.data.auditSubTab === 'articles') {
       this.loadPendingArticles();
     }
+    if (this.data.activeTab === 'audit' && this.data.auditSubTab === 'plans') {
+      this.loadPendingPlans();
+    }
   },
+  formatPendingPlan(item) {
+    return {
+      ...item,
+      id: item.id,
+      title: item.title || '-',
+      user: item.user_id || '-',
+      dietitian: item.dietitian_name || item.dietitian_id || '-',
+      submitTime: this.formatDateTimeText(item.update_time || item.create_time)
+    };
+  },
+
+  loadPendingPlans() {
+    this.setData({ planLoading: true, planHint: '' });
+    api.dietPlan
+      .adminPendingList()
+      .then((res) => {
+        if (res.code === 200) {
+          const list = Array.isArray(res.data) ? res.data.map((x) => this.formatPendingPlan(x)) : [];
+          this.setData({
+            pendingPlans: list,
+            pendingPlansCount: list.length,
+            'stats.pendingPlans': list.length
+          });
+          return;
+        }
+        this.setData({
+          pendingPlans: [],
+          pendingPlansCount: 0,
+          'stats.pendingPlans': 0,
+          planHint: res.message || '加载待审计划失败'
+        });
+      })
+      .catch(() => {
+        this.setData({
+          pendingPlans: [],
+          pendingPlansCount: 0,
+          'stats.pendingPlans': 0,
+          planHint: '网络错误，请稍后重试'
+        });
+      })
+      .finally(() => {
+        this.setData({ planLoading: false });
+      });
+  },
+
 
   checkFirstVisit() {
     const hasVisitedManage = wx.getStorageSync('has_visited_manage');
@@ -648,6 +691,10 @@ Page({
       this.loadIngredientSubmissions();
       return;
     }
+    if (subtab === 'plans') {
+      this.loadPendingPlans();
+      return;
+    }
     if (subtab === 'articles') {
       this.loadPendingArticles();
     }
@@ -937,31 +984,185 @@ Page({
   },
 
   approvePlan(e) {
-    const index = e.currentTarget.dataset.index;
-    const plans = [...this.data.pendingPlans];
-    plans.splice(index, 1);
-    this.setData({
-      pendingPlans: plans,
-      pendingPlansCount: plans.length
-    });
-    wx.showToast({
-      title: '审核通过',
-      icon: 'success'
-    });
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    api.dietPlan
+      .adminReview(id, { action: 'approve' })
+      .then((res) => {
+        if (res.code === 200) {
+          wx.showToast({ title: '审核通过', icon: 'success' });
+          this.loadPendingPlans();
+          return;
+        }
+        wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
   },
 
   rejectPlan(e) {
-    const index = e.currentTarget.dataset.index;
-    const plans = [...this.data.pendingPlans];
-    plans.splice(index, 1);
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    wx.showModal({
+      title: '驳回膳食计划',
+      editable: true,
+      placeholderText: '请输入驳回原因',
+      success: (r) => {
+        if (!r.confirm) return;
+        const reviewNote = (r.content || '').trim();
+        if (!reviewNote) {
+          wx.showToast({ title: '请填写驳回原因', icon: 'none' });
+          return;
+        }
+        api.dietPlan
+          .adminReview(id, { action: 'reject', review_note: reviewNote })
+          .then((res) => {
+            if (res.code === 200) {
+              wx.showToast({ title: '已驳回', icon: 'success' });
+              this.loadPendingPlans();
+              return;
+            }
+            wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
+    });
+  },
+
+  viewPlanDetail(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item || !item.id || !item.user_id) {
+      wx.showToast({ title: '计划信息不完整', icon: 'none' });
+      return;
+    }
+    api.dietPlan
+      .getDetail(item.id, { user_id: item.user_id })
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          const planDetail = this.normalizePlanDetailForDisplay(res.data);
+          const dayState = this.buildPlanDetailDayState(planDetail, '');
+          this.setData({
+            selectedPlanDetail: planDetail,
+            showPlanDetailModal: true,
+            planInfoExpanded: false,
+            planDetailScrolled: false,
+            planDetailSelectedDate: dayState.selectedDate,
+            planDetailSelectedDateText: dayState.selectedDateText,
+            planDetailCurrentDay: dayState.dayPlan
+          });
+          return;
+        }
+        wx.showToast({ title: res.message || '加载详情失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '加载详情失败', icon: 'none' });
+      });
+  },
+
+  hidePlanDetailModal() {
     this.setData({
-      pendingPlans: plans,
-      pendingPlansCount: plans.length
+      showPlanDetailModal: false,
+      selectedPlanDetail: null,
+      planInfoExpanded: false,
+      planDetailScrolled: false,
+      planDetailSelectedDate: '',
+      planDetailSelectedDateText: '',
+      planDetailCurrentDay: null
     });
-    wx.showToast({
-      title: '审核驳回',
-      icon: 'success'
+  },
+
+  togglePlanInfoExpand() {
+    this.setData({
+      planInfoExpanded: !this.data.planInfoExpanded
     });
+  },
+
+  onPlanDetailDateChange(e) {
+    const selectedDate = e.detail.value;
+    const state = this.buildPlanDetailDayState(this.data.selectedPlanDetail, selectedDate);
+    this.setData({
+      planDetailSelectedDate: state.selectedDate,
+      planDetailSelectedDateText: state.selectedDateText,
+      planDetailCurrentDay: state.dayPlan
+    });
+  },
+
+  normalizeDateText(v) {
+    if (!v) return '';
+    const s = String(v).trim();
+    const first10 = s.slice(0, 10).replace(/\//g, '-');
+    const d = new Date(first10);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    return first10;
+  },
+
+  formatDateTextCN(v) {
+    const d = new Date(v);
+    if (isNaN(d.getTime())) {
+      return v || '—';
+    }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}年${m}月${day}日`;
+  },
+
+  getDietGoalText(goal) {
+    const g = goal != null ? String(goal).trim() : '';
+    if (!g || g === '—') return '未填写';
+    const goalMap = {
+      weight_loss: '减脂',
+      weight_gain: '增重',
+      diabetes_control: '控糖',
+      health_maintain: '养生',
+      sports_nutrition: '运动营养',
+      pregnancy: '孕期营养'
+    };
+    return goalMap[g] || g;
+  },
+
+  normalizePlanDetailForDisplay(detail) {
+    if (!detail || typeof detail !== 'object') return detail;
+    return {
+      ...detail,
+      goal_text: this.getDietGoalText(detail.goal),
+      update_time_text: this.formatDateTimeText(detail.update_time)
+    };
+  },
+
+  buildPlanDetailDayState(planDetail, dateText) {
+    const days = (planDetail && Array.isArray(planDetail.plan_days)) ? planDetail.plan_days : [];
+    if (days.length === 0) {
+      return {
+        selectedDate: '',
+        selectedDateText: '未选择日期',
+        dayPlan: null
+      };
+    }
+    const candidate = this.normalizeDateText(dateText) || this.normalizeDateText(days[0].date || days[0].plan_date);
+    const dayPlan = days.find((d) => this.normalizeDateText(d.date || d.plan_date) === candidate) || days[0];
+    const selectedDate = this.normalizeDateText(dayPlan.date || dayPlan.plan_date);
+    return {
+      selectedDate,
+      selectedDateText: this.formatDateTextCN(selectedDate),
+      dayPlan
+    };
+  },
+
+  onPlanDetailScroll(e) {
+    const top = e && e.detail ? Number(e.detail.scrollTop || 0) : 0;
+    const shouldHideTopInfo = top > 24;
+    if (shouldHideTopInfo !== this.data.planDetailScrolled) {
+      this.setData({ planDetailScrolled: shouldHideTopInfo });
+    }
   },
 
   approveArticle(e) {

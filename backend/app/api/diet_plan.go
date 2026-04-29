@@ -40,6 +40,8 @@ func NewDietPlanHandler(dietPlanService *services.DietPlanService) *DietPlanHand
 func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 	dietPlanGroup := router.Group("/diet-plans")
 	{
+		dietPlanGroup.GET("/admin/pending", h.GetAdminPendingDietPlans)
+		dietPlanGroup.POST("/admin/:id/review", h.AdminReviewDietPlan)
 		dietPlanGroup.POST("/ai/generate-draft", h.GenerateAIDietPlanDraft)
 		dietPlanGroup.POST("/ai/generate", h.GenerateAIDietPlan)
 		dietPlanGroup.POST("/:id/ai/optimize-draft", h.OptimizeAIDietPlanDraft)
@@ -52,6 +54,12 @@ func (h *DietPlanHandler) RegisterRoutes(router *gin.RouterGroup) {
 		dietPlanGroup.PUT("/:id/optimization", h.RequestOptimization)
 		dietPlanGroup.PUT("/:id/publish", h.PublishDietPlan)
 	}
+}
+
+func isAdmin(c *gin.Context) bool {
+	roleType, _ := c.Get("roleType")
+	roleTypeStr, _ := roleType.(string)
+	return roleTypeStr == "admin"
 }
 
 // GenerateAIDietPlanDraft 规划师端智能推荐生成初稿（不落库）
@@ -233,10 +241,27 @@ func (h *DietPlanHandler) GetUserDietPlans(c *gin.Context) {
 		targetUserID = userID.(string)
 	}
 
+	roleType := c.GetString("roleType")
+	requestUserID := c.Query("user_id")
+	if roleType == "user" {
+		if requestUserID != "" && requestUserID != targetUserID {
+			c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "无权查看其他用户计划"})
+			return
+		}
+	}
 	plans, err := h.dietPlanService.GetUserDietPlans(targetUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: "获取膳食计划失败"})
 		return
+	}
+	if roleType == "user" {
+		filtered := make([]schemas.DietPlan, 0, len(plans))
+		for _, p := range plans {
+			if p.AuditStatus == "approved" || p.AuditStatus == "pending_review" {
+				filtered = append(filtered, p)
+			}
+		}
+		plans = filtered
 	}
 
 	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "获取成功", Data: plans})
@@ -276,6 +301,10 @@ func (h *DietPlanHandler) GetDietPlanDetail(c *gin.Context) {
 
 	plan, err := h.dietPlanService.GetDietPlanDetail(planID, targetUserID)
 	if err != nil {
+		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
+		return
+	}
+	if c.GetString("roleType") == "user" && plan.AuditStatus != "approved" {
 		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "膳食计划不存在"})
 		return
 	}
@@ -495,4 +524,56 @@ func (h *DietPlanHandler) PublishDietPlan(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "发布成功", Data: plan})
+}
+
+// GetAdminPendingDietPlans 管理员获取待审核膳食计划
+func (h *DietPlanHandler) GetAdminPendingDietPlans(c *gin.Context) {
+	if !isAdmin(c) {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅管理员可访问"})
+		return
+	}
+	plans, err := h.dietPlanService.GetAdminPendingDietPlans()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: "获取待审核计划失败"})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "获取成功", Data: plans})
+}
+
+// AdminReviewDietPlan 管理员审核膳食计划
+func (h *DietPlanHandler) AdminReviewDietPlan(c *gin.Context) {
+	if !isAdmin(c) {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅管理员可操作"})
+		return
+	}
+	planID := strings.TrimSpace(c.Param("id"))
+	if planID == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "计划ID不能为空"})
+		return
+	}
+	var req schemas.DietPlanAdminReviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "请求参数错误"})
+		return
+	}
+	action := strings.TrimSpace(req.Action)
+	if action != "approve" && action != "reject" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "审核动作不合法"})
+		return
+	}
+	if action == "reject" && strings.TrimSpace(req.ReviewNote) == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "驳回原因不能为空"})
+		return
+	}
+	adminID := c.GetString("userID")
+	plan, err := h.dietPlanService.AdminReviewDietPlan(planID, adminID, action, req.ReviewNote)
+	if err != nil {
+		if errors.Is(err, services.ErrDietPlanNotFound) {
+			c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "操作成功", Data: plan})
 }

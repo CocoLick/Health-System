@@ -549,6 +549,14 @@ const dietPlan = {
   // 发布膳食计划
   publish: function(id, userId) {
     return put(`/api/diet-plans/${id}/publish?user_id=${userId}`);
+  },
+  // 管理员：待审核膳食计划列表
+  adminPendingList: function() {
+    return get('/api/diet-plans/admin/pending');
+  },
+  // 管理员：审核膳食计划
+  adminReview: function(id, data) {
+    return post(`/api/diet-plans/admin/${encodeURIComponent(id)}/review`, data || {});
   }
 };
 

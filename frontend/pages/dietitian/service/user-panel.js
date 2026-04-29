@@ -122,6 +122,8 @@ Page({
       evaluationExpired: false,
       planTitle: '',
       planStatus: '',
+      planStatusClass: 'status-warning',
+      planRejectReason: '',
       serviceRequestId: '',
       dietGoalText: '—',
       healthData: {
@@ -188,6 +190,8 @@ Page({
           evaluationExpired: false,
           planTitle: '',
           planStatus: '',
+          planStatusClass: 'status-warning',
+          planRejectReason: '',
           serviceRequestId: '',
           dietGoalText: '—',
           healthData: {
@@ -299,15 +303,23 @@ Page({
           const plans = res.data.sort((a, b) => new Date(b.update_time) - new Date(a.update_time));
           const latestPlan = plans[0];
           const planStatusText = {
-            draft: '📝 草稿',
-            published: '✅ 已发布'
+            pending_review: '⏳ 待审核',
+            approved: '✅ 已通过',
+            rejected: '❌ 已驳回'
+          };
+          const planStatusClassMap = {
+            pending_review: 'status-warning',
+            approved: 'status-ok',
+            rejected: 'status-warning'
           };
           this.setData({
             userInfo: {
               ...this.data.userInfo,
               hasPlan: true,
               planTitle: latestPlan.title || '未命名计划',
-              planStatus: planStatusText[latestPlan.status] || '❓ 未知状态'
+              planStatus: planStatusText[latestPlan.status] || '❓ 未知状态',
+              planStatusClass: planStatusClassMap[latestPlan.status] || 'status-warning',
+              planRejectReason: latestPlan.status === 'rejected' ? (latestPlan.audit_note || '') : ''
             }
           });
         } else {
@@ -316,7 +328,9 @@ Page({
               ...this.data.userInfo,
               hasPlan: false,
               planTitle: '',
-              planStatus: '❌ 无计划'
+              planStatus: '❌ 无计划',
+              planStatusClass: 'status-warning',
+              planRejectReason: ''
             }
           });
         }
@@ -327,7 +341,9 @@ Page({
             ...this.data.userInfo,
             hasPlan: false,
             planTitle: '',
-            planStatus: '❌ 无计划'
+            planStatus: '❌ 无计划',
+            planStatusClass: 'status-warning',
+            planRejectReason: ''
           }
         });
       });

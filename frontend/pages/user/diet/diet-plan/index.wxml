@@ -255,8 +255,7 @@
           <view class="plan-status">待审核</view>
           <view class="plan-title">{{currentPlan.title}}</view>
           <view class="plan-info">
-            <text>规划师：{{currentPlan.dietitianName}}</text>
-            <text>目标：{{currentPlan.goalText || currentPlan.goal}}</text>
+            <view><text>规划师：{{currentPlan.dietitianName}}</text></view>
           </view>
           <view class="plan-desc">您的膳食计划已提交，正在等待管理员审核</view>
           <view class="action-btn" bindtap="viewPlanDetail">查看计划详情</view>

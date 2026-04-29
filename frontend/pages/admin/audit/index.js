@@ -6,32 +6,12 @@ Page({
     activeTab: 'plans',
     filterOptions: ['全部', '膳食计划', '健康文章', '通过', '驳回'],
     filterIndex: 0,
-    pendingPlans: [
-      {
-        id: 1,
-        title: '减脂膳食计划',
-        user: '张三',
-        dietitian: '张医生',
-        goal: '减脂',
-        submitTime: '2026-04-18 09:30'
-      },
-      {
-        id: 2,
-        title: '控糖膳食计划',
-        user: '李四',
-        dietitian: '王医生',
-        goal: '控糖',
-        submitTime: '2026-04-18 10:15'
-      },
-      {
-        id: 3,
-        title: '增肌膳食计划',
-        user: '王五',
-        dietitian: '李医生',
-        goal: '增肌',
-        submitTime: '2026-04-18 11:00'
-      }
-    ],
+    pendingPlans: [],
+    planLoading: false,
+    planHint: '',
+    showPlanDetailModal: false,
+    selectedPlanDetail: null,
+    planDetailLoading: false,
     pendingArticles: [],
     articleLoading: false,
     articleHint: '',
@@ -70,6 +50,9 @@ Page({
   },
 
   onShow() {
+    if (this.data.activeTab === 'plans') {
+      this.loadPendingData();
+    }
     if (this.data.activeTab === 'articles') {
       this.loadPendingArticles();
     }
@@ -79,9 +62,29 @@ Page({
   },
 
   loadPendingData() {
-    // 模拟API请求获取待审核数据
-    console.log('加载待审核数据');
-    // 实际项目中应该调用后端API
+    this.setData({ planLoading: true, planHint: '' });
+    api.dietPlan
+      .adminPendingList()
+      .then((res) => {
+        if (res.code === 200) {
+          const list = Array.isArray(res.data) ? res.data.map((x) => this.formatPendingPlan(x)) : [];
+          this.setData({ pendingPlans: list });
+          return;
+        }
+        this.setData({
+          pendingPlans: [],
+          planHint: res.message || '加载待审计划失败'
+        });
+      })
+      .catch(() => {
+        this.setData({
+          pendingPlans: [],
+          planHint: '网络错误，请稍后重试'
+        });
+      })
+      .finally(() => {
+        this.setData({ planLoading: false });
+      });
   },
 
   switchTab(e) {
@@ -93,10 +96,27 @@ Page({
       this.loadIngredientSubmissions();
       return;
     }
+    if (tab === 'plans') {
+      this.loadPendingData();
+      return;
+    }
     if (tab === 'articles') {
       this.loadPendingArticles();
     }
   },
+  formatPendingPlan(item) {
+    return {
+      ...item,
+      id: item.id,
+      user_id: item.user_id,
+      title: item.title || '-',
+      user: item.user_id || '-',
+      dietitian: item.dietitian_name || item.dietitian_id || '-',
+      goal: item.goal || '-',
+      submitTime: this.formatDateTimeText(item.update_time || item.create_time)
+    };
+  },
+
   formatDateTimeText(v) {
     const s = v ? String(v) : '';
     if (!s) return '-';
@@ -161,44 +181,51 @@ Page({
   },
 
   approvePlan(e) {
-    const index = e.currentTarget.dataset.index;
-    const plans = [...this.data.pendingPlans];
-    const plan = plans[index];
-    
-    // 模拟审核通过
-    console.log('通过膳食计划:', plan.title);
-    
-    // 从待审核列表中移除
-    plans.splice(index, 1);
-    this.setData({
-      pendingPlans: plans
-    });
-    
-    // 显示成功提示
-    wx.showToast({
-      title: '审核通过',
-      icon: 'success'
-    });
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    api.dietPlan
+      .adminReview(id, { action: 'approve' })
+      .then((res) => {
+        if (res.code === 200) {
+          wx.showToast({ title: '审核通过', icon: 'success' });
+          this.loadPendingData();
+          return;
+        }
+        wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '网络错误', icon: 'none' });
+      });
   },
 
   rejectPlan(e) {
-    const index = e.currentTarget.dataset.index;
-    const plans = [...this.data.pendingPlans];
-    const plan = plans[index];
-    
-    // 模拟审核驳回
-    console.log('驳回膳食计划:', plan.title);
-    
-    // 从待审核列表中移除
-    plans.splice(index, 1);
-    this.setData({
-      pendingPlans: plans
-    });
-    
-    // 显示成功提示
-    wx.showToast({
-      title: '审核驳回',
-      icon: 'success'
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    wx.showModal({
+      title: '驳回膳食计划',
+      editable: true,
+      placeholderText: '请输入驳回原因',
+      success: (r) => {
+        if (!r.confirm) return;
+        const reviewNote = (r.content || '').trim();
+        if (!reviewNote) {
+          wx.showToast({ title: '请填写驳回原因', icon: 'none' });
+          return;
+        }
+        api.dietPlan
+          .adminReview(id, { action: 'reject', review_note: reviewNote })
+          .then((res) => {
+            if (res.code === 200) {
+              wx.showToast({ title: '已驳回', icon: 'success' });
+              this.loadPendingData();
+              return;
+            }
+            wx.showToast({ title: res.message || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
     });
   },
 
@@ -257,10 +284,34 @@ Page({
 
 
   viewPlanDetail(e) {
-    const index = e.currentTarget.dataset.index;
-    const plan = this.data.pendingPlans[index];
-    console.log('查看膳食计划详情:', plan);
-    // 跳转到详情页面
+    const item = e.currentTarget.dataset.item;
+    if (!item || !item.id || !item.user_id) return;
+    this.setData({ planDetailLoading: true });
+    api.dietPlan
+      .getDetail(item.id, { user_id: item.user_id })
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          this.setData({
+            selectedPlanDetail: res.data,
+            showPlanDetailModal: true
+          });
+          return;
+        }
+        wx.showToast({ title: res.message || '加载详情失败', icon: 'none' });
+      })
+      .catch(() => {
+        wx.showToast({ title: '加载详情失败', icon: 'none' });
+      })
+      .finally(() => {
+        this.setData({ planDetailLoading: false });
+      });
+  },
+
+  hidePlanDetailModal() {
+    this.setData({
+      showPlanDetailModal: false,
+      selectedPlanDetail: null
+    });
   },
 
   viewArticleDetail(e) {

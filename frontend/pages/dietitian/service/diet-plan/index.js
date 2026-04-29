@@ -111,6 +111,9 @@ Page({
       duration: 7,
       startDate: ''
     },
+    planAuditStatus: '',
+    planRejectReason: '',
+    planRejectTime: '',
     today: '',
     currentDay: 1,
     currentDayMeals: [],
@@ -554,6 +557,7 @@ Page({
           // 不再需要获取 goal，因为我们已经删除了 dietGoal 字段
           const getGoal = (p) => (p && (p.goal || p.diet_goal || p.dietGoal)) || '';
           const getCycleDays = (p) => (p && (p.cycle_days || p.cycleDays)) || 7;
+          const getAuditNote = (p) => (p && (p.audit_note || p.auditNote)) || '';
 
           // 按更新时间排序，选择最新的计划（与服务面板逻辑一致）
           plans.sort((a, b) => {
@@ -568,6 +572,9 @@ Page({
           const planId = getId(latestPlan);
           const title = getTitle(latestPlan);
           const duration = getCycleDays(latestPlan);
+          const status = getStatus(latestPlan);
+          const rejectReason = getAuditNote(latestPlan);
+          const rejectTime = getUpdateTime(latestPlan);
 
           console.log('=== 3. 选中的计划 ===', latestPlan);
           console.log('=== 4. 计划ID ===', planId);
@@ -580,7 +587,10 @@ Page({
               ...this.data.planInfo,
               title,
               duration
-            }
+            },
+            planAuditStatus: status,
+            planRejectReason: status === 'rejected' ? rejectReason : '',
+            planRejectTime: status === 'rejected' ? this.formatDateTimeText(rejectTime) : ''
           });
 
           console.log('=== 8. setData 完成 === 当前 planInfo.title ===', this.data.planInfo.title);
@@ -613,6 +623,15 @@ Page({
           console.log('=== 12. planDetail ===', planDetail);
           console.log('=== 13. planDetail.plan_days ===', planDetail.plan_days);
           
+          const detailStatus = planDetail.status || '';
+          const detailRejectReason = planDetail.audit_note || '';
+          const detailRejectTime = planDetail.audited_at || planDetail.update_time || '';
+          this.setData({
+            planAuditStatus: detailStatus,
+            planRejectReason: detailStatus === 'rejected' ? detailRejectReason : '',
+            planRejectTime: detailStatus === 'rejected' ? this.formatDateTimeText(detailRejectTime) : ''
+          });
+
           if (planDetail.plan_days && planDetail.plan_days.length > 0) {
             const duration = parseInt(this.data.planInfo.duration) || 7;
             const planDays = planDetail.plan_days.map((day, index) => ({
@@ -660,6 +679,12 @@ Page({
       .catch(err => {
         console.error('=== loadPlanDays 错误 ===', err);
       });
+  },
+
+  formatDateTimeText(v) {
+    const s = v ? String(v) : '';
+    if (!s) return '';
+    return s.length >= 19 ? s.slice(0, 19).replace('T', ' ') : s.replace('T', ' ');
   },
 
   loadIngredients() {

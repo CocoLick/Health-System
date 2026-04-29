@@ -50,6 +50,7 @@
 .plan-info,
 .plan-days,
 .nutrition-ratio,
+.reject-notice,
 .modal-content,
 .search-input,
 .search-results,
@@ -64,9 +65,43 @@
 .user-info,
 .plan-info,
 .plan-days,
-.nutrition-ratio {
+.nutrition-ratio,
+.reject-notice {
   padding: 24rpx;
   margin-bottom: 20rpx;
+}
+
+.reject-notice {
+  border-left: 8rpx solid #b56d42;
+  background: rgba(181, 109, 66, 0.08);
+}
+
+.reject-notice-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #8d4d27;
+  margin-bottom: 10rpx;
+}
+
+.reject-notice-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 6rpx;
+}
+
+.reject-notice-label {
+  width: 132rpx;
+  font-size: 24rpx;
+  color: #8d4d27;
+  flex-shrink: 0;
+}
+
+.reject-notice-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: #7a3a18;
+  line-height: 1.6;
+  word-break: break-all;
 }
 
 .user-info {

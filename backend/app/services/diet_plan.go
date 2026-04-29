@@ -45,7 +45,7 @@ func (s *DietPlanService) CreateDietPlan(req schemas.DietPlanCreate) (schemas.Di
 		Source:           req.Source,
 		DietGoal:         strings.TrimSpace(req.DietGoal),
 		CycleDays:        req.CycleDays,
-		AuditStatus:      "draft", // 默认为草稿
+		AuditStatus:      "pending_review", // 创建后进入待审核
 		UpdatedAt:        time.Now(),
 	}
 
@@ -158,18 +158,21 @@ func (s *DietPlanService) CreateDietPlan(req schemas.DietPlanCreate) (schemas.Di
 
 	dietitianNames := NewServiceRequestService().DietitianNamesByIDs([]string{plan.DietitianID})
 	return schemas.DietPlan{
-		PlanID:          plan.PlanID,
-		UserID:          plan.UserID,
+		PlanID:           plan.PlanID,
+		UserID:           plan.UserID,
 		ServiceRequestID: plan.ServiceRequestID,
-		DietitianID:     plan.DietitianID,
-		DietitianName:   dietitianNames[plan.DietitianID],
-		PlanTitle:       plan.PlanTitle,
-		Source:          plan.Source,
-		DietGoal:        plan.DietGoal,
-		CycleDays:       plan.CycleDays,
-		AuditStatus:     plan.AuditStatus,
-		PublishedAt:     plan.PublishedAt,
-		UpdatedAt:       plan.UpdatedAt,
+		DietitianID:      plan.DietitianID,
+		DietitianName:    dietitianNames[plan.DietitianID],
+		PlanTitle:        plan.PlanTitle,
+		Source:           plan.Source,
+		DietGoal:         plan.DietGoal,
+		CycleDays:        plan.CycleDays,
+		AuditStatus:      plan.AuditStatus,
+		AuditNote:        plan.AuditNote,
+		AuditedBy:        plan.AuditedBy,
+		AuditedAt:        plan.AuditedAt,
+		PublishedAt:      plan.PublishedAt,
+		UpdatedAt:        plan.UpdatedAt,
 	}, nil
 }
 
@@ -191,18 +194,21 @@ func (s *DietPlanService) GetUserDietPlans(userID string) ([]schemas.DietPlan, e
 	result := make([]schemas.DietPlan, len(plans))
 	for i, plan := range plans {
 		result[i] = schemas.DietPlan{
-			PlanID:          plan.PlanID,
-			UserID:          plan.UserID,
+			PlanID:           plan.PlanID,
+			UserID:           plan.UserID,
 			ServiceRequestID: plan.ServiceRequestID,
-			DietitianID:     plan.DietitianID,
-			DietitianName:   nameMap[plan.DietitianID],
-			PlanTitle:       plan.PlanTitle,
-			Source:          plan.Source,
-			DietGoal:        plan.DietGoal,
-			CycleDays:       plan.CycleDays,
-			AuditStatus:     plan.AuditStatus,
-			PublishedAt:     plan.PublishedAt,
-			UpdatedAt:       plan.UpdatedAt,
+			DietitianID:      plan.DietitianID,
+			DietitianName:    nameMap[plan.DietitianID],
+			PlanTitle:        plan.PlanTitle,
+			Source:           plan.Source,
+			DietGoal:         plan.DietGoal,
+			CycleDays:        plan.CycleDays,
+			AuditStatus:      plan.AuditStatus,
+			AuditNote:        plan.AuditNote,
+			AuditedBy:        plan.AuditedBy,
+			AuditedAt:        plan.AuditedAt,
+			PublishedAt:      plan.PublishedAt,
+			UpdatedAt:        plan.UpdatedAt,
 		}
 	}
 
@@ -281,19 +287,22 @@ func (s *DietPlanService) GetDietPlanDetail(planID, userID string) (schemas.Diet
 
 	// 构建响应
 	planDetail := schemas.DietPlanDetail{
-		PlanID:          plan.PlanID,
-		UserID:          plan.UserID,
+		PlanID:           plan.PlanID,
+		UserID:           plan.UserID,
 		ServiceRequestID: plan.ServiceRequestID,
-		DietitianID:     plan.DietitianID,
-		DietitianName:   dietitianNames[plan.DietitianID],
-		PlanTitle:       plan.PlanTitle,
-		Source:          plan.Source,
-		DietGoal:        plan.DietGoal,
-		CycleDays:       plan.CycleDays,
-		AuditStatus:     plan.AuditStatus,
-		PublishedAt:     plan.PublishedAt,
-		UpdatedAt:       plan.UpdatedAt,
-		PlanDays:        planDaysDetail,
+		DietitianID:      plan.DietitianID,
+		DietitianName:    dietitianNames[plan.DietitianID],
+		PlanTitle:        plan.PlanTitle,
+		Source:           plan.Source,
+		DietGoal:         plan.DietGoal,
+		CycleDays:        plan.CycleDays,
+		AuditStatus:      plan.AuditStatus,
+		AuditNote:        plan.AuditNote,
+		AuditedBy:        plan.AuditedBy,
+		AuditedAt:        plan.AuditedAt,
+		PublishedAt:      plan.PublishedAt,
+		UpdatedAt:        plan.UpdatedAt,
+		PlanDays:         planDaysDetail,
 	}
 
 	return planDetail, nil
@@ -455,18 +464,21 @@ func (s *DietPlanService) UpdateDietPlan(planID, userID, actorDietitianID string
 
 	dietitianNames := NewServiceRequestService().DietitianNamesByIDs([]string{plan.DietitianID})
 	return schemas.DietPlan{
-		PlanID:          plan.PlanID,
-		UserID:          plan.UserID,
+		PlanID:           plan.PlanID,
+		UserID:           plan.UserID,
 		ServiceRequestID: plan.ServiceRequestID,
-		DietitianID:     plan.DietitianID,
-		DietitianName:   dietitianNames[plan.DietitianID],
-		PlanTitle:       plan.PlanTitle,
-		Source:          plan.Source,
-		DietGoal:        plan.DietGoal,
-		CycleDays:       plan.CycleDays,
-		AuditStatus:     plan.AuditStatus,
-		PublishedAt:     plan.PublishedAt,
-		UpdatedAt:       plan.UpdatedAt,
+		DietitianID:      plan.DietitianID,
+		DietitianName:    dietitianNames[plan.DietitianID],
+		PlanTitle:        plan.PlanTitle,
+		Source:           plan.Source,
+		DietGoal:         plan.DietGoal,
+		CycleDays:        plan.CycleDays,
+		AuditStatus:      plan.AuditStatus,
+		AuditNote:        plan.AuditNote,
+		AuditedBy:        plan.AuditedBy,
+		AuditedAt:        plan.AuditedAt,
+		PublishedAt:      plan.PublishedAt,
+		UpdatedAt:        plan.UpdatedAt,
 	}, nil
 }
 
@@ -482,9 +494,11 @@ func (s *DietPlanService) PublishDietPlan(planID, userID, actorDietitianID strin
 		plan.DietitianID = actorDietitianID
 	}
 
-	// 更新状态为已发布
-	plan.AuditStatus = "published"
-	plan.PublishedAt = time.Now()
+	// 重审核模式：规划师发布改为提交审核
+	plan.AuditStatus = "pending_review"
+	plan.AuditNote = ""
+	plan.AuditedBy = ""
+	plan.AuditedAt = nil
 	plan.UpdatedAt = time.Now()
 
 	if err := fillDietPlanFromApprovedServiceRequest(config.DB, &plan, plan.ServiceRequestID, ""); err != nil {
@@ -500,18 +514,102 @@ func (s *DietPlanService) PublishDietPlan(planID, userID, actorDietitianID strin
 
 	dietitianNames := NewServiceRequestService().DietitianNamesByIDs([]string{plan.DietitianID})
 	return schemas.DietPlan{
-		PlanID:          plan.PlanID,
-		UserID:          plan.UserID,
+		PlanID:           plan.PlanID,
+		UserID:           plan.UserID,
 		ServiceRequestID: plan.ServiceRequestID,
-		DietitianID:     plan.DietitianID,
-		DietitianName:   dietitianNames[plan.DietitianID],
-		PlanTitle:       plan.PlanTitle,
-		Source:          plan.Source,
-		DietGoal:        plan.DietGoal,
-		CycleDays:       plan.CycleDays,
-		AuditStatus:     plan.AuditStatus,
-		PublishedAt:     plan.PublishedAt,
-		UpdatedAt:       plan.UpdatedAt,
+		DietitianID:      plan.DietitianID,
+		DietitianName:    dietitianNames[plan.DietitianID],
+		PlanTitle:        plan.PlanTitle,
+		Source:           plan.Source,
+		DietGoal:         plan.DietGoal,
+		CycleDays:        plan.CycleDays,
+		AuditStatus:      plan.AuditStatus,
+		AuditNote:        plan.AuditNote,
+		AuditedBy:        plan.AuditedBy,
+		AuditedAt:        plan.AuditedAt,
+		PublishedAt:      plan.PublishedAt,
+		UpdatedAt:        plan.UpdatedAt,
+	}, nil
+}
+
+// GetAdminPendingDietPlans 获取管理员待审核膳食计划
+func (s *DietPlanService) GetAdminPendingDietPlans() ([]schemas.DietPlan, error) {
+	var plans []models.DietPlan
+	if err := config.DB.Where("audit_status = ?", "pending_review").Order("updated_at DESC").Find(&plans).Error; err != nil {
+		return nil, err
+	}
+	dietitianIDs := make([]string, 0, len(plans))
+	for _, plan := range plans {
+		dietitianIDs = append(dietitianIDs, plan.DietitianID)
+	}
+	nameMap := NewServiceRequestService().DietitianNamesByIDs(dietitianIDs)
+	result := make([]schemas.DietPlan, len(plans))
+	for i, plan := range plans {
+		result[i] = schemas.DietPlan{
+			PlanID:           plan.PlanID,
+			UserID:           plan.UserID,
+			ServiceRequestID: plan.ServiceRequestID,
+			DietitianID:      plan.DietitianID,
+			DietitianName:    nameMap[plan.DietitianID],
+			PlanTitle:        plan.PlanTitle,
+			Source:           plan.Source,
+			DietGoal:         plan.DietGoal,
+			CycleDays:        plan.CycleDays,
+			AuditStatus:      plan.AuditStatus,
+			AuditNote:        plan.AuditNote,
+			AuditedBy:        plan.AuditedBy,
+			AuditedAt:        plan.AuditedAt,
+			PublishedAt:      plan.PublishedAt,
+			UpdatedAt:        plan.UpdatedAt,
+		}
+	}
+	return result, nil
+}
+
+// AdminReviewDietPlan 管理员审核膳食计划
+func (s *DietPlanService) AdminReviewDietPlan(planID, adminID, action, reviewNote string) (schemas.DietPlan, error) {
+	var plan models.DietPlan
+	if err := config.DB.Where("plan_id = ?", strings.TrimSpace(planID)).First(&plan).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.DietPlan{}, ErrDietPlanNotFound
+		}
+		return schemas.DietPlan{}, err
+	}
+	action = strings.TrimSpace(action)
+	switch action {
+	case "approve":
+		plan.AuditStatus = "approved"
+		plan.PublishedAt = time.Now()
+	case "reject":
+		plan.AuditStatus = "rejected"
+	default:
+		return schemas.DietPlan{}, errors.New("不支持的审核动作")
+	}
+	plan.AuditNote = strings.TrimSpace(reviewNote)
+	plan.AuditedBy = strings.TrimSpace(adminID)
+	auditedAt := time.Now()
+	plan.AuditedAt = &auditedAt
+	plan.UpdatedAt = time.Now()
+	if err := config.DB.Save(&plan).Error; err != nil {
+		return schemas.DietPlan{}, err
+	}
+	dietitianNames := NewServiceRequestService().DietitianNamesByIDs([]string{plan.DietitianID})
+	return schemas.DietPlan{
+		PlanID:           plan.PlanID,
+		UserID:           plan.UserID,
+		ServiceRequestID: plan.ServiceRequestID,
+		DietitianID:      plan.DietitianID,
+		DietitianName:    dietitianNames[plan.DietitianID],
+		PlanTitle:        plan.PlanTitle,
+		Source:           plan.Source,
+		DietGoal:         plan.DietGoal,
+		CycleDays:        plan.CycleDays,
+		AuditStatus:      plan.AuditStatus,
+		AuditNote:        plan.AuditNote,
+		AuditedBy:        plan.AuditedBy,
+		AuditedAt:        plan.AuditedAt,
+		PublishedAt:      plan.PublishedAt,
+		UpdatedAt:        plan.UpdatedAt,
 	}, nil
 }
 

@@ -184,7 +184,7 @@ Page({
     
     // 优先检查是否存在当日膳食计划
     const currentPlan = wx.getStorageSync('currentDietPlan');
-    if (currentPlan && currentPlan.status === 'published') {
+    if (currentPlan && currentPlan.status === 'approved') {
       // 使用膳食计划的营养目标
       const formattedNutrients = {
         calories: parseFloat(this.formatNumber(currentPlan.calories)),

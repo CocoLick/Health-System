@@ -530,7 +530,7 @@ Page({
           return;
         }
         const raw = res.data || [];
-        const published = raw.filter((p) => p && String(p.status).toLowerCase() === 'published');
+        const published = raw.filter((p) => p && String(p.status).toLowerCase() === 'approved');
         const planOptions = published.map((p) => ({
           id: p.id || p.plan_id,
           title: (p.title && String(p.title).trim()) || '未命名计划'

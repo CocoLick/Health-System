@@ -94,18 +94,21 @@ type FoodUpdate struct {
 
 // DietPlan 膳食计划响应
 type DietPlan struct {
-	PlanID           string    `json:"id"`
-	UserID           string    `json:"user_id"`
-	ServiceRequestID string    `json:"service_request_id"`
-	DietitianID      string    `json:"dietitian_id"`
-	DietitianName    string    `json:"dietitian_name"`
-	PlanTitle        string    `json:"title"`
-	Source           string    `json:"source"`
-	DietGoal         string    `json:"goal"`
-	CycleDays        int       `json:"cycle_days"`
-	AuditStatus      string    `json:"status"`
-	PublishedAt      time.Time `json:"create_time"`
-	UpdatedAt        time.Time `json:"update_time"`
+	PlanID           string     `json:"id"`
+	UserID           string     `json:"user_id"`
+	ServiceRequestID string     `json:"service_request_id"`
+	DietitianID      string     `json:"dietitian_id"`
+	DietitianName    string     `json:"dietitian_name"`
+	PlanTitle        string     `json:"title"`
+	Source           string     `json:"source"`
+	DietGoal         string     `json:"goal"`
+	CycleDays        int        `json:"cycle_days"`
+	AuditStatus      string     `json:"status"`
+	AuditNote        string     `json:"audit_note,omitempty"`
+	AuditedBy        string     `json:"audited_by,omitempty"`
+	AuditedAt        *time.Time `json:"audited_at,omitempty"`
+	PublishedAt      time.Time  `json:"create_time"`
+	UpdatedAt        time.Time  `json:"update_time"`
 }
 
 // DietPlanDetail 膳食计划详情响应
@@ -120,10 +123,19 @@ type DietPlanDetail struct {
 	DietGoal         string          `json:"goal"`
 	CycleDays        int             `json:"cycle_days"`
 	AuditStatus      string          `json:"status"`
+	AuditNote        string          `json:"audit_note,omitempty"`
+	AuditedBy        string          `json:"audited_by,omitempty"`
+	AuditedAt        *time.Time      `json:"audited_at,omitempty"`
 	PublishedAt      time.Time       `json:"create_time"`
 	UpdatedAt        time.Time       `json:"update_time"`
 	GenerationSource string          `json:"generation_source,omitempty"`
 	PlanDays         []PlanDayDetail `json:"plan_days"`
+}
+
+// DietPlanAdminReviewRequest 管理员审核膳食计划请求
+type DietPlanAdminReviewRequest struct {
+	Action     string `json:"action" binding:"required"`
+	ReviewNote string `json:"review_note"`
 }
 
 // PlanDayDetail 天计划详情响应
@@ -196,9 +208,9 @@ type AIDietPlanDraftResponse struct {
 
 // AIDietPlanOptimizeRequest 规划师：基于当前计划、身体变化与反馈生成优化草案（不落库）
 type AIDietPlanOptimizeRequest struct {
-	UserID        string   `json:"user_id" binding:"required"`
-	FeedbackIDs   []string `json:"feedback_ids"`
-	PlannerNote   string   `json:"planner_note"`
+	UserID      string   `json:"user_id" binding:"required"`
+	FeedbackIDs []string `json:"feedback_ids"`
+	PlannerNote string   `json:"planner_note"`
 }
 
 // AIDietPlanOptimizeDraftResponse 智能优化草案（仅生成，需规划师审阅后保存/发布）

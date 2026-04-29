@@ -99,9 +99,9 @@ Page({
           let currentPlan = null;
           let historyPlans = [];
           
-          // 找到最新的已发布计划（按发布时间倒序更稳定）
+          // 找到最新的已通过计划（按审核/发布时间倒序更稳定）
           const publishedPlans = plans
-            .filter(p => p && p.status === 'published')
+            .filter(p => p && p.status === 'approved')
             .sort((a, b) => {
               const dateA = a.published_at ? new Date(a.published_at) : new Date(0);
               const dateB = b.published_at ? new Date(b.published_at) : new Date(0);
@@ -212,10 +212,50 @@ Page({
                   this.initDate();
                 });
           }
+
+          // 若没有已通过计划，展示“待管理员审核”提示卡片
+          if (!currentPlan) {
+            const pendingPlans = plans
+              .filter(p => p && p.status === 'pending_review')
+              .sort((a, b) => {
+                const dateA = a.update_time ? new Date(a.update_time) : new Date(0);
+                const dateB = b.update_time ? new Date(b.update_time) : new Date(0);
+                return dateB - dateA;
+              });
+            if (pendingPlans.length > 0) {
+              const pending = pendingPlans[0];
+              const pendingGoal = this.normalizePlanGoalRaw(pending);
+              currentPlan = {
+                id: pending.id,
+                user_id: pending.user_id,
+                dietitian_id: pending.dietitian_id,
+                title: pending.title || '膳食计划',
+                source: pending.source || 'dietitian',
+                dietitianName: pending.dietitian_name || pending.dietitian_id || '规划师',
+                status: pending.status,
+                goal: pendingGoal,
+                goalText: this.getDietGoalText(pendingGoal, pending.other_goal || ''),
+                createTime: pending.update_time || pending.create_time || ''
+              };
+              wx.setStorageSync('currentDietPlan', currentPlan);
+            }
+          }
+
+          // 待审核计划也需要立即渲染到页面
+          if (currentPlan && currentPlan.status === 'pending_review') {
+            this.setData({
+              selectedDietitian,
+              pendingRequest,
+              currentPlan,
+              historyPlans
+            });
+            this.determineStatus();
+            this.initDate();
+          }
           
           // 其他计划作为历史计划
           for (const planData of plans) {
-            if (planData.status !== 'published') {
+            if (planData.status !== 'approved') {
               historyPlans.push({
                 id: planData.id,
                 title: planData.title,
@@ -277,9 +317,9 @@ Page({
     const { pendingRequest, currentPlan } = this.data;
     let status = 0;
 
-    if (currentPlan && currentPlan.status === 'published') {
+    if (currentPlan && currentPlan.status === 'approved') {
       status = 4;
-    } else if (currentPlan && currentPlan.status === 'pending_audit') {
+    } else if (currentPlan && currentPlan.status === 'pending_review') {
       status = 3;
     } else if (pendingRequest) {
       status = 2;
@@ -308,6 +348,10 @@ Page({
   viewPlanDetail() {
     if (!this.data.currentPlan) {
       wx.showToast({ title: '暂无计划', icon: 'none' });
+      return;
+    }
+    if (this.data.currentPlan.status === 'pending_review') {
+      wx.showToast({ title: '计划正在等待管理员审核', icon: 'none' });
       return;
     }
     // 计划详情已经在当前页面显示，不需要任何操作

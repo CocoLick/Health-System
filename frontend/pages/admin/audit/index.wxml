@@ -16,6 +16,9 @@
 
   <!-- 膳食计划审核 -->
   <view wx:if="{{activeTab === 'plans'}}" class="audit-content">
+    <view wx:if="{{planLoading}}" class="empty-state">
+      <text class="empty-text">加载中...</text>
+    </view>
     <view wx:for="{{pendingPlans}}" wx:key="index" class="audit-item">
       <view class="item-header">
         <text class="item-title">{{item.title}}</text>
@@ -40,12 +43,15 @@
         </view>
       </view>
       <view class="item-footer">
-        <view class="btn-primary" bindtap="approvePlan" data-index="{{index}}">通过</view>
-        <view class="btn-secondary" bindtap="rejectPlan" data-index="{{index}}">驳回</view>
-        <view class="btn-text" bindtap="viewPlanDetail" data-index="{{index}}">查看详情</view>
+        <view class="btn-primary" bindtap="approvePlan" data-id="{{item.id}}">通过</view>
+        <view class="btn-secondary" bindtap="rejectPlan" data-id="{{item.id}}">驳回</view>
+        <view class="btn-text" bindtap="viewPlanDetail" data-item="{{item}}">查看详情</view>
       </view>
     </view>
-    <view wx:if="{{pendingPlans.length === 0}}" class="empty-state">
+    <view wx:if="{{planHint}}" class="empty-state">
+      <text class="empty-text">{{planHint}}</text>
+    </view>
+    <view wx:if="{{!planLoading && !planHint && pendingPlans.length === 0}}" class="empty-state">
       <text class="empty-icon">📋</text>
       <text class="empty-text">暂无待审核的膳食计划</text>
     </view>
@@ -222,6 +228,36 @@
       </view>
       <view class="item-footer">
         <view class="btn-secondary" bindtap="hideArticleDetailModal">关闭</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showPlanDetailModal}}" class="audit-modal-mask" bindtap="hidePlanDetailModal">
+    <view class="audit-modal-card" catchtap="noop">
+      <view class="audit-modal-head">
+        <text class="audit-modal-title">膳食计划详情</text>
+        <view class="audit-modal-close" bindtap="hidePlanDetailModal">×</view>
+      </view>
+      <view class="audit-modal-body">
+        <view class="item-info"><text class="info-label">标题：</text><text class="info-value">{{selectedPlanDetail.title}}</text></view>
+        <view class="item-info"><text class="info-label">用户ID：</text><text class="info-value">{{selectedPlanDetail.user_id}}</text></view>
+        <view class="item-info"><text class="info-label">规划师：</text><text class="info-value">{{selectedPlanDetail.dietitian_name || selectedPlanDetail.dietitian_id || '-'}}</text></view>
+        <view class="item-info"><text class="info-label">目标：</text><text class="info-value">{{selectedPlanDetail.goal || '-'}}</text></view>
+        <view class="item-info"><text class="info-label">周期：</text><text class="info-value">{{selectedPlanDetail.cycle_days}} 天</text></view>
+        <view class="item-info"><text class="info-label">提交时间：</text><text class="info-value">{{selectedPlanDetail.update_time}}</text></view>
+        <view class="item-info"><text class="info-label">状态：</text><text class="info-value">{{selectedPlanDetail.status}}</text></view>
+        <view class="item-info"><text class="info-label">驳回原因：</text><text class="info-value">{{selectedPlanDetail.audit_note || '—'}}</text></view>
+
+        <view wx:for="{{selectedPlanDetail.plan_days}}" wx:key="id" class="article-preview">
+          <text class="preview-text">第{{item.day_index}}天 {{item.date}} · {{item.calories}} kcal</text>
+          <view wx:for="{{item.meals}}" wx:key="id" class="item-info">
+            <text class="info-label">{{item.type}}：</text>
+            <text class="info-value">{{item.time}} · {{item.calories}} kcal</text>
+          </view>
+        </view>
+      </view>
+      <view class="item-footer">
+        <view class="btn-secondary" bindtap="hidePlanDetailModal">关闭</view>
       </view>
     </view>
   </view>

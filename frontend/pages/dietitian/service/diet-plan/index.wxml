@@ -27,6 +27,19 @@
     </view>
   </view>
 
+  <!-- 驳回原因提示（仅驳回状态显示） -->
+  <view class="reject-notice" wx:if="{{planAuditStatus === 'rejected' && planRejectReason}}">
+    <view class="reject-notice-title">⚠️ 当前计划已被驳回</view>
+    <view class="reject-notice-row">
+      <text class="reject-notice-label">驳回原因：</text>
+      <text class="reject-notice-text">{{planRejectReason}}</text>
+    </view>
+    <view class="reject-notice-row" wx:if="{{planRejectTime}}">
+      <text class="reject-notice-label">审核时间：</text>
+      <text class="reject-notice-text">{{planRejectTime}}</text>
+    </view>
+  </view>
+
   <!-- 计划基本信息 -->
   <view class="plan-info">
     <view class="section-title">计划基本信息</view>
