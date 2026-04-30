@@ -210,12 +210,12 @@
     </view>
 
     <view class="card block">
-      <view class="label">标题 <text class="req">*</text></view>
+      <view class="label">标题 <text wx:if="{{category !== 'dietitian_review'}}" class="req">*</text><text wx:else>（选填）</text></view>
       <input class="input" placeholder="简要概括问题" maxlength="80" value="{{title}}" bindinput="onTitleInput" />
     </view>
 
     <view class="card block">
-      <view class="label">正文 <text class="req">*</text></view>
+      <view class="label">正文 <text wx:if="{{category !== 'dietitian_review'}}" class="req">*</text><text wx:else>（选填）</text></view>
       <textarea
         class="textarea"
         placeholder="请描述具体情况、复现步骤或建议"

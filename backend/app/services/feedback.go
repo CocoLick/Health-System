@@ -203,9 +203,6 @@ func (s *FeedbackService) CreateUserFeedback(userID string, req schemas.Feedback
 	}
 	title := strings.TrimSpace(req.Title)
 	content := strings.TrimSpace(req.Content)
-	if title == "" || content == "" {
-		return nil, fmt.Errorf("%w: 标题与内容不能为空", ErrFeedbackValidation)
-	}
 
 	row := &models.UserFeedback{
 		FeedbackID: newFeedbackID(),
@@ -221,6 +218,9 @@ func (s *FeedbackService) CreateUserFeedback(userID string, req schemas.Feedback
 
 	switch cat {
 	case "diet_plan":
+		if title == "" || content == "" {
+			return nil, fmt.Errorf("%w: 标题与内容不能为空", ErrFeedbackValidation)
+		}
 		pid := strings.TrimSpace(req.RelatedPlanID)
 		if pid == "" {
 			return nil, fmt.Errorf("%w: 膳食计划类反馈需填写 related_plan_id", ErrFeedbackValidation)
@@ -238,6 +238,9 @@ func (s *FeedbackService) CreateUserFeedback(userID string, req schemas.Feedback
 		row.RelatedPlanID = pid
 		row.TargetDietitianID = strings.TrimSpace(plan.DietitianID)
 	case "dietitian_service":
+		if title == "" || content == "" {
+			return nil, fmt.Errorf("%w: 标题与内容不能为空", ErrFeedbackValidation)
+		}
 		did := strings.TrimSpace(req.TargetDietitianID)
 		if did == "" {
 			return nil, fmt.Errorf("%w: 规划服务类反馈需指定 target_dietitian_id", ErrFeedbackValidation)
@@ -257,8 +260,20 @@ func (s *FeedbackService) CreateUserFeedback(userID string, req schemas.Feedback
 		if !s.userServesDietitian(userID, did) {
 			return nil, fmt.Errorf("%w: 未与该规划师建立已通过/已完成的服务关系", ErrFeedbackValidation)
 		}
+		if title == "" {
+			title = "规划师评价"
+		}
+		if content == "" {
+			content = "用户未填写文字评价"
+		}
+		row.Title = title
+		row.Content = content
+		row.Status = "closed"
 		row.TargetDietitianID = did
 	case "system":
+		if title == "" || content == "" {
+			return nil, fmt.Errorf("%w: 标题与内容不能为空", ErrFeedbackValidation)
+		}
 		row.TargetDietitianID = ""
 	}
 
@@ -330,7 +345,7 @@ func (s *FeedbackService) assertDietitianTarget(dietitianID string, fb *models.U
 	return nil
 }
 
-// ListForDietitian 指派给当前规划师的反馈（不含 system）
+// ListForDietitian 指派给当前规划师的反馈（不含 system / dietitian_review）
 func (s *FeedbackService) ListForDietitian(dietitianID string, q schemas.FeedbackDietitianListQuery) ([]schemas.FeedbackListItem, error) {
 	dietitianID = strings.TrimSpace(dietitianID)
 	st := strings.ToLower(strings.TrimSpace(q.Status))
@@ -339,7 +354,7 @@ func (s *FeedbackService) ListForDietitian(dietitianID string, q schemas.Feedbac
 	}
 
 	tx := s.db.Model(&models.UserFeedback{}).
-		Where("target_dietitian_id = ? AND category != ?", dietitianID, "system").
+		Where("target_dietitian_id = ? AND category NOT IN ?", dietitianID, []string{"system", "dietitian_review"}).
 		Order("CASE WHEN status = 'pending' THEN 0 ELSE 1 END, updated_at DESC")
 
 	switch st {
@@ -418,7 +433,7 @@ func (s *FeedbackService) ListForDietitian(dietitianID string, q schemas.Feedbac
 func (s *FeedbackService) CountPendingForDietitian(dietitianID string) (int64, error) {
 	var n int64
 	err := s.db.Model(&models.UserFeedback{}).
-		Where("target_dietitian_id = ? AND status = ? AND category != ?", strings.TrimSpace(dietitianID), "pending", "system").
+		Where("target_dietitian_id = ? AND status = ? AND category NOT IN ?", strings.TrimSpace(dietitianID), "pending", []string{"system", "dietitian_review"}).
 		Count(&n).Error
 	return n, err
 }

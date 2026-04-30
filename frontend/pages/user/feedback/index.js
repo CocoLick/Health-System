@@ -627,16 +627,16 @@ Page({
     }
     const title = String(this.data.title || '').trim();
     const content = String(this.data.content || '').trim();
-    if (!title) {
+    const cat = this.data.category;
+
+    if (cat !== 'dietitian_review' && !title) {
       wx.showToast({ title: '请填写标题', icon: 'none' });
       return;
     }
-    if (!content) {
+    if (cat !== 'dietitian_review' && !content) {
       wx.showToast({ title: '请填写正文', icon: 'none' });
       return;
     }
-
-    const cat = this.data.category;
     const payload = { category: cat, title, content };
 
     if (this.data.rating > 0) {

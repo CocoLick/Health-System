@@ -5,8 +5,8 @@ import "time"
 // FeedbackCreate 用户提交反馈（用户端接口，供后续接入；也可用于联调）
 type FeedbackCreate struct {
 	Category           string `json:"category" binding:"required"` // diet_plan | dietitian_service | dietitian_review | system
-	Title              string `json:"title" binding:"required"`
-	Content            string `json:"content" binding:"required"`
+	Title              string `json:"title"`
+	Content            string `json:"content"`
 	Rating             *int   `json:"rating"`
 	RelatedPlanID      string `json:"related_plan_id"`
 	TargetDietitianID  string `json:"target_dietitian_id"` // dietitian_service 时必填
