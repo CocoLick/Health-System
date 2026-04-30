@@ -346,6 +346,9 @@ const healthEducation = {
 
 // 意见反馈（用户提交 + 规划师处理）
 const feedback = {
+  adminStats: function() {
+    return get('/api/feedback/admin/stats');
+  },
   submit: function(data) {
     return post('/api/feedback', data);
   },

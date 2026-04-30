@@ -706,21 +706,16 @@
       <view class="chart-section">
         <text class="section-title">用户增长趋势</text>
         <view class="chart-placeholder">
-          <text class="chart-text">图表区域</text>
-        </view>
-      </view>
-
-      <view class="chart-section">
-        <text class="section-title">膳食计划统计</text>
-        <view class="chart-placeholder">
-          <text class="chart-text">图表区域</text>
-        </view>
-      </view>
-
-      <view class="chart-section">
-        <text class="section-title">营养记录统计</text>
-        <view class="chart-placeholder">
-          <text class="chart-text">图表区域</text>
+          <view class="mini-bars" wx:if="{{userGrowthTrend.length > 0}}">
+            <view class="mini-bar-item" wx:for="{{userGrowthTrend}}" wx:key="dateKey">
+              <view class="mini-bar-track">
+                <view class="mini-bar-fill" style="height: {{item.value > 0 ? (item.value * 10 + 12) : 8}}rpx;"></view>
+              </view>
+              <text class="mini-bar-value">{{item.value}}</text>
+              <text class="mini-bar-label">{{item.label}}</text>
+            </view>
+          </view>
+          <text class="chart-text" wx:else>暂无用户增长数据</text>
         </view>
       </view>
     </view>

@@ -767,3 +767,76 @@ func (s *FeedbackService) formatFeedbackForPrompt(fb *models.UserFeedback) strin
 	}
 	return b.String()
 }
+
+// AdminStats 管理员：反馈处理统计
+func (s *FeedbackService) AdminStats(days int) (*schemas.FeedbackAdminStats, error) {
+	if days <= 0 {
+		days = 7
+	}
+
+	var rows []models.UserFeedback
+	if err := s.db.Select("category", "status", "created_at", "first_reply_at").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	labels := make([]string, 0, days)
+	dateSet := make(map[string]bool, days)
+	for i := days - 1; i >= 0; i-- {
+		d := now.AddDate(0, 0, -i).Format("2006-01-02")
+		labels = append(labels, d)
+		dateSet[d] = true
+	}
+
+	createdMap := make(map[string]int, days)
+	processedMap := make(map[string]int, days)
+
+	var out schemas.FeedbackAdminStats
+	for _, it := range rows {
+		out.TotalCount++
+		switch strings.TrimSpace(it.Status) {
+		case "pending":
+			out.PendingCount++
+		case "replied":
+			out.RepliedCount++
+		case "closed":
+			out.ClosedCount++
+		}
+
+		switch strings.TrimSpace(it.Category) {
+		case "diet_plan":
+			out.DietPlanCount++
+		case "dietitian_service":
+			out.ServiceCount++
+		case "dietitian_review":
+			out.ReviewCount++
+		case "system":
+			out.SystemCount++
+		}
+
+		createdKey := it.CreatedAt.Format("2006-01-02")
+		if dateSet[createdKey] {
+			createdMap[createdKey] = createdMap[createdKey] + 1
+		}
+		if it.FirstReplyAt != nil {
+			processedKey := it.FirstReplyAt.Format("2006-01-02")
+			if dateSet[processedKey] {
+				processedMap[processedKey] = processedMap[processedKey] + 1
+			}
+		}
+	}
+
+	out.CreatedTrend7d = make([]schemas.FeedbackTrendPoint, 0, days)
+	out.ProcessedTrend7d = make([]schemas.FeedbackTrendPoint, 0, days)
+	for _, d := range labels {
+		out.CreatedTrend7d = append(out.CreatedTrend7d, schemas.FeedbackTrendPoint{
+			Date:  d,
+			Count: createdMap[d],
+		})
+		out.ProcessedTrend7d = append(out.ProcessedTrend7d, schemas.FeedbackTrendPoint{
+			Date:  d,
+			Count: processedMap[d],
+		})
+	}
+	return &out, nil
+}

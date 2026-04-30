@@ -22,6 +22,7 @@ func RegisterFeedbackRoutes(router *gin.RouterGroup) {
 	h := NewFeedbackHandler()
 	g := router.Group("/feedback")
 	{
+		g.GET("/admin/stats", h.AdminStats)
 		g.GET("/dietitian/pending-count", h.PendingCount)
 		g.GET("/dietitian", h.ListDietitian)
 		g.GET("/dietitian/:id/reviews", h.ListDietitianReviewsForUser)
@@ -33,6 +34,20 @@ func RegisterFeedbackRoutes(router *gin.RouterGroup) {
 		g.GET("/:id", h.DetailDietitian)
 		g.POST("", h.CreateUser)
 	}
+}
+
+// AdminStats GET /api/feedback/admin/stats?days=7
+func (h *FeedbackHandler) AdminStats(c *gin.Context) {
+	if strings.TrimSpace(c.GetString("roleType")) != "admin" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅管理员可查看"})
+		return
+	}
+	stats, err := h.svc.AdminStats(7)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "ok", Data: stats})
 }
 
 // ListDietitianReviewsForUser GET /api/feedback/dietitian/:id/reviews

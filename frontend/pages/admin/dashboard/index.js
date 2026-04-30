@@ -72,6 +72,7 @@ Page({
       completedPlans: 0,
       healthEducationCount: 0
     },
+    userGrowthTrend: [],
     recentActivities: [],
     notices: [
       {
@@ -142,6 +143,7 @@ Page({
 
   onLoad() {
     this.loadSystemStats();
+    this.loadStatisticsCharts();
     this.loadDietitians();
     this.loadUsers();
     this.loadNutritionItems();
@@ -301,6 +303,66 @@ Page({
         'stats.activeUsers': activeUsers,
         'stats.completedPlans': completedPlans,
         'stats.healthEducationCount': healthEducationCount
+      });
+    });
+  },
+
+  formatDateYMD(dateObj) {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  },
+
+  formatDateMDLabel(ymd) {
+    const s = String(ymd || '');
+    if (s.length < 10) return s;
+    return `${s.slice(5, 7)}/${s.slice(8, 10)}`;
+  },
+
+  getRecentDateKeys(days) {
+    const out = [];
+    const now = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      out.push(this.formatDateYMD(d));
+    }
+    return out;
+  },
+
+  loadStatisticsCharts() {
+    const safe =
+      (p) =>
+        p.then((r) => r).catch(() => null);
+
+    Promise.all([
+      safe(api.admin.getAllUsers()),
+    ]).then(([userRes]) => {
+      const dateKeys = this.getRecentDateKeys(7);
+
+      const userCreatedMap = {};
+      dateKeys.forEach((k) => {
+        userCreatedMap[k] = 0;
+      });
+      if (userRes && this.isOk200(userRes.code) && Array.isArray(userRes.data)) {
+        userRes.data.forEach((u) => {
+          const d = new Date(u && u.created_at ? u.created_at : '');
+          if (isNaN(d.getTime())) return;
+          const key = this.formatDateYMD(d);
+          if (userCreatedMap[key] != null) {
+            userCreatedMap[key] = userCreatedMap[key] + 1;
+          }
+        });
+      }
+      const userGrowthTrend = dateKeys.map((k) => ({
+        dateKey: k,
+        label: this.formatDateMDLabel(k),
+        value: userCreatedMap[k] || 0
+      }));
+
+      this.setData({
+        userGrowthTrend
       });
     });
   },
@@ -730,6 +792,9 @@ Page({
     this.setData({
       activeTab: tab
     });
+    if (tab === 'statistics') {
+      this.loadStatisticsCharts();
+    }
   },
 
   switchAuditSubTab(e) {

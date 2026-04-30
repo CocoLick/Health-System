@@ -1754,6 +1754,48 @@
   color: var(--c-text-3);
 }
 
+.mini-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10rpx;
+}
+
+.mini-bar-item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.mini-bar-track {
+  width: 100%;
+  height: 100rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: #f4efe9;
+  border-radius: 8rpx;
+}
+
+.mini-bar-fill {
+  width: 72%;
+  border-radius: 8rpx 8rpx 4rpx 4rpx;
+  background: rgba(45, 106, 79, 0.7);
+}
+
+.mini-bar-value {
+  font-size: 22rpx;
+  color: var(--c-text);
+}
+
+.mini-bar-label {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+}
+
 /* 食材审核卡片底部按钮微调 */
 .ingredient-actions {
   justify-content: space-between;

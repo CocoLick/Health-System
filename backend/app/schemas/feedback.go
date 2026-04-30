@@ -96,3 +96,23 @@ type FeedbackDetailResponse struct {
 	UpdatedAt         time.Time            `json:"updated_at"`
 	Replies           []FeedbackReplyItem  `json:"replies"`
 }
+
+// FeedbackTrendPoint 反馈趋势点
+type FeedbackTrendPoint struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
+// FeedbackAdminStats 管理员反馈处理统计
+type FeedbackAdminStats struct {
+	TotalCount        int64                `json:"total_count"`
+	PendingCount      int64                `json:"pending_count"`
+	RepliedCount      int64                `json:"replied_count"`
+	ClosedCount       int64                `json:"closed_count"`
+	DietPlanCount     int64                `json:"diet_plan_count"`
+	ServiceCount      int64                `json:"service_count"`
+	ReviewCount       int64                `json:"review_count"`
+	SystemCount       int64                `json:"system_count"`
+	CreatedTrend7d    []FeedbackTrendPoint `json:"created_trend_7d"`
+	ProcessedTrend7d  []FeedbackTrendPoint `json:"processed_trend_7d"`
+}
