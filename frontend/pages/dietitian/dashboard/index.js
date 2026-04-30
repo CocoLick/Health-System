@@ -9,7 +9,30 @@ Page({
     feedbackSubTab: 'pending',
     searchKeyword: '',
     showPersonalCenterModal: false,
+    showProfileEditor: false,
+    profileLoading: false,
+    profileSaving: false,
     dietitianName: '营养师',
+    profileData: {
+      account_id: '',
+      username: '',
+      name: '',
+      title: '',
+      specialty: '',
+      introduction: '',
+      contact: '',
+      status: '',
+      role_type: '',
+      created_at: '',
+      updated_at: ''
+    },
+    profileForm: {
+      name: '',
+      title: '',
+      specialty: '',
+      introduction: '',
+      contact: ''
+    },
     stats: {
       pendingPlans: 0,
       pendingArticles: 1,
@@ -51,6 +74,7 @@ Page({
     this.loadData();
     this.loadServiceRequests();
     this.loadPendingFeedbackCount();
+    this.loadDietitianProfile();
   },
 
   onShow() {
@@ -58,9 +82,93 @@ Page({
     this.loadServiceRequests();
     this.loadHealthEducationList();
     this.loadPendingFeedbackCount();
+    this.loadDietitianProfile();
     if (this.data.activeTab === 'feedback') {
       this.loadFeedbacks();
     }
+  },
+
+  formatProfileDate(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  },
+
+  syncUserInfoToStorage(profileData) {
+    if (!profileData) return;
+    const old = wx.getStorageSync('userInfo') || {};
+    const next = Object.assign({}, old, {
+      user_id: profileData.account_id,
+      username: profileData.username,
+      name: profileData.name,
+      title: profileData.title,
+      specialty: profileData.specialty,
+      introduction: profileData.introduction,
+      contact: profileData.contact,
+      status: profileData.status,
+      role_type: profileData.role_type
+    });
+    wx.setStorageSync('userInfo', next);
+  },
+
+  loadDietitianProfile() {
+    this.setData({ profileLoading: true });
+    api.dietitian.getProfile()
+      .then((res) => {
+        if ((res.code !== 200 && res.code !== '200') || !res.data) {
+          wx.showToast({
+            title: res.message || '资料加载失败',
+            icon: 'none'
+          });
+          return;
+        }
+        const row = res.data;
+        const profileData = {
+          account_id: row.account_id || '',
+          username: row.username || '',
+          name: row.name || '',
+          title: row.title || '',
+          specialty: row.specialty || '',
+          introduction: row.introduction || '',
+          contact: row.contact || '',
+          status: row.status || '',
+          role_type: row.role_type || '',
+          created_at: this.formatProfileDate(row.created_at),
+          updated_at: this.formatProfileDate(row.updated_at)
+        };
+        const displayName = profileData.name || profileData.username || '营养师';
+        this.setData({
+          profileData,
+          dietitianName: displayName,
+          'stats.totalPlans': Number(row.total_plans || 0),
+          'stats.avgRating': Number(row.avg_rating || 0),
+          profileForm: {
+            name: profileData.name,
+            title: profileData.title,
+            specialty: profileData.specialty,
+            introduction: profileData.introduction,
+            contact: profileData.contact
+          }
+        });
+        this.syncUserInfoToStorage(row);
+      })
+      .catch((err) => {
+        console.error('加载规划师资料失败:', err);
+        wx.showToast({
+          title: '资料加载失败',
+          icon: 'none'
+        });
+      })
+      .finally(() => {
+        this.setData({ profileLoading: false });
+      });
   },
 
   loadData() {
@@ -686,11 +794,75 @@ Page({
   },
 
   editProfile() {
-    wx.showModal({
-      title: '个人资料',
-      content: '编辑个人资料功能开发中',
-      showCancel: false
+    const p = this.data.profileData || {};
+    this.hidePersonalCenter();
+    this.setData({
+      showProfileEditor: true,
+      profileForm: {
+        name: p.name || '',
+        title: p.title || '',
+        specialty: p.specialty || '',
+        introduction: p.introduction || '',
+        contact: p.contact || ''
+      }
     });
+  },
+
+  closeProfileEditor() {
+    this.setData({ showProfileEditor: false });
+  },
+
+  onProfileInput(e) {
+    const field = e.currentTarget.dataset.field;
+    if (!field) return;
+    this.setData({
+      [`profileForm.${field}`]: e.detail.value
+    });
+  },
+
+  submitProfileEdit() {
+    const form = this.data.profileForm || {};
+    const payload = {
+      name: String(form.name || '').trim(),
+      title: String(form.title || '').trim(),
+      specialty: String(form.specialty || '').trim(),
+      introduction: String(form.introduction || '').trim(),
+      contact: String(form.contact || '').trim()
+    };
+    if (!payload.name || !payload.title || !payload.specialty || !payload.contact) {
+      wx.showToast({
+        title: '请完整填写必填项',
+        icon: 'none'
+      });
+      return;
+    }
+    this.setData({ profileSaving: true });
+    api.dietitian.updateProfile(payload)
+      .then((res) => {
+        if (res.code !== 200 || !res.data) {
+          wx.showToast({
+            title: res.message || '保存失败',
+            icon: 'none'
+          });
+          return;
+        }
+        wx.showToast({
+          title: '资料已更新',
+          icon: 'success'
+        });
+        this.closeProfileEditor();
+        this.loadDietitianProfile();
+      })
+      .catch((err) => {
+        console.error('更新规划师资料失败:', err);
+        wx.showToast({
+          title: '网络错误',
+          icon: 'none'
+        });
+      })
+      .finally(() => {
+        this.setData({ profileSaving: false });
+      });
   },
 
   changePassword() {

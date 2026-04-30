@@ -183,6 +183,14 @@ const dietitian = {
   // 响应服务请求
   respondRequest: function(requestId, data) {
     return put(`/api/dietitian/service-request/${requestId}/respond`, data);
+  },
+  // 获取当前规划师个人资料
+  getProfile: function() {
+    return get('/api/auth/dietitian/profile');
+  },
+  // 更新当前规划师个人资料
+  updateProfile: function(data) {
+    return put('/api/auth/dietitian/profile', data);
   }
 };
 

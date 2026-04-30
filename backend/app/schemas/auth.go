@@ -30,14 +30,14 @@ type AdminLoginRequest struct {
 
 // CreateDietitianRequest 管理员创建规划师请求
 type CreateDietitianRequest struct {
-	Username  string `json:"username" binding:"required"`
-	Name      string `json:"name" binding:"required"`
-	Password  string `json:"password" binding:"required,min=6"`
-	Title     string `json:"title" binding:"required"`
-	Specialty string `json:"specialty" binding:"required"`
+	Username     string `json:"username" binding:"required"`
+	Name         string `json:"name" binding:"required"`
+	Password     string `json:"password" binding:"required,min=6"`
+	Title        string `json:"title" binding:"required"`
+	Specialty    string `json:"specialty" binding:"required"`
 	Introduction string `json:"introduction"`
-	Contact   string `json:"contact" binding:"required"`
-	Status    string `json:"status" binding:"required"`
+	Contact      string `json:"contact" binding:"required"`
+	Status       string `json:"status" binding:"required"`
 }
 
 // UpdateDietitianStatusRequest 更新规划师状态请求
@@ -57,11 +57,20 @@ type ChangePasswordRequest struct {
 	ConfirmPassword string `json:"confirm_password" binding:"required,eqfield=NewPassword"`
 }
 
+// UpdateDietitianProfileRequest 规划师更新个人资料请求
+type UpdateDietitianProfileRequest struct {
+	Name         string `json:"name" binding:"required"`
+	Title        string `json:"title" binding:"required"`
+	Specialty    string `json:"specialty" binding:"required"`
+	Introduction string `json:"introduction"`
+	Contact      string `json:"contact" binding:"required"`
+}
+
 // DietitianListQuery 用户端规划师列表筛选参数
 type DietitianListQuery struct {
-	Specialty                     string `form:"specialty"`
-	MaxCurrentServiceUserCount    int    `form:"max_current_service_user_count"`
-	MinHistoricalServiceUserCount int    `form:"min_historical_service_user_count"`
+	Specialty                     string  `form:"specialty"`
+	MaxCurrentServiceUserCount    int     `form:"max_current_service_user_count"`
+	MinHistoricalServiceUserCount int     `form:"min_historical_service_user_count"`
 	MinHistoricalAvgRating        float64 `form:"min_historical_avg_rating"`
 }
 

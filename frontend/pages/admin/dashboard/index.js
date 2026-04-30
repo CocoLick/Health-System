@@ -67,10 +67,10 @@ Page({
       dietitianCount: 15,
       pendingPlans: 3,
       pendingArticles: 2,
-      todayUsers: 12,
-      activeUsers: 86,
-      completedPlans: 45,
-      likedArticles: 230
+      todayUsers: 0,
+      activeUsers: 0,
+      completedPlans: 0,
+      healthEducationCount: 0
     },
     recentActivities: [],
     notices: [
@@ -246,12 +246,80 @@ Page({
   },
 
   loadSystemStats() {
-    console.log('加载系统统计数据');
+    const safe =
+      (p) =>
+        p.then((r) => r).catch(() => null);
+
+    Promise.all([
+      safe(api.admin.getAllUsers()),
+      safe(api.adminAudit.historyList()),
+      Promise.all([
+        safe(api.healthEducation.adminList({ audit_status: 'pending_review' })),
+        safe(api.healthEducation.adminList({ audit_status: 'approved' })),
+        safe(api.healthEducation.adminList({ audit_status: 'rejected' }))
+      ])
+    ]).then(([userRes, historyRes, articleResList]) => {
+      let todayUsers = 0;
+      let activeUsers = 0;
+      if (userRes && this.isOk200(userRes.code) && Array.isArray(userRes.data)) {
+        const users = userRes.data;
+        todayUsers = users.filter((u) => this.isTodayDateTime(u && u.created_at)).length;
+        activeUsers = users.filter((u) => {
+          const s = (u && u.status ? String(u.status) : '').trim();
+          return s !== '禁用';
+        }).length;
+      }
+
+      let completedPlans = 0;
+      if (historyRes && this.isOk200(historyRes.code) && Array.isArray(historyRes.data)) {
+        completedPlans = historyRes.data.filter((item) => {
+          const sourceType = item && item.source_type ? String(item.source_type).trim() : '';
+          const status = item && item.status ? String(item.status).trim() : '';
+          return sourceType === 'diet_plan' && status === '通过';
+        }).length;
+      }
+
+      let healthEducationCount = 0;
+      if (Array.isArray(articleResList)) {
+        const heIdSet = {};
+        articleResList.forEach((res) => {
+          if (!(res && this.isOk200(res.code) && Array.isArray(res.data))) {
+            return;
+          }
+          res.data.forEach((item) => {
+            const heId = item && item.he_id ? String(item.he_id).trim() : '';
+            if (heId) {
+              heIdSet[heId] = true;
+            }
+          });
+        });
+        healthEducationCount = Object.keys(heIdSet).length;
+      }
+
+      this.setData({
+        'stats.todayUsers': todayUsers,
+        'stats.activeUsers': activeUsers,
+        'stats.completedPlans': completedPlans,
+        'stats.healthEducationCount': healthEducationCount
+      });
+    });
   },
 
   /** 与后端 created_at/updated_at 一致，按时间合并多条来源 */
   isOk200(code) {
     return code === 200 || code === '200';
+  },
+
+  isTodayDateTime(v) {
+    if (!v) return false;
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return false;
+    const now = new Date();
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
   },
 
   formatActivityRelativeTime(iso) {

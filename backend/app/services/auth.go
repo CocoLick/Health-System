@@ -275,18 +275,18 @@ func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*mode
 
 	// 创建规划师（写入 dietitian 表）
 	dietitian := &models.Dietitian{
-		AccountID: accountID,
-		Username:  req.Username,
-		Name:      req.Name,
-		Password:  req.Password,
-		RoleType:  "dietitian",
-		Title:     req.Title,
-		Specialty: req.Specialty,
+		AccountID:    accountID,
+		Username:     req.Username,
+		Name:         req.Name,
+		Password:     req.Password,
+		RoleType:     "dietitian",
+		Title:        req.Title,
+		Specialty:    req.Specialty,
 		Introduction: strings.TrimSpace(req.Introduction),
-		Contact:   req.Contact,
-		Status:    req.Status,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Contact:      req.Contact,
+		Status:       req.Status,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	// 保存账号
@@ -296,18 +296,18 @@ func (s *AuthService) CreateDietitian(req schemas.CreateDietitianRequest) (*mode
 
 	// 兼容现有前端字段结构
 	return &models.User{
-		UserID:    dietitian.AccountID,
-		Username:  dietitian.Username,
-		Name:      dietitian.Name,
-		Phone:     dietitian.Contact,
-		RoleType:  dietitian.RoleType,
-		Title:     dietitian.Title,
-		Specialty: dietitian.Specialty,
+		UserID:       dietitian.AccountID,
+		Username:     dietitian.Username,
+		Name:         dietitian.Name,
+		Phone:        dietitian.Contact,
+		RoleType:     dietitian.RoleType,
+		Title:        dietitian.Title,
+		Specialty:    dietitian.Specialty,
 		Introduction: dietitian.Introduction,
-		Contact:   dietitian.Contact,
-		Status:    dietitian.Status,
-		CreatedAt: dietitian.CreatedAt,
-		UpdatedAt: dietitian.UpdatedAt,
+		Contact:      dietitian.Contact,
+		Status:       dietitian.Status,
+		CreatedAt:    dietitian.CreatedAt,
+		UpdatedAt:    dietitian.UpdatedAt,
 	}, nil
 }
 
@@ -463,22 +463,22 @@ func (s *AuthService) GetDietitians(q schemas.DietitianListQuery) ([]models.User
 		}
 		seen[d.AccountID] = true
 		dietitians = append(dietitians, models.User{
-			UserID:    d.AccountID,
-			Username:  d.Username,
-			Name:      d.Name,
-			Phone:     d.Contact,
-			RoleType:  d.RoleType,
-			Title:     d.Title,
-			Specialty: d.Specialty,
-			Introduction: d.Introduction,
-			Contact:   d.Contact,
+			UserID:                     d.AccountID,
+			Username:                   d.Username,
+			Name:                       d.Name,
+			Phone:                      d.Contact,
+			RoleType:                   d.RoleType,
+			Title:                      d.Title,
+			Specialty:                  d.Specialty,
+			Introduction:               d.Introduction,
+			Contact:                    d.Contact,
 			CurrentServiceUserCount:    currentCount,
 			HistoricalServiceUserCount: historyCount,
 			HistoricalAvgRating:        avgRating,
 			RatingCount:                ratingCount,
-			Status:    d.Status,
-			CreatedAt: d.CreatedAt,
-			UpdatedAt: d.UpdatedAt,
+			Status:                     d.Status,
+			CreatedAt:                  d.CreatedAt,
+			UpdatedAt:                  d.UpdatedAt,
 		})
 	}
 
@@ -582,18 +582,18 @@ func (s *AuthService) GetUserByID(userID string) (*models.User, error) {
 		return nil, result.Error
 	}
 	return &models.User{
-		UserID:    d.AccountID,
-		Username:  d.Username,
-		Name:      d.Name,
-		Phone:     d.Contact,
-		RoleType:  d.RoleType,
-		Title:     d.Title,
-		Specialty: d.Specialty,
+		UserID:       d.AccountID,
+		Username:     d.Username,
+		Name:         d.Name,
+		Phone:        d.Contact,
+		RoleType:     d.RoleType,
+		Title:        d.Title,
+		Specialty:    d.Specialty,
 		Introduction: d.Introduction,
-		Contact:   d.Contact,
-		Status:    d.Status,
-		CreatedAt: d.CreatedAt,
-		UpdatedAt: d.UpdatedAt,
+		Contact:      d.Contact,
+		Status:       d.Status,
+		CreatedAt:    d.CreatedAt,
+		UpdatedAt:    d.UpdatedAt,
 	}, nil
 }
 
@@ -656,6 +656,108 @@ func (s *AuthService) ChangePassword(userID, roleType string, req schemas.Change
 	default:
 		return errors.New("不支持的角色类型")
 	}
+}
+
+// GetCurrentDietitianProfile 获取当前登录规划师资料
+func (s *AuthService) GetCurrentDietitianProfile(userID string) (map[string]interface{}, error) {
+	var totalPlans int64
+	_ = config.DB.Model(&models.DietPlan{}).Where("dietitian_id = ?", userID).Count(&totalPlans).Error
+
+	var ratingAgg struct {
+		AvgRating float64 `gorm:"column:avg_rating"`
+	}
+	_ = config.DB.Model(&models.UserFeedback{}).
+		Select("COALESCE(AVG(rating), 0) AS avg_rating").
+		Where("target_dietitian_id = ? AND category = ? AND rating IS NOT NULL", userID, "dietitian_review").
+		Scan(&ratingAgg).Error
+	avgRating := math.Round(ratingAgg.AvgRating*10) / 10
+
+	var d models.Dietitian
+	if err := config.DB.Where("account_id = ? AND role_type = ?", userID, "dietitian").First(&d).Error; err == nil {
+		return map[string]interface{}{
+			"account_id":   userID,
+			"username":     d.Username,
+			"name":         d.Name,
+			"title":        d.Title,
+			"specialty":    d.Specialty,
+			"introduction": d.Introduction,
+			"contact":      d.Contact,
+			"status":       d.Status,
+			"role_type":    d.RoleType,
+			"created_at":   d.CreatedAt,
+			"updated_at":   d.UpdatedAt,
+			"total_plans":  totalPlans,
+			"avg_rating":   avgRating,
+		}, nil
+	}
+
+	if legacyAuthFallbackEnabled() {
+		var u models.User
+		if err := config.DB.Where("user_id = ? AND role_type = ?", userID, "dietitian").First(&u).Error; err == nil {
+			return map[string]interface{}{
+				"account_id":   userID,
+				"username":     u.Username,
+				"name":         u.Name,
+				"title":        u.Title,
+				"specialty":    u.Specialty,
+				"introduction": u.Introduction,
+				"contact":      u.Contact,
+				"status":       u.Status,
+				"role_type":    u.RoleType,
+				"created_at":   u.CreatedAt,
+				"updated_at":   u.UpdatedAt,
+				"total_plans":  totalPlans,
+				"avg_rating":   avgRating,
+			}, nil
+		}
+	}
+
+	return nil, errors.New("规划师不存在")
+}
+
+// UpdateCurrentDietitianProfile 更新当前登录规划师资料
+func (s *AuthService) UpdateCurrentDietitianProfile(userID string, req schemas.UpdateDietitianProfileRequest) (map[string]interface{}, error) {
+	name := strings.TrimSpace(req.Name)
+	title := strings.TrimSpace(req.Title)
+	specialty := strings.TrimSpace(req.Specialty)
+	introduction := strings.TrimSpace(req.Introduction)
+	contact := strings.TrimSpace(req.Contact)
+
+	if name == "" || title == "" || specialty == "" || contact == "" {
+		return nil, errors.New("姓名、职称、擅长方向、联系方式不能为空")
+	}
+
+	err := config.DB.Model(&models.Dietitian{}).
+		Where("account_id = ? AND role_type = ?", userID, "dietitian").
+		Updates(map[string]interface{}{
+			"name":         name,
+			"title":        title,
+			"specialty":    specialty,
+			"introduction": introduction,
+			"contact":      contact,
+			"updated_at":   time.Now(),
+		}).Error
+	if err == nil {
+		return s.GetCurrentDietitianProfile(userID)
+	}
+
+	if legacyAuthFallbackEnabled() {
+		legacyErr := config.DB.Model(&models.User{}).
+			Where("user_id = ? AND role_type = ?", userID, "dietitian").
+			Updates(map[string]interface{}{
+				"name":         name,
+				"title":        title,
+				"specialty":    specialty,
+				"introduction": introduction,
+				"contact":      contact,
+				"updated_at":   time.Now(),
+			}).Error
+		if legacyErr == nil {
+			return s.GetCurrentDietitianProfile(userID)
+		}
+		return nil, legacyErr
+	}
+	return nil, err
 }
 
 func (s *AuthService) getLoginAccountByUsername(username string) (*loginAccount, error) {

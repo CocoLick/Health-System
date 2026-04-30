@@ -430,6 +430,69 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	})
 }
 
+// GetCurrentDietitianProfile 获取当前规划师个人资料
+func (h *AuthHandler) GetCurrentDietitianProfile(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	roleType, _ := c.Get("roleType")
+	if userID == nil || roleType == nil || roleType.(string) != "dietitian" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "仅规划师可访问",
+		})
+		return
+	}
+	data, err := h.authService.GetCurrentDietitianProfile(userID.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "获取成功",
+		Data:    data,
+	})
+}
+
+// UpdateCurrentDietitianProfile 更新当前规划师个人资料
+func (h *AuthHandler) UpdateCurrentDietitianProfile(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	roleType, _ := c.Get("roleType")
+	if userID == nil || roleType == nil || roleType.(string) != "dietitian" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "仅规划师可访问",
+		})
+		return
+	}
+
+	var req schemas.UpdateDietitianProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "请求参数错误：" + err.Error(),
+		})
+		return
+	}
+
+	data, err := h.authService.UpdateCurrentDietitianProfile(userID.(string), req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "个人资料已更新",
+		Data:    data,
+	})
+}
+
 // RegisterAuthRoutes 注册认证路由
 func RegisterAuthRoutes(router *gin.RouterGroup) {
 	handler := NewAuthHandler()
@@ -454,5 +517,7 @@ func RegisterAuthRoutes(router *gin.RouterGroup) {
 	authProtectedGroup.Use(middleware.AuthMiddleware())
 	{
 		authProtectedGroup.PUT("/change-password", handler.ChangePassword)
+		authProtectedGroup.GET("/dietitian/profile", handler.GetCurrentDietitianProfile)
+		authProtectedGroup.PUT("/dietitian/profile", handler.UpdateCurrentDietitianProfile)
 	}
 }

@@ -350,7 +350,7 @@
           <view class="personal-avatar-large" bindtap="chooseAvatar">营</view>
           <view class="personal-details">
             <text class="personal-name-large">{{dietitianName}}</text>
-            <text class="personal-role-large">营养师</text>
+            <text class="personal-role-large">{{profileData.title || '营养师'}}</text>
             <view class="personal-stats">
               <view class="stat-item">
                 <text class="stat-number">{{stats.serviceUsers || 0}}</text>
@@ -461,6 +461,57 @@
             <text class="pc-chev">›</text>
           </view>
         </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showProfileEditor}}" class="modal-mask" bindtap="closeProfileEditor">
+    <view class="request-detail-modal profile-edit-modal" catchtap="stopPropagation">
+      <view class="modal-header profile-modal-header">
+        <text class="modal-title profile-modal-title">编辑个人资料</text>
+        <view class="modal-close profile-modal-close" bindtap="closeProfileEditor">✕</view>
+      </view>
+      <view class="modal-body profile-modal-body">
+        <view class="profile-grid">
+          <view class="field-row">
+            <text class="field-label">账号ID</text>
+            <view class="readonly-input-wrap">
+              <text class="readonly-lock">🔒</text>
+              <input class="form-input readonly" value="{{profileData.account_id}}" disabled />
+            </view>
+          </view>
+          <view class="field-row">
+            <text class="field-label">登录名</text>
+            <view class="readonly-input-wrap">
+              <text class="readonly-lock">🔒</text>
+              <input class="form-input readonly" value="{{profileData.username}}" disabled />
+            </view>
+          </view>
+          <view class="field-row">
+            <text class="field-label">姓名 <text class="required-mark">*</text></text>
+            <input class="form-input" value="{{profileForm.name}}" data-field="name" bindinput="onProfileInput" maxlength="100" placeholder="请输入姓名" placeholder-class="profile-input-placeholder" />
+          </view>
+          <view class="field-row">
+            <text class="field-label">职称 <text class="required-mark">*</text></text>
+            <input class="form-input" value="{{profileForm.title}}" data-field="title" bindinput="onProfileInput" maxlength="100" placeholder="请输入职称" placeholder-class="profile-input-placeholder" />
+          </view>
+          <view class="field-row">
+            <text class="field-label">擅长方向 <text class="required-mark">*</text></text>
+            <input class="form-input" value="{{profileForm.specialty}}" data-field="specialty" bindinput="onProfileInput" maxlength="100" placeholder="请输入擅长方向" placeholder-class="profile-input-placeholder" />
+          </view>
+          <view class="field-row">
+            <text class="field-label">个人简介</text>
+            <textarea class="form-input form-textarea" value="{{profileForm.introduction}}" data-field="introduction" bindinput="onProfileInput" maxlength="500" placeholder="请输入个人简介" placeholder-class="profile-input-placeholder" />
+          </view>
+          <view class="field-row">
+            <text class="field-label">联系方式 <text class="required-mark">*</text></text>
+            <input class="form-input" value="{{profileForm.contact}}" data-field="contact" bindinput="onProfileInput" maxlength="50" placeholder="请输入手机号或邮箱" placeholder-class="profile-input-placeholder" />
+          </view>
+        </view>
+      </view>
+      <view class="modal-footer profile-modal-footer">
+        <view class="profile-btn profile-btn-cancel" bindtap="closeProfileEditor">取消</view>
+        <view class="profile-btn profile-btn-save" bindtap="submitProfileEdit">保存</view>
       </view>
     </view>
   </view>
