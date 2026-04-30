@@ -124,10 +124,6 @@
     </view>
 
     <view class="action-grid detail-card">
-      <view class="action-item" bindtap="applyOptimization">
-        <view class="action-icon icon-opt"></view>
-        <text class="action-text">申请优化</text>
-      </view>
       <view class="action-item" bindtap="viewDetailedComparison">
         <view class="action-icon icon-compare"></view>
         <text class="action-text">查看对比</text>

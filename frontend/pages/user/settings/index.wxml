@@ -1,2 +1,48 @@
-<!--pages/settings/index.wxml-->
-<text>pages/settings/index.wxml</text>
+<view class="settings-page">
+  <view class="settings-card">
+    <view class="card-title">修改密码</view>
+    <view class="card-subtitle">当前账号角色：{{roleText}}</view>
+
+    <view class="form-item">
+      <text class="form-label">旧密码</text>
+      <input
+        class="form-input"
+        password
+        placeholder="请输入旧密码"
+        value="{{oldPassword}}"
+        bindinput="bindOldPassword"
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">新密码</text>
+      <input
+        class="form-input"
+        password
+        placeholder="请输入新密码（至少6位）"
+        value="{{newPassword}}"
+        bindinput="bindNewPassword"
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">确认新密码</text>
+      <input
+        class="form-input"
+        password
+        placeholder="请再次输入新密码"
+        value="{{confirmPassword}}"
+        bindinput="bindConfirmPassword"
+      />
+    </view>
+
+    <button
+      class="submit-btn"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+      bindtap="submitChangePassword"
+    >
+      确认修改
+    </button>
+  </view>
+</view>

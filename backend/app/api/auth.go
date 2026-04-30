@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/yourusername/nutrition-system/app/middleware"
 	"github.com/yourusername/nutrition-system/app/schemas"
 	"github.com/yourusername/nutrition-system/app/services"
 )
@@ -394,6 +395,41 @@ func (h *AuthHandler) GetUserByID(c *gin.Context) {
 	})
 }
 
+// ChangePassword 修改当前登录账号密码
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	var req schemas.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "请求参数错误：" + err.Error(),
+		})
+		return
+	}
+
+	userID, _ := c.Get("userID")
+	roleType, _ := c.Get("roleType")
+	if userID == nil || roleType == nil {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "未登录或登录已失效",
+		})
+		return
+	}
+
+	if err := h.authService.ChangePassword(userID.(string), roleType.(string), req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "密码修改成功",
+	})
+}
+
 // RegisterAuthRoutes 注册认证路由
 func RegisterAuthRoutes(router *gin.RouterGroup) {
 	handler := NewAuthHandler()
@@ -412,5 +448,11 @@ func RegisterAuthRoutes(router *gin.RouterGroup) {
 		authGroup.PUT("/admin/dietitian/:user_id/status", handler.UpdateDietitianStatus)
 		authGroup.PUT("/admin/user/:user_id/status", handler.UpdateUserStatus)
 		authGroup.DELETE("/admin/dietitian/:user_id", handler.DeleteDietitian)
+	}
+
+	authProtectedGroup := router.Group("/auth")
+	authProtectedGroup.Use(middleware.AuthMiddleware())
+	{
+		authProtectedGroup.PUT("/change-password", handler.ChangePassword)
 	}
 }

@@ -1358,10 +1358,8 @@ Page({
   },
 
   changePassword() {
-    wx.showModal({
-      title: '修改密码',
-      content: '修改密码功能开发中',
-      showCancel: false
+    wx.navigateTo({
+      url: '/pages/user/settings/index'
     });
   },
 

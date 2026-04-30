@@ -121,6 +121,10 @@ const auth = {
   // 根据ID获取用户信息
   getUserByID: function(userID) {
     return get(`/api/auth/user/${userID}`);
+  },
+  // 当前登录用户修改密码（user/dietitian/admin）
+  changePassword: function(data) {
+    return put('/api/auth/change-password', data);
   }
 };
 

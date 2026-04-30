@@ -1,1 +1,58 @@
-/* pages/settings/index.wxss */
+.settings-page {
+  min-height: 100vh;
+  padding: 28rpx;
+  background: linear-gradient(180deg, #f6f3ee 0%, #f3f1ed 100%);
+  box-sizing: border-box;
+}
+
+.settings-card {
+  background: #ffffff;
+  border-radius: 12rpx;
+  border: 1rpx solid #eee3d8;
+  box-shadow: 0 10rpx 24rpx rgba(39, 39, 39, 0.06);
+  padding: 28rpx;
+}
+
+.card-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #2f2a24;
+}
+
+.card-subtitle {
+  margin-top: 10rpx;
+  margin-bottom: 22rpx;
+  font-size: 26rpx;
+  color: #8a7f73;
+}
+
+.form-item {
+  margin-bottom: 20rpx;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 10rpx;
+  font-size: 26rpx;
+  color: #534a40;
+}
+
+.form-input {
+  height: 82rpx;
+  border-radius: 10rpx;
+  border: 1rpx solid #e8ded3;
+  background: #faf8f4;
+  padding: 0 22rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  color: #2f2a24;
+}
+
+.submit-btn {
+  margin-top: 10rpx;
+  border-radius: 10rpx;
+  background: #c97b4b;
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+}

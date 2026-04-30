@@ -3,11 +3,12 @@ Page({
     isLoggedIn: false,
     userRole: 'user',
     userInfo: {},
+    showAboutModal: false,
     menuItems: [
-      { icon: '🥬', text: '食材管理', path: '/pages/user/diet/ingredients/index' },
-      { icon: '💬', text: '意见反馈', path: '/pages/user/feedback/index' },
-      { icon: '📋', text: '健康记录', action: 'viewHealthHistory' },
-      { icon: '⚙️', text: '设置', action: 'showSettings' }
+      { icon: '◫', text: '食材管理', path: '/pages/user/diet/ingredients/index' },
+      { icon: '✉', text: '意见反馈', path: '/pages/user/feedback/index' },
+      { icon: '⌁', text: '修改密码', path: '/pages/user/settings/index' },
+      { icon: 'i', text: '关于', action: 'showAbout' }
     ],
   },
 
@@ -66,30 +67,25 @@ Page({
     });
   },
 
-  navigateTo(e) {
+  handleMenuTap(e) {
     const path = e.currentTarget.dataset.path;
+    const action = e.currentTarget.dataset.action;
     if (path) {
       wx.navigateTo({ url: path });
+      return;
+    }
+    if (action && typeof this[action] === 'function') {
+      this[action]();
     }
   },
 
-  viewHealthHistory() {
-    wx.navigateTo({
-      url: '/pages/user/history/index'
-    });
-  },
-
-  showSettings() {
-    wx.navigateTo({
-      url: '/pages/user/settings/index'
-    });
-  },
-
   showAbout() {
-    wx.showModal({
-      title: '关于我们',
-      content: '个性化营养膳食智能规划系统 v1.0\n\n为您的健康饮食保驾护航',
-      showCancel: false
-    });
-  }
+    this.setData({ showAboutModal: true });
+  },
+
+  closeAboutModal() {
+    this.setData({ showAboutModal: false });
+  },
+
+  stopPropagation() {}
 });

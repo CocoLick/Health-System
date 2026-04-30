@@ -12,6 +12,7 @@ import (
 	"github.com/yourusername/nutrition-system/app/schemas"
 	"github.com/yourusername/nutrition-system/config"
 	"github.com/yourusername/nutrition-system/utils"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // AuthService 认证服务
@@ -594,6 +595,67 @@ func (s *AuthService) GetUserByID(userID string) (*models.User, error) {
 		CreatedAt: d.CreatedAt,
 		UpdatedAt: d.UpdatedAt,
 	}, nil
+}
+
+// ChangePassword 修改当前登录账号密码（支持 user/dietitian/admin）
+func (s *AuthService) ChangePassword(userID, roleType string, req schemas.ChangePasswordRequest) error {
+	if strings.TrimSpace(req.NewPassword) == strings.TrimSpace(req.OldPassword) {
+		return errors.New("新密码不能与旧密码相同")
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("密码加密失败")
+	}
+
+	switch roleType {
+	case "user":
+		var user models.User
+		if err := config.DB.Where("user_id = ? AND role_type = ?", userID, "user").First(&user).Error; err != nil {
+			return errors.New("用户不存在")
+		}
+		if !user.CheckPassword(req.OldPassword) {
+			return errors.New("旧密码错误")
+		}
+		return config.DB.Model(&models.User{}).
+			Where("user_id = ? AND role_type = ?", userID, "user").
+			Updates(map[string]interface{}{
+				"password":   string(hashed),
+				"updated_at": time.Now(),
+			}).Error
+	case "dietitian", "admin":
+		var account models.Dietitian
+		err := config.DB.Where("account_id = ? AND role_type = ?", userID, roleType).First(&account).Error
+		if err == nil {
+			if !account.CheckPassword(req.OldPassword) {
+				return errors.New("旧密码错误")
+			}
+			return config.DB.Model(&models.Dietitian{}).
+				Where("account_id = ? AND role_type = ?", userID, roleType).
+				Updates(map[string]interface{}{
+					"password":   string(hashed),
+					"updated_at": time.Now(),
+				}).Error
+		}
+
+		if legacyAuthFallbackEnabled() {
+			var legacy models.User
+			if err := config.DB.Where("user_id = ? AND role_type = ?", userID, roleType).First(&legacy).Error; err == nil {
+				if !legacy.CheckPassword(req.OldPassword) {
+					return errors.New("旧密码错误")
+				}
+				return config.DB.Model(&models.User{}).
+					Where("user_id = ? AND role_type = ?", userID, roleType).
+					Updates(map[string]interface{}{
+						"password":   string(hashed),
+						"updated_at": time.Now(),
+					}).Error
+			}
+		}
+		return errors.New("账号不存在")
+	default:
+		return errors.New("不支持的角色类型")
+	}
 }
 
 func (s *AuthService) getLoginAccountByUsername(username string) (*loginAccount, error) {
