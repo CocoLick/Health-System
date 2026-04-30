@@ -156,6 +156,12 @@ const admin = {
   }
 };
 
+const adminAudit = {
+  historyList: function() {
+    return get('/api/admin/audit/history');
+  }
+};
+
 // 规划师相关API
 const dietitian = {
   // 获取规划师信息
@@ -575,6 +581,7 @@ const dietPlan = {
 module.exports = {
   auth,
   admin,
+  adminAudit,
   dietitian,
   user,
   healthData,

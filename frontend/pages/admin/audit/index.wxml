@@ -113,6 +113,9 @@
         </view>
       </picker>
     </view>
+    <view wx:if="{{historyLoading}}" class="empty-state">
+      <text class="empty-text">加载中...</text>
+    </view>
     <view wx:for="{{auditHistory}}" wx:key="index" class="audit-item">
       <view class="item-header">
         <text class="item-title">{{item.title}}</text>
@@ -140,7 +143,10 @@
         <view class="btn-text" bindtap="viewAuditDetail" data-index="{{index}}">查看详情</view>
       </view>
     </view>
-    <view wx:if="{{auditHistory.length === 0}}" class="empty-state">
+    <view wx:if="{{historyHint}}" class="empty-state">
+      <text class="empty-text">{{historyHint}}</text>
+    </view>
+    <view wx:if="{{!historyLoading && !historyHint && auditHistory.length === 0}}" class="empty-state">
       <text class="empty-icon">📋</text>
       <text class="empty-text">暂无审核历史记录</text>
     </view>

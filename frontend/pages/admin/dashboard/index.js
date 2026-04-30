@@ -125,22 +125,9 @@ Page({
       gram_per_unit: '100',
       review_note: ''
     },
-    auditHistory: [
-      {
-        id: 1,
-        title: '高血压患者膳食计划',
-        type: '膳食计划',
-        status: '通过',
-        auditTime: '2026-04-17 16:30'
-      },
-      {
-        id: 2,
-        title: '如何正确补充蛋白质',
-        type: '健康文章',
-        status: '驳回',
-        auditTime: '2026-04-17 15:45'
-      }
-    ],
+    auditHistory: [],
+    historyLoading: false,
+    historyHint: '',
     users: [],
     feedbacks: [
       {
@@ -175,6 +162,9 @@ Page({
     }
     if (this.data.activeTab === 'audit' && this.data.auditSubTab === 'plans') {
       this.loadPendingPlans();
+    }
+    if (this.data.activeTab === 'audit' && this.data.auditSubTab === 'history') {
+      this.loadAuditHistory();
     }
   },
   formatPendingPlan(item) {
@@ -689,7 +679,51 @@ Page({
     }
     if (subtab === 'articles') {
       this.loadPendingArticles();
+      return;
     }
+    if (subtab === 'history') {
+      this.loadAuditHistory();
+    }
+  },
+
+  formatAuditHistoryItem(item) {
+    return {
+      id: item.id,
+      sourceId: item.source_id || '',
+      sourceType: item.source_type || '',
+      title: item.title || '-',
+      type: item.type || '-',
+      status: item.status || '-',
+      auditor: item.auditor || '管理员',
+      auditTime: this.formatDateTimeText(item.audit_time),
+      reason: item.reason || ''
+    };
+  },
+
+  loadAuditHistory() {
+    this.setData({ historyLoading: true, historyHint: '' });
+    api.adminAudit
+      .historyList()
+      .then((res) => {
+        if (res.code === 200) {
+          const list = Array.isArray(res.data) ? res.data.map((x) => this.formatAuditHistoryItem(x)) : [];
+          this.setData({ auditHistory: list });
+          return;
+        }
+        this.setData({
+          auditHistory: [],
+          historyHint: res.message || '加载审核历史失败'
+        });
+      })
+      .catch(() => {
+        this.setData({
+          auditHistory: [],
+          historyHint: '网络错误，请稍后重试'
+        });
+      })
+      .finally(() => {
+        this.setData({ historyLoading: false });
+      });
   },
 
   switchArticleAuditTab(e) {

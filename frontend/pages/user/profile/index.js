@@ -3,6 +3,7 @@ Page({
     isLoggedIn: false,
     userRole: 'user',
     userInfo: {},
+    avatarInitial: '登',
     showAboutModal: false,
     menuItems: [
       { icon: '◫', text: '食材管理', path: '/pages/user/diet/ingredients/index' },
@@ -25,16 +26,20 @@ Page({
     const token = wx.getStorageSync('token');
 
     if (userInfo && token) {
+      const username = userInfo.username ? String(userInfo.username) : '用户';
       this.setData({
         isLoggedIn: true,
         userRole: userInfo.role || 'user',
-        userInfo: userInfo
+        userInfo: userInfo,
+        avatarInitial: username.charAt(0).toUpperCase()
       });
     } else {
       this.setData({
         isLoggedIn: false,
         userRole: 'user',
-        userInfo: { username: '用户' }
+        userInfo: { username: '用户' },
+        avatarInitial: '登',
+        showAboutModal: false
       });
     }
   },
@@ -58,13 +63,21 @@ Page({
             icon: 'success'
           });
           this.checkLoginStatus();
-          // 跳转到登录页面
-          wx.navigateTo({
+          // 退出后重置到登录页，避免 tab 页栈状态导致异常
+          wx.reLaunch({
             url: '/pages/auth/login/login'
           });
         }
       }
     });
+  },
+
+  handleAuthButtonTap() {
+    if (this.data.isLoggedIn) {
+      this.handleLogout();
+      return;
+    }
+    this.handleLogin();
   },
 
   handleMenuTap(e) {

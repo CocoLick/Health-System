@@ -235,6 +235,9 @@
         </view>
 
         <view wx:if="{{auditSubTab === 'history'}}">
+          <view wx:if="{{historyLoading}}" class="empty-state">
+            <text class="empty-text">加载中...</text>
+          </view>
           <view wx:for="{{auditHistory}}" wx:key="index" class="audit-item">
             <view class="item-header">
               <text class="item-title">{{item.title}}</text>
@@ -246,12 +249,23 @@
                 <text class="info-value">{{item.type}}</text>
               </view>
               <view class="item-info">
+                <text class="info-label">审核人：</text>
+                <text class="info-value">{{item.auditor}}</text>
+              </view>
+              <view class="item-info">
                 <text class="info-label">审核时间：</text>
                 <text class="info-value">{{item.auditTime}}</text>
               </view>
+              <view wx:if="{{item.reason}}" class="reject-reason">
+                <text class="reason-label">驳回原因：</text>
+                <text class="reason-text">{{item.reason}}</text>
+              </view>
             </view>
           </view>
-          <view wx:if="{{auditHistory.length === 0}}" class="empty-state">
+          <view wx:if="{{historyHint}}" class="empty-state">
+            <text class="empty-text">{{historyHint}}</text>
+          </view>
+          <view wx:if="{{!historyLoading && !historyHint && auditHistory.length === 0}}" class="empty-state">
             <text class="empty-icon">📋</text>
             <text class="empty-text">暂无审核历史</text>
           </view>

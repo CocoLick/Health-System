@@ -17,25 +17,10 @@ Page({
     articleHint: '',
     showArticleDetailModal: false,
     selectedArticle: null,
-    auditHistory: [
-      {
-        id: 1,
-        title: '高血压患者膳食计划',
-        type: '膳食计划',
-        status: '通过',
-        auditor: '管理员',
-        auditTime: '2026-04-17 16:30'
-      },
-      {
-        id: 2,
-        title: '如何正确补充蛋白质',
-        type: '健康文章',
-        status: '驳回',
-        auditor: '管理员',
-        auditTime: '2026-04-17 15:45',
-        reason: '内容需要进一步科学验证'
-      }
-    ],
+    auditHistoryRaw: [],
+    auditHistory: [],
+    historyLoading: false,
+    historyHint: '',
     ingredientSubmissions: [],
     ingredientLoading: false,
     showIngredientDetailModal: false,
@@ -58,6 +43,9 @@ Page({
     }
     if (this.data.activeTab === 'ingredients') {
       this.loadIngredientSubmissions();
+    }
+    if (this.data.activeTab === 'history') {
+      this.loadAuditHistory();
     }
   },
 
@@ -102,6 +90,10 @@ Page({
     }
     if (tab === 'articles') {
       this.loadPendingArticles();
+      return;
+    }
+    if (tab === 'history') {
+      this.loadAuditHistory();
     }
   },
   formatPendingPlan(item) {
@@ -171,13 +163,61 @@ Page({
     this.setData({
       filterIndex: e.detail.value
     });
-    // 根据筛选条件过滤审核历史
     this.filterAuditHistory();
   },
 
+  loadAuditHistory() {
+    this.setData({ historyLoading: true, historyHint: '' });
+    api.adminAudit
+      .historyList()
+      .then((res) => {
+        if (res.code === 200) {
+          const list = Array.isArray(res.data) ? res.data.map((x) => this.formatAuditHistoryItem(x)) : [];
+          this.setData({ auditHistoryRaw: list }, () => this.filterAuditHistory());
+          return;
+        }
+        this.setData({
+          auditHistoryRaw: [],
+          auditHistory: [],
+          historyHint: res.message || '加载审核历史失败'
+        });
+      })
+      .catch(() => {
+        this.setData({
+          auditHistoryRaw: [],
+          auditHistory: [],
+          historyHint: '网络错误，请稍后重试'
+        });
+      })
+      .finally(() => {
+        this.setData({ historyLoading: false });
+      });
+  },
+
+  formatAuditHistoryItem(item) {
+    return {
+      id: item.id,
+      sourceId: item.source_id || '',
+      sourceType: item.source_type || '',
+      title: item.title || '-',
+      type: item.type || '-',
+      status: item.status || '-',
+      auditor: item.auditor || '管理员',
+      auditTime: this.formatDateTimeText(item.audit_time),
+      reason: item.reason || ''
+    };
+  },
+
   filterAuditHistory() {
-    // 实现筛选逻辑
-    console.log('筛选审核历史');
+    const option = this.data.filterOptions[this.data.filterIndex] || '全部';
+    const source = Array.isArray(this.data.auditHistoryRaw) ? this.data.auditHistoryRaw : [];
+    if (option === '全部') {
+      this.setData({ auditHistory: source });
+      return;
+    }
+    this.setData({
+      auditHistory: source.filter((item) => item.type === option || item.status === option)
+    });
   },
 
   approvePlan(e) {

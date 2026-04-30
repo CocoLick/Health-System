@@ -2,7 +2,7 @@
   <view class="header-card">
     <view class="user-info">
       <view class="avatar">
-        <text class="avatar-text">{{isLoggedIn ? (userInfo.username ? userInfo.username.charAt(0).toUpperCase() : '用') : '登'}}</text>
+        <text class="avatar-text">{{avatarInitial}}</text>
       </view>
       <view class="info">
         <view class="username">{{isLoggedIn ? (userInfo.username || '用户') : '请登录'}}</view>
@@ -33,7 +33,7 @@
   </view>
 
   <view class="logout-section">
-    <button class="logout-btn" bindtap="{{isLoggedIn ? 'handleLogout' : 'handleLogin'}}">{{isLoggedIn ? '退出登录' : '去登录'}}</button>
+    <button class="logout-btn" bindtap="handleAuthButtonTap">{{isLoggedIn ? '退出登录' : '去登录'}}</button>
   </view>
 
   <view wx:if="{{showAboutModal}}" class="about-mask" bindtap="closeAboutModal">
