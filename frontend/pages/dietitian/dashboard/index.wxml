@@ -497,7 +497,25 @@
           </view>
           <view class="field-row">
             <text class="field-label">擅长方向 <text class="required-mark">*</text></text>
-            <input class="form-input" value="{{profileForm.specialty}}" data-field="specialty" bindinput="onProfileInput" maxlength="100" placeholder="请输入擅长方向" placeholder-class="profile-input-placeholder" />
+            <view class="tag-editor">
+              <view class="tag-list">
+                <view class="tag-chip" wx:for="{{profileSpecialtyTags}}" wx:key="index">
+                  <text class="tag-chip-text">{{item}}</text>
+                  <text class="tag-chip-remove" bindtap="removeProfileSpecialtyTag" data-index="{{index}}">×</text>
+                </view>
+              </view>
+              <input
+                class="tag-input"
+                value="{{profileSpecialtyInput}}"
+                data-field="specialty"
+                bindinput="onProfileInput"
+                bindconfirm="addProfileSpecialtyTag"
+                maxlength="20"
+                placeholder="输入擅长方向后回车，如：临床营养"
+                placeholder-class="profile-input-placeholder"
+              />
+              <view class="tag-hint">回车添加，最多5项，单项最多20字</view>
+            </view>
           </view>
           <view class="field-row">
             <text class="field-label">个人简介</text>

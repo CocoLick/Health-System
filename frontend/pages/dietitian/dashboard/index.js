@@ -1,6 +1,47 @@
 // dietitian/dashboard/index.js
 const api = require('../../../utils/api');
 
+const MAX_SPECIALTY_COUNT = 5;
+const MAX_SPECIALTY_LENGTH = 20;
+
+function normalizeSpecialtyInput(raw) {
+  const text = String(raw || '').replace(/[，、；;\n]/g, ',');
+  const parts = text.split(',');
+  const out = [];
+  const seen = {};
+  for (let i = 0; i < parts.length; i += 1) {
+    const item = parts[i].trim();
+    if (!item) continue;
+    if (item.length > MAX_SPECIALTY_LENGTH) {
+      return { ok: false, message: `单个擅长方向最多${MAX_SPECIALTY_LENGTH}个字` };
+    }
+    const key = item.toLowerCase();
+    if (seen[key]) continue;
+    seen[key] = true;
+    out.push(item);
+    if (out.length > MAX_SPECIALTY_COUNT) {
+      return { ok: false, message: `擅长方向最多填写${MAX_SPECIALTY_COUNT}项` };
+    }
+  }
+  if (!out.length) {
+    return { ok: false, message: '请至少填写1个擅长方向' };
+  }
+  return { ok: true, text: out.join(',') };
+}
+
+function parseSpecialtyTags(raw) {
+  return String(raw || '')
+    .replace(/[，、；;\n]/g, ',')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+function buildSpecialtyRaw(tags, inputValue) {
+  const merged = (Array.isArray(tags) ? tags.slice() : []).concat(String(inputValue || '').trim());
+  return merged.filter(Boolean).join(',');
+}
+
 Page({
   data: {
     activeTab: 'home',
@@ -12,6 +53,8 @@ Page({
     showProfileEditor: false,
     profileLoading: false,
     profileSaving: false,
+    profileSpecialtyTags: [],
+    profileSpecialtyInput: '',
     dietitianName: '营养师',
     profileData: {
       account_id: '',
@@ -147,6 +190,8 @@ Page({
         this.setData({
           profileData,
           dietitianName: displayName,
+          profileSpecialtyTags: parseSpecialtyTags(profileData.specialty),
+          profileSpecialtyInput: '',
           'stats.totalPlans': Number(row.total_plans || 0),
           'stats.avgRating': Number(row.avg_rating || 0),
           profileForm: {
@@ -804,7 +849,9 @@ Page({
         specialty: p.specialty || '',
         introduction: p.introduction || '',
         contact: p.contact || ''
-      }
+      },
+      profileSpecialtyTags: parseSpecialtyTags(p.specialty),
+      profileSpecialtyInput: ''
     });
   },
 
@@ -815,23 +862,66 @@ Page({
   onProfileInput(e) {
     const field = e.currentTarget.dataset.field;
     if (!field) return;
+    if (field === 'specialty') {
+      this.setData({
+        profileSpecialtyInput: e.detail.value
+      });
+      return;
+    }
     this.setData({
       [`profileForm.${field}`]: e.detail.value
     });
   },
 
+  addProfileSpecialtyTag() {
+    const raw = buildSpecialtyRaw(this.data.profileSpecialtyTags, this.data.profileSpecialtyInput);
+    if (!raw) return;
+    const result = normalizeSpecialtyInput(raw);
+    if (!result.ok) {
+      wx.showToast({ title: result.message, icon: 'none' });
+      return;
+    }
+    const tags = parseSpecialtyTags(result.text);
+    this.setData({
+      profileSpecialtyTags: tags,
+      profileSpecialtyInput: '',
+      'profileForm.specialty': result.text
+    });
+  },
+
+  removeProfileSpecialtyTag(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const tags = this.data.profileSpecialtyTags.slice();
+    if (Number.isNaN(idx) || idx < 0 || idx >= tags.length) return;
+    tags.splice(idx, 1);
+    this.setData({
+      profileSpecialtyTags: tags,
+      'profileForm.specialty': tags.join(',')
+    });
+  },
+
   submitProfileEdit() {
     const form = this.data.profileForm || {};
+    const specialtyResult = normalizeSpecialtyInput(
+      buildSpecialtyRaw(this.data.profileSpecialtyTags, this.data.profileSpecialtyInput)
+    );
     const payload = {
       name: String(form.name || '').trim(),
       title: String(form.title || '').trim(),
-      specialty: String(form.specialty || '').trim(),
+      specialty: specialtyResult.ok ? specialtyResult.text : '',
       introduction: String(form.introduction || '').trim(),
       contact: String(form.contact || '').trim()
     };
-    if (!payload.name || !payload.title || !payload.specialty || !payload.contact) {
+    if (!payload.name || !payload.title || !payload.contact) {
       wx.showToast({
         title: '请完整填写必填项',
+        icon: 'none'
+      });
+      return;
+    }
+    if (!specialtyResult.ok) {
+      wx.showToast({
+        title: specialtyResult.message,
         icon: 'none'
       });
       return;

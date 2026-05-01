@@ -8,6 +8,47 @@ function displayStatusFromDB(st) {
 
 const ROLE_LABEL = { user: '普通用户', dietitian: '规划师', admin: '管理员' };
 
+const MAX_SPECIALTY_COUNT = 5;
+const MAX_SPECIALTY_LENGTH = 20;
+
+function normalizeSpecialtyInput(raw) {
+  const text = String(raw || '').replace(/[，、；;\n]/g, ',');
+  const parts = text.split(',');
+  const out = [];
+  const seen = {};
+  for (let i = 0; i < parts.length; i += 1) {
+    const item = parts[i].trim();
+    if (!item) continue;
+    if (item.length > MAX_SPECIALTY_LENGTH) {
+      return { ok: false, message: `单个专业领域最多${MAX_SPECIALTY_LENGTH}个字` };
+    }
+    const key = item.toLowerCase();
+    if (seen[key]) continue;
+    seen[key] = true;
+    out.push(item);
+    if (out.length > MAX_SPECIALTY_COUNT) {
+      return { ok: false, message: `专业领域最多填写${MAX_SPECIALTY_COUNT}项` };
+    }
+  }
+  if (!out.length) {
+    return { ok: false, message: '请输入至少1个专业领域' };
+  }
+  return { ok: true, text: out.join(',') };
+}
+
+function parseSpecialtyTags(raw) {
+  return String(raw || '')
+    .replace(/[，、；;\n]/g, ',')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+function buildSpecialtyRaw(tags, inputValue) {
+  const merged = (Array.isArray(tags) ? tags.slice() : []).concat(String(inputValue || '').trim());
+  return merged.filter(Boolean).join(',');
+}
+
 function mapAdminUserRow(u) {
   return {
     user_id: u.user_id,
@@ -31,6 +72,8 @@ Page({
     statusOptions: ['启用', '禁用'],
     statusIndex: 0,
     formError: '',
+    newDietitianSpecialtyTags: [],
+    newDietitianSpecialtyInput: '',
     newDietitian: {
       username: '',
       name: '',
@@ -97,6 +140,8 @@ Page({
     selectedArticle: null,
     showPlanDetailModal: false,
     selectedPlanDetail: null,
+    showDietitianDetailModal: false,
+    selectedDietitianDetail: null,
     planInfoExpanded: false,
     planDetailScrolled: false,
     planDetailSelectedDate: '',
@@ -589,6 +634,8 @@ Page({
         contact: '',
         password: ''
       },
+      newDietitianSpecialtyTags: [],
+      newDietitianSpecialtyInput: '',
       statusIndex: 0
     });
   },
@@ -632,9 +679,39 @@ Page({
     });
   },
 
-  bindDietitianSpecialty(e) {
+  onDietitianSpecialtyInput(e) {
     this.setData({
-      'newDietitian.specialty': e.detail.value
+      newDietitianSpecialtyInput: e.detail.value,
+      formError: ''
+    });
+  },
+
+  addDietitianSpecialtyTag() {
+    const raw = buildSpecialtyRaw(this.data.newDietitianSpecialtyTags, this.data.newDietitianSpecialtyInput);
+    if (!raw) return;
+    const result = normalizeSpecialtyInput(raw);
+    if (!result.ok) {
+      this.setData({ formError: result.message });
+      return;
+    }
+    const tags = parseSpecialtyTags(result.text);
+    this.setData({
+      newDietitianSpecialtyTags: tags,
+      newDietitianSpecialtyInput: '',
+      'newDietitian.specialty': result.text,
+      formError: ''
+    });
+  },
+
+  removeDietitianSpecialtyTag(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const tags = this.data.newDietitianSpecialtyTags.slice();
+    if (Number.isNaN(idx) || idx < 0 || idx >= tags.length) return;
+    tags.splice(idx, 1);
+    this.setData({
+      newDietitianSpecialtyTags: tags,
+      'newDietitian.specialty': tags.join(','),
+      formError: ''
     });
   },
 
@@ -663,8 +740,11 @@ Page({
   },
 
   confirmAddDietitian() {
-    const { username, name, title, specialty, introduction, contact, password } = this.data.newDietitian;
+    const { username, name, title, introduction, contact, password } = this.data.newDietitian;
     const status = this.data.statusOptions[this.data.statusIndex];
+    const specialtyResult = normalizeSpecialtyInput(
+      buildSpecialtyRaw(this.data.newDietitianSpecialtyTags, this.data.newDietitianSpecialtyInput)
+    );
 
     if (!username) {
       this.setData({ formError: '请输入用户名' });
@@ -678,8 +758,8 @@ Page({
       this.setData({ formError: '请输入职称' });
       return;
     }
-    if (!specialty) {
-      this.setData({ formError: '请输入专业领域' });
+    if (!specialtyResult.ok) {
+      this.setData({ formError: specialtyResult.message });
       return;
     }
     if (!contact) {
@@ -695,7 +775,7 @@ Page({
       username: username,
       name: name,
       title: title,
-      specialty: specialty,
+      specialty: specialtyResult.text,
       introduction: introduction,
       contact: contact,
       password: password,
@@ -721,6 +801,28 @@ Page({
           icon: 'none'
         });
       });
+  },
+
+  openDietitianDetail(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const row = this.data.dietitians[index];
+    if (!row) return;
+    this.setData({
+      showDietitianDetailModal: true,
+      selectedDietitianDetail: {
+        ...row,
+        specialtyArr: parseSpecialtyTags(row.specialty),
+        createdAtText: this.formatDateTimeText(row.created_at),
+        updatedAtText: this.formatDateTimeText(row.updated_at)
+      }
+    });
+  },
+
+  hideDietitianDetailModal() {
+    this.setData({
+      showDietitianDetailModal: false,
+      selectedDietitianDetail: null
+    });
   },
 
   toggleDietitianStatus(e) {

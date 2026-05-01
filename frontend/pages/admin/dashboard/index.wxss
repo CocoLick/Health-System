@@ -1712,6 +1712,71 @@
   text-overflow: ellipsis;
 }
 
+/* 规划师详情弹窗：字段名固定单行展示 */
+.dietitian-detail-body .item-info {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.dietitian-detail-body .info-label {
+  flex: 0 0 auto;
+  width: auto;
+  margin-right: 8rpx;
+  white-space: nowrap;
+}
+
+.dietitian-detail-modal {
+  border-radius: 28rpx;
+  overflow: hidden;
+}
+
+.dietitian-detail-header {
+  align-items: flex-start;
+  border-bottom: 1rpx solid rgba(40, 38, 34, 0.08);
+}
+
+.dietitian-detail-head-main {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.dietitian-detail-avatar {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2d6a4f, #4c956c);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dietitian-detail-head-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.dietitian-detail-sub {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: var(--c-text-3);
+}
+
+.dietitian-detail-card {
+  background: #fcfaf6;
+  border: 1rpx solid rgba(40, 38, 34, 0.08);
+  border-radius: 16rpx;
+  padding: 18rpx 16rpx 8rpx;
+}
+
+.detail-specialty-tag {
+  border-radius: 999rpx;
+  padding: 6rpx 14rpx;
+}
+
 /* 食材风险标签颜色强化，突出正常/提示/异常 */
 .item-status.risk-pass {
   background: rgba(45, 106, 79, 0.16) !important;
@@ -2373,4 +2438,55 @@
 .plan-food-item {
   font-size: 24rpx;
   line-height: 1.65;
+}
+
+.tag-editor {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1rpx solid var(--c-border);
+  border-radius: 16rpx;
+  background: #fff;
+  padding: 14rpx 16rpx;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 10rpx;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(45, 106, 79, 0.1);
+  color: var(--c-primary);
+}
+
+.tag-chip-text {
+  font-size: 22rpx;
+  line-height: 1;
+}
+
+.tag-chip-remove {
+  font-size: 26rpx;
+  line-height: 1;
+  padding: 0 4rpx;
+}
+
+.tag-input {
+  width: 100%;
+  min-height: 64rpx;
+  font-size: 24rpx;
+  color: var(--c-text);
+  line-height: 1.5;
+}
+
+.tag-hint {
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: var(--c-text-3);
 }

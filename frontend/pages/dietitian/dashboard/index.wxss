@@ -1510,3 +1510,54 @@
   transform: translateY(1rpx);
   box-shadow: 0 6rpx 16rpx rgba(45, 106, 79, 0.22);
 }
+
+.tag-editor {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1rpx solid var(--c-border);
+  border-radius: 20rpx;
+  background: #fff;
+  padding: 14rpx 16rpx;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 10rpx;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(45, 106, 79, 0.1);
+  color: var(--c-primary);
+}
+
+.tag-chip-text {
+  font-size: 22rpx;
+  line-height: 1;
+}
+
+.tag-chip-remove {
+  font-size: 26rpx;
+  line-height: 1;
+  padding: 0 4rpx;
+}
+
+.tag-input {
+  width: 100%;
+  min-height: 64rpx;
+  font-size: 24rpx;
+  color: var(--c-text);
+  line-height: 1.5;
+}
+
+.tag-hint {
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: var(--c-text-3);
+}

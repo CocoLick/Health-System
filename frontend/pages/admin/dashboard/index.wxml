@@ -392,6 +392,43 @@
       </view>
     </view>
 
+    <view wx:if="{{showDietitianDetailModal}}" class="modal-mask" bindtap="hideDietitianDetailModal">
+      <view class="modal-content dietitian-detail-modal" catchtap="stopPropagation">
+        <view class="modal-header dietitian-detail-header">
+          <view class="dietitian-detail-head-main">
+            <view class="dietitian-detail-avatar">{{selectedDietitianDetail.nameInitial || '营'}}</view>
+            <view class="dietitian-detail-head-text">
+              <text class="modal-title">{{selectedDietitianDetail.displayName || '规划师详情'}}</text>
+              <text class="dietitian-detail-sub">{{selectedDietitianDetail.title || '—'}} · {{selectedDietitianDetail.status || '—'}}</text>
+            </view>
+          </view>
+          <view class="modal-close" bindtap="hideDietitianDetailModal">×</view>
+        </view>
+        <view class="modal-body dietitian-detail-body">
+          <view class="dietitian-detail-card">
+          <view class="item-info"><text class="info-label">姓名：</text><text class="info-value">{{selectedDietitianDetail.displayName || '—'}}</text></view>
+          <view class="item-info"><text class="info-label">工号：</text><text class="info-value">{{selectedDietitianDetail.username || '—'}}</text></view>
+          <view class="item-info"><text class="info-label">职称：</text><text class="info-value">{{selectedDietitianDetail.title || '—'}}</text></view>
+          <view class="item-info">
+            <text class="info-label">专业领域：</text>
+            <view class="specialty">
+              <text class="specialty-tag detail-specialty-tag" wx:for="{{selectedDietitianDetail.specialtyArr}}" wx:key="index">{{item}}</text>
+              <text class="info-value" wx:if="{{!selectedDietitianDetail.specialtyArr || selectedDietitianDetail.specialtyArr.length === 0}}">—</text>
+            </view>
+          </view>
+          <view class="item-info"><text class="info-label">联系方式：</text><text class="info-value">{{selectedDietitianDetail.contact || '—'}}</text></view>
+          <view class="item-info"><text class="info-label">账号状态：</text><text class="info-value">{{selectedDietitianDetail.status || '—'}}</text></view>
+          <view class="item-info"><text class="info-label">个人简介：</text><text class="info-value">{{selectedDietitianDetail.introduction || '未填写'}}</text></view>
+          <view class="item-info"><text class="info-label">创建时间：</text><text class="info-value">{{selectedDietitianDetail.createdAtText || '—'}}</text></view>
+          <view class="item-info"><text class="info-label">更新时间：</text><text class="info-value">{{selectedDietitianDetail.updatedAtText || '—'}}</text></view>
+          </view>
+        </view>
+        <view class="modal-footer">
+          <view class="btn-cancel" bindtap="hideDietitianDetailModal">关闭</view>
+        </view>
+      </view>
+    </view>
+
     <view wx:if="{{showIngredientDetailModal}}" class="modal-mask" bindtap="hideIngredientDetailModal">
       <view class="modal-content" catchtap="stopPropagation">
         <view class="modal-header">
@@ -515,7 +552,7 @@
             <text class="add-icon">+</text>
             <text class="add-text">添加规划师</text>
           </view>
-          <view wx:for="{{dietitians}}" wx:key="index" class="manage-item">
+          <view wx:for="{{dietitians}}" wx:key="index" class="manage-item" bindtap="openDietitianDetail" data-index="{{index}}">
             <view class="item-header">
               <view class="dietitian-avatar">{{item.nameInitial}}</view>
               <view class="user-info-small">
@@ -534,7 +571,7 @@
                 <text class="info-value">{{item.contact}}</text>
               </view>
             </view>
-            <view class="item-footer">
+            <view class="item-footer" catchtap="stopPropagation">
               <view class="btn-text" bindtap="toggleDietitianStatus" data-index="{{index}}">{{item.status === '启用' ? '禁用' : '启用'}}</view>
               <view class="btn-text btn-danger" bindtap="deleteDietitian" data-index="{{index}}">删除</view>
             </view>
@@ -743,7 +780,22 @@
         </view>
         <view class="form-item">
           <text class="form-label">专业领域</text>
-          <input class="form-input" placeholder="如：临床营养" bindinput="bindDietitianSpecialty" value="{{newDietitian.specialty}}"/>
+          <view class="tag-editor">
+            <view class="tag-list">
+              <view class="tag-chip" wx:for="{{newDietitianSpecialtyTags}}" wx:key="index">
+                <text class="tag-chip-text">{{item}}</text>
+                <text class="tag-chip-remove" bindtap="removeDietitianSpecialtyTag" data-index="{{index}}">×</text>
+              </view>
+            </view>
+            <input
+              class="tag-input"
+              placeholder="输入专业领域后回车，如：临床营养"
+              bindinput="onDietitianSpecialtyInput"
+              bindconfirm="addDietitianSpecialtyTag"
+              value="{{newDietitianSpecialtyInput}}"
+            />
+            <view class="tag-hint">回车添加，最多5项，单项最多20字</view>
+          </view>
         </view>
         <view class="form-item">
           <text class="form-label">个人简介</text>

@@ -6,11 +6,33 @@
     </view>
   </view>
 
-  <view class="filter-tabs">
-    <view class="filter-tab {{filterType === 'all' ? 'active' : ''}}" bindtap="switchFilter" data-filter="all">全部</view>
-    <view class="filter-tab {{filterType === 'weight_loss' ? 'active' : ''}}" bindtap="switchFilter" data-filter="weight_loss">减脂</view>
-    <view class="filter-tab {{filterType === 'diabetes' ? 'active' : ''}}" bindtap="switchFilter" data-filter="diabetes">控糖</view>
-    <view class="filter-tab {{filterType === 'nutrition' ? 'active' : ''}}" bindtap="switchFilter" data-filter="nutrition">营养</view>
+  <view class="specialty-filter-card">
+    <view class="specialty-filter-head">
+      <text class="specialty-filter-title">专业领域（可多选）</text>
+      <text class="specialty-filter-sub">已选 {{selectedSpecialties.length}} 项</text>
+    </view>
+    <view class="specialty-filter-tags">
+      <view
+        class="specialty-filter-tag {{item.selected ? 'active' : ''}}"
+        wx:for="{{specialtyOptionItems}}"
+        wx:key="name"
+        data-tag="{{item.name}}"
+        bindtap="toggleSpecialtyFilter"
+      >
+        {{item.name}}
+      </view>
+    </view>
+    <view class="specialty-custom-row">
+      <input
+        class="specialty-custom-input"
+        type="text"
+        placeholder="输入自定义专业领域，回车添加"
+        bindinput="onCustomSpecialtyInput"
+        bindconfirm="addCustomSpecialty"
+        value="{{customSpecialtyInput}}"
+      />
+      <view class="specialty-custom-btn" bindtap="addCustomSpecialty">添加</view>
+    </view>
   </view>
 
   <view class="metric-filters">
