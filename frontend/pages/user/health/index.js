@@ -16,6 +16,49 @@ function formatEvalDateTime(iso) {
   return `${y}-${m}-${day} ${h}:${min}`;
 }
 
+function formatDateOnly(iso) {
+  if (!iso) {
+    return '';
+  }
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) {
+    return String(iso).slice(0, 10);
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function mapEvaluationDetailPayload(d) {
+  const row = d && typeof d === 'object' ? d : {};
+  let expired = false;
+  if (row.valid_until) {
+    const end = new Date(row.valid_until);
+    const today = new Date();
+    end.setHours(23, 59, 59, 999);
+    today.setHours(0, 0, 0, 0);
+    expired = end < today;
+  }
+  const bmiVal = row.bmi != null ? row.bmi : '';
+  return {
+    evaluation_id: row.evaluation_id || '',
+    createdAtText: formatEvalDateTime(row.created_at),
+    validUntilText: row.valid_until ? formatDateOnly(row.valid_until) : '',
+    expired,
+    bmi: bmiVal,
+    nutritionStatusText: nutritionStatusLabel(row.nutrition_status),
+    energyNeedKcal: row.energy_need_kcal || '',
+    priorityIssues: Array.isArray(row.priority_issues) ? row.priority_issues : [],
+    body_composition_text: row.body_composition_text || '',
+    dietary_pattern_text: row.dietary_pattern_text || '',
+    micronutrient_text: row.micronutrient_text || '',
+    risks_text: row.risks_text || '',
+    professional_conclusion: row.professional_conclusion || '—',
+    plan_recommendations: row.plan_recommendations || ''
+  };
+}
+
 function nutritionStatusLabel(code) {
   const map = {
     normal: '总体正常',
@@ -25,17 +68,6 @@ function nutritionStatusLabel(code) {
     unclear_data: '依据有限待复评'
   };
   return map[code] || code || '—';
-}
-
-function evaluationExpired(ev) {
-  if (!ev || !ev.valid_until) {
-    return false;
-  }
-  const end = new Date(ev.valid_until);
-  const today = new Date();
-  end.setHours(23, 59, 59, 999);
-  today.setHours(0, 0, 0, 0);
-  return end < today;
 }
 
 function activityLevelText(level) {
@@ -535,8 +567,10 @@ Page({
     /** 未选择为 -1，与膳食/注册页 picker 一致 */
     activityLevelIndex: -1,
     nutritionGoalIndex: -1,
-    evaluation: null,
     evaluationId: '',
+    evalDetailLoading: false,
+    evalDetailError: '',
+    evalDetail: {},
     historyList: [],
     historyRawList: [],
     historyStats: {
@@ -588,19 +622,19 @@ Page({
     if (ui && token && this.data.healthMainTab === 'education') {
       this.loadEducationReaderList();
     }
-    // 从膳食页跳转并滚动到营养评估：若当前停在「健康教育」tab，#eval-section 未渲染，pageScrollTo 会失败（控制台常见 Error: timeout）
+    // 从膳食页跳转并滚动到营养评估：若当前停在其他 tab，#eval-detail-anchor 未渲染，pageScrollTo 会失败（控制台常见 Error: timeout）
     if (scrollEval && ui && token) {
       const doScroll = () => {
         setTimeout(() => {
           wx.pageScrollTo({
-            selector: '#eval-section',
+            selector: '#eval-detail-anchor',
             duration: 300,
             fail: function() {}
           });
         }, 400);
       };
-      if (this.data.healthMainTab !== 'data') {
-        this.setData({ healthMainTab: 'data' }, doScroll);
+      if (this.data.healthMainTab !== 'evaluation') {
+        this.setData({ healthMainTab: 'evaluation' }, doScroll);
       } else {
         doScroll();
       }
@@ -709,8 +743,10 @@ Page({
       this.setData({
         hasHealthData: false,
         isLoggedIn: false,
-        evaluation: null,
         evaluationId: '',
+        evalDetailLoading: false,
+        evalDetailError: '',
+        evalDetail: {},
         healthMainTab: 'data',
         heUserListDisplay: [],
         heEduHint: '',
@@ -1006,41 +1042,88 @@ Page({
     this.setData({ showHistoryDetail: !this.data.showHistoryDetail });
   },
 
+  loadEvaluationDetail(id) {
+    if (!id) {
+      this.setData({
+        evalDetailLoading: false,
+        evalDetailError: '',
+        evalDetail: {}
+      });
+      return;
+    }
+    this.setData({ evalDetailLoading: true, evalDetailError: '' });
+    api.evaluation
+      .getDetail(id)
+      .then((res) => {
+        if (res.code !== 200 && res.code !== '200') {
+          this.setData({
+            evalDetailLoading: false,
+            evalDetailError: res.message || '加载失败',
+            evalDetail: {}
+          });
+          return;
+        }
+        const detail = mapEvaluationDetailPayload(res.data || {});
+        this.setData({
+          evalDetailLoading: false,
+          evalDetailError: '',
+          evalDetail: detail
+        });
+      })
+      .catch(() => {
+        this.setData({
+          evalDetailLoading: false,
+          evalDetailError: '网络异常，请稍后重试',
+          evalDetail: {}
+        });
+      });
+  },
+
   loadEvaluation() {
     const token = wx.getStorageSync('token');
     if (!token) {
-      this.setData({ evaluation: null, evaluationId: '' });
+      this.setData({
+        evaluationId: '',
+        evalDetailLoading: false,
+        evalDetailError: '',
+        evalDetail: {}
+      });
       return;
     }
     api.evaluation
       .getUserEvaluations(10)
       .then((res) => {
         if (res.code !== 200 && res.code !== '200') {
-          this.setData({ evaluation: null, evaluationId: '' });
+          this.setData({
+            evaluationId: '',
+            evalDetailLoading: false,
+            evalDetailError: '',
+            evalDetail: {}
+          });
           return;
         }
         const list = Array.isArray(res.data) ? res.data : [];
         if (!list.length) {
-          this.setData({ evaluation: null, evaluationId: '' });
+          this.setData({
+            evaluationId: '',
+            evalDetailLoading: false,
+            evalDetailError: '',
+            evalDetail: {}
+          });
           return;
         }
         const ev = list[0];
-        const expired = evaluationExpired(ev);
-        const card = {
-          status: expired ? 'expired' : 'completed',
-          statusText: expired ? '已过期' : '最新',
-          evalTime: formatEvalDateTime(ev.created_at),
-          bmi: ev.bmi != null && ev.bmi !== '' ? String(ev.bmi) : '—',
-          nutritionStatus: nutritionStatusLabel(ev.nutrition_status),
-          suggestion: (ev.professional_conclusion || '—').slice(0, 220)
-        };
-        this.setData({
-          evaluation: card,
-          evaluationId: ev.evaluation_id || ''
-        });
+        const eid = ev.evaluation_id || '';
+        this.setData({ evaluationId: eid });
+        this.loadEvaluationDetail(eid);
       })
       .catch(() => {
-        this.setData({ evaluation: null, evaluationId: '' });
+        this.setData({
+          evaluationId: '',
+          evalDetailLoading: false,
+          evalDetailError: '',
+          evalDetail: {}
+        });
       });
   },
 
@@ -1361,17 +1444,6 @@ Page({
     setTimeout(() => {
       this.loadHealthData();
     }, 1000);
-  },
-
-  viewEvaluation() {
-    const id = this.data.evaluationId;
-    if (!id) {
-      wx.showToast({ title: '暂无专业营养评估', icon: 'none' });
-      return;
-    }
-    wx.navigateTo({
-      url: '/pages/user/health/evaluation-detail/index?id=' + encodeURIComponent(id)
-    });
   },
 
   gotoLogin() {

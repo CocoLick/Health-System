@@ -12,12 +12,17 @@
       <text class="health-page-subtitle">管理健康数据，查看营养评估与健康教育</text>
     </view>
 
-    <view class="health-main-tabs">
+    <view class="health-main-tabs health-main-tabs-3">
       <view
         class="h-main-tab {{healthMainTab === 'data' ? 'active' : ''}}"
         bindtap="switchHealthMainTab"
         data-tab="data"
       >健康数据</view>
+      <view
+        class="h-main-tab {{healthMainTab === 'evaluation' ? 'active' : ''}}"
+        bindtap="switchHealthMainTab"
+        data-tab="evaluation"
+      >营养评估</view>
       <view
         class="h-main-tab {{healthMainTab === 'education' ? 'active' : ''}}"
         bindtap="switchHealthMainTab"
@@ -97,37 +102,6 @@
               <view class="health-value allergy-value">{{healthData.allergyHistory || '无'}}</view>
             </view>
           </view>
-        </view>
-      </view>
-
-      <view class="section" id="eval-section">
-        <view class="section-header">
-          <view class="section-title">营养评估</view>
-          <view class="section-action" wx:if="{{evaluationId}}" bindtap="viewEvaluation">查看详情</view>
-        </view>
-        <view class="evaluation-card" wx:if="{{evaluation}}">
-          <view class="evaluation-header">
-            <view class="evaluation-status {{evaluation.status}}">{{evaluation.statusText}}</view>
-            <view class="evaluation-time">{{evaluation.evalTime}}</view>
-          </view>
-          <view class="evaluation-content">
-            <view class="evaluation-item evaluation-bmi-item">
-              <text class="evaluation-label">BMI 指数</text>
-              <text class="evaluation-value evaluation-bmi-value">{{evaluation.bmi}}</text>
-            </view>
-            <view class="evaluation-item">
-              <text class="evaluation-label">营养状态</text>
-              <text class="evaluation-value">{{evaluation.nutritionStatus}}</text>
-            </view>
-            <view class="evaluation-item">
-              <text class="evaluation-label">评估结论</text>
-              <text class="evaluation-value">{{evaluation.suggestion}}</text>
-            </view>
-          </view>
-        </view>
-        <view class="evaluation-empty" wx:else>
-          <text>暂无专业营养评估</text>
-          <text class="evaluation-tip">规划师完成评估后，将在此展示结论摘要；您也可在「膳食计划」中跳转查看。</text>
         </view>
       </view>
 
@@ -235,6 +209,74 @@
         <view class="history-empty" wx:else>
           <text>暂无历史记录</text>
         </view>
+      </view>
+    </view>
+
+    <view wx:elif="{{healthMainTab === 'evaluation'}}" class="eval-detail-panel" id="eval-detail-anchor">
+      <view class="eval-detail-loading" wx:if="{{evalDetailLoading}}">加载中…</view>
+      <view class="eval-detail-error" wx:elif="{{evalDetailError}}">{{evalDetailError}}</view>
+      <block wx:elif="{{evaluationId}}">
+        <view class="eval-detail-section">
+          <view class="eval-detail-section-title">评估概览</view>
+          <view class="eval-meta-row">
+            <text>评估编号：{{evalDetail.evaluation_id}}</text>
+          </view>
+          <view class="eval-meta-row">
+            <text>评估时间：{{evalDetail.createdAtText}}</text>
+          </view>
+          <view class="eval-meta-row" wx:if="{{evalDetail.validUntilText}}">
+            <text>有效期至：{{evalDetail.validUntilText}}</text>
+            <text class="eval-meta-tag {{evalDetail.expired ? 'expired' : ''}}">{{evalDetail.expired ? '已过期' : '有效'}}</text>
+          </view>
+          <view class="eval-meta-row" wx:if="{{evalDetail.bmi != null && evalDetail.bmi !== ''}}">
+            <text>参考 BMI：{{evalDetail.bmi}}</text>
+          </view>
+          <view class="eval-meta-row" wx:if="{{evalDetail.nutritionStatusText}}">
+            <text>营养状态：{{evalDetail.nutritionStatusText}}</text>
+          </view>
+          <view class="eval-meta-row" wx:if="{{evalDetail.energyNeedKcal}}">
+            <text>估算日能量：{{evalDetail.energyNeedKcal}} kcal</text>
+          </view>
+        </view>
+
+        <view class="eval-detail-section" wx:if="{{evalDetail.priorityIssues && evalDetail.priorityIssues.length}}">
+          <view class="eval-detail-section-title">主要问题</view>
+          <view class="eval-priority-item" wx:for="{{evalDetail.priorityIssues}}" wx:key="*this">{{item}}</view>
+        </view>
+
+        <view class="eval-detail-section" wx:if="{{evalDetail.body_composition_text}}">
+          <view class="eval-detail-section-title">体成分与 BMI</view>
+          <view class="eval-block-text">{{evalDetail.body_composition_text}}</view>
+        </view>
+
+        <view class="eval-detail-section" wx:if="{{evalDetail.dietary_pattern_text}}">
+          <view class="eval-detail-section-title">饮食结构</view>
+          <view class="eval-block-text">{{evalDetail.dietary_pattern_text}}</view>
+        </view>
+
+        <view class="eval-detail-section" wx:if="{{evalDetail.micronutrient_text}}">
+          <view class="eval-detail-section-title">微量营养素与纤维</view>
+          <view class="eval-block-text">{{evalDetail.micronutrient_text}}</view>
+        </view>
+
+        <view class="eval-detail-section" wx:if="{{evalDetail.risks_text}}">
+          <view class="eval-detail-section-title">风险与禁忌</view>
+          <view class="eval-block-text">{{evalDetail.risks_text}}</view>
+        </view>
+
+        <view class="eval-detail-section">
+          <view class="eval-detail-section-title">专业评估结论</view>
+          <view class="eval-block-text">{{evalDetail.professional_conclusion}}</view>
+        </view>
+
+        <view class="eval-detail-section" wx:if="{{evalDetail.plan_recommendations}}">
+          <view class="eval-detail-section-title">对膳食计划的建议</view>
+          <view class="eval-block-text">{{evalDetail.plan_recommendations}}</view>
+        </view>
+      </block>
+      <view class="eval-detail-empty" wx:else>
+        <text>暂无专业营养评估</text>
+        <text class="eval-detail-empty-tip">规划师完成评估后，将在此展示完整报告；您也可从「膳食计划」跳转至本页。</text>
       </view>
     </view>
 
