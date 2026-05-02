@@ -20,6 +20,34 @@
     </view>
   </view>
 
+  <view class="section inbox-wrap">
+    <view class="section-header">
+      <view class="section-title">消息</view>
+    </view>
+    <view class="inbox-card card">
+      <view wx:if="{{inboxLoading}}" class="inbox-loading"><text class="inbox-muted">加载中...</text></view>
+      <view wx:elif="{{inboxMessages.length === 0}}" class="inbox-empty"><text class="inbox-muted">暂无消息</text></view>
+      <scroll-view wx:else scroll-y class="inbox-scroll" show-scrollbar="{{false}}">
+        <view
+          wx:for="{{inboxMessages}}"
+          wx:key="id"
+          class="inbox-row"
+          bindtap="openInboxMessage"
+          data-msg-id="{{item.id}}"
+          data-type="{{item.type}}"
+          data-ref-id="{{item.ref_id}}"
+        >
+          <view class="inbox-dot-wrap"><view class="inbox-dot"></view></view>
+          <view class="inbox-body">
+            <view class="inbox-title">{{item.title}}</view>
+            <view wx:if="{{item.summary}}" class="inbox-summary">{{item.summary}}</view>
+            <view class="inbox-time">{{item.timeText}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
   <view class="metrics-section card">
     <view class="section-title">今日摄入概览</view>
     <view class="ring-grid">

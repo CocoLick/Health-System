@@ -592,6 +592,14 @@ const dietPlan = {
   }
 };
 
+// 用户首页消息聚合（服务申请、膳食计划、营养评估、指派文章）
+const inbox = {
+  getMessages: function(limit) {
+    const q = typeof limit === 'number' && limit > 0 ? `?limit=${limit}` : '';
+    return get('/api/inbox/messages' + q);
+  }
+};
+
 // 导出API对象
 module.exports = {
   auth,
@@ -606,5 +614,6 @@ module.exports = {
   evaluation,
   ingredient,
   dietPlan,
-  nutrition
+  nutrition,
+  inbox
 };

@@ -88,6 +88,9 @@ func RegisterRoutes(router *gin.Engine) {
 			dietPlanHandler := NewDietPlanHandler(dietPlanService)
 			dietPlanHandler.RegisterRoutes(authGroup)
 
+			// 用户首页消息聚合
+			RegisterUserInboxRoutes(authGroup)
+
 			// 注册登录态食材路由（用户私有食材提交与查询）
 			RegisterIngredientAuthRoutes(authGroup)
 		}

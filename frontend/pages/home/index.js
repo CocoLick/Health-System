@@ -1,6 +1,9 @@
 // home/index.js
 const api = require('../../utils/api');
 
+const STORAGE_INBOX_DISMISSED = 'inboxDismissedIds';
+const STORAGE_INBOX_PENDING_DISMISS = 'inboxPendingDismissId';
+
 Page({
   data: {
     isLoggedIn: false,
@@ -46,7 +49,9 @@ Page({
       { key: 'water', title: '多喝水', desc: '每次点击 +250ml，目标 2000ml' },
       { key: 'exercise', title: '适量运动', desc: '完成今日 30 分钟活动打卡' }
     ],
-    ingredientShortcut: null
+    ingredientShortcut: null,
+    inboxMessages: [],
+    inboxLoading: false
   },
 
   onLoad() {
@@ -149,6 +154,101 @@ Page({
       });
 
     this.loadIngredientShortcut();
+    this.loadInboxMessages();
+  },
+
+  flushInboxPendingDismiss() {
+    const pending = wx.getStorageSync(STORAGE_INBOX_PENDING_DISMISS);
+    if (!pending) return;
+    let dismissed = wx.getStorageSync(STORAGE_INBOX_DISMISSED) || [];
+    if (!dismissed.includes(pending)) {
+      dismissed.push(pending);
+      if (dismissed.length > 200) {
+        dismissed = dismissed.slice(-200);
+      }
+      wx.setStorageSync(STORAGE_INBOX_DISMISSED, dismissed);
+    }
+    wx.removeStorageSync(STORAGE_INBOX_PENDING_DISMISS);
+  },
+
+  filterInboxByDismissed(mapped) {
+    const dismissed = wx.getStorageSync(STORAGE_INBOX_DISMISSED) || [];
+    if (!dismissed.length) return mapped;
+    return mapped.filter((it) => it.id && !dismissed.includes(it.id));
+  },
+
+  loadInboxMessages() {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      this.setData({ inboxMessages: [], inboxLoading: false });
+      return;
+    }
+    this.flushInboxPendingDismiss();
+    this.setData({ inboxLoading: true });
+    api.inbox
+      .getMessages(30)
+      .then((res) => {
+        const items =
+          res && res.code === 200 && res.data && Array.isArray(res.data.items)
+            ? res.data.items
+            : [];
+        const mapped = items.map((it) =>
+          Object.assign({}, it, {
+            timeText: this.formatInboxTime(it.time)
+          })
+        );
+        const visible = this.filterInboxByDismissed(mapped);
+        this.setData({ inboxMessages: visible, inboxLoading: false });
+      })
+      .catch(() => {
+        this.setData({ inboxMessages: [], inboxLoading: false });
+      });
+  },
+
+  formatInboxTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso).slice(0, 16).replace('T', ' ');
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${day} ${h}:${min}`;
+  },
+
+  openInboxMessage(e) {
+    const type = e.currentTarget.dataset.type;
+    const refRaw = e.currentTarget.dataset.refId || '';
+    if (!type) return;
+    const msgId = e.currentTarget.dataset.msgId || '';
+    if (msgId) {
+      wx.setStorageSync(STORAGE_INBOX_PENDING_DISMISS, msgId);
+    }
+    const ref = refRaw ? encodeURIComponent(refRaw) : '';
+    switch (type) {
+      case 'nutrition_evaluation':
+        wx.navigateTo({
+          url: `/pages/user/health/evaluation-detail/index?id=${ref}`
+        });
+        return;
+      case 'health_education_assigned':
+        wx.navigateTo({
+          url: `/pages/user/health/education-detail/index?id=${ref}`
+        });
+        return;
+      case 'service_request_approved':
+      case 'service_request_rejected':
+        wx.navigateTo({ url: '/pages/user/dietitian/requests/index' });
+        return;
+      case 'diet_plan_pending_review':
+      case 'diet_plan_approved':
+      case 'diet_plan_rejected':
+        wx.switchTab({ url: '/pages/user/diet/diet-plan/index' });
+        return;
+      default:
+        break;
+    }
   },
 
   loadIngredientShortcut() {
