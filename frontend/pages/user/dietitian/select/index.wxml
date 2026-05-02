@@ -35,6 +35,38 @@
     </view>
   </view>
 
+  <view class="recommend-section" wx:if="{{recommendedDietitians.length > 0 && !recommendCollapsed}}">
+    <view class="recommend-head">
+      <text class="recommend-title">为你推荐</text>
+      <text class="recommend-sub">基于当前筛选与口碑等综合排序</text>
+      <text class="recommend-collapse" bindtap="collapseRecommend">不看推荐</text>
+    </view>
+    <scroll-view class="recommend-scroll" scroll-x="true">
+      <view class="recommend-card" wx:for="{{recommendedDietitians}}" wx:key="id" bindtap="viewRecommendedDetail" data-id="{{item.id}}">
+        <view class="recommend-card-top">
+          <view class="recommend-avatar">{{item.nameInitial}}</view>
+          <view class="recommend-main">
+            <text class="recommend-name">{{item.name}}</text>
+            <text class="recommend-title-text">{{item.title}}</text>
+          </view>
+        </view>
+        <view class="recommend-meta">
+          <text class="recommend-rating">⭐ {{item.ratingText}}</text>
+          <text class="recommend-service">当前 {{item.serviceCount}} 人</text>
+        </view>
+        <view class="recommend-tags">
+          <text class="recommend-tag" wx:for="{{item.recommendTagPreview}}" wx:for-item="tg" wx:key="tg">{{tg}}</text>
+        </view>
+        <text class="recommend-reason">{{item.recommendReason}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="recommend-collapsed-bar" wx:if="{{recommendedDietitians.length > 0 && recommendCollapsed}}" bindtap="expandRecommend">
+    <text class="recommend-collapsed-text">为你推荐</text>
+    <text class="recommend-collapsed-action">查看推荐</text>
+  </view>
+
   <view class="metric-filters">
     <view class="metric-filter-row">
       <text class="metric-filter-label">当前服务人数</text>

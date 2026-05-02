@@ -49,11 +49,6 @@
   margin-bottom: 6rpx;
 }
 
-.experience {
-  font-size: 24rpx;
-  opacity: 0.8;
-}
-
 .stats {
   display: flex;
   align-items: center;
@@ -244,7 +239,6 @@
 }
 
 .title,
-.experience,
 .review-content,
 .case-desc {
   color: var(--u-sub);

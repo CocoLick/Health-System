@@ -7,7 +7,6 @@
       <view class="basic-info">
         <view class="name">{{dietitian.name}}</view>
         <view class="title">{{dietitian.title}}</view>
-        <view class="experience">{{dietitian.experience}}从业经验</view>
       </view>
     </view>
     <view class="stats">

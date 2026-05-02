@@ -11,7 +11,6 @@ Page({
       specialtyArr: [],
       rating: 0,
       serviceCount: 0,
-      experience: '',
       introduction: '',
       reviews: []
     }
