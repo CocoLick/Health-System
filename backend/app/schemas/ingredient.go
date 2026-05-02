@@ -85,6 +85,7 @@ type IngredientSubmissionListItem struct {
 	WorkflowStatus           string           `json:"workflow_status"`
 	ReviewNote               string           `json:"review_note,omitempty"`
 	CreatedAt                time.Time        `json:"created_at"`
+	UpdatedAt                time.Time        `json:"updated_at"`
 }
 
 type IngredientSubmissionListResponse struct {

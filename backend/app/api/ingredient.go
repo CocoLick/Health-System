@@ -376,7 +376,7 @@ func (h *IngredientHandler) SearchIngredients(c *gin.Context) {
 	})
 }
 
-// CreateIngredientSubmission 用户提交食材（私有库立即可用）
+// CreateIngredientSubmission 用户提交食材（方案 A：仅创建工单，审核通过后才有可记账食材）
 func (h *IngredientHandler) CreateIngredientSubmission(c *gin.Context) {
 	var req schemas.IngredientSubmissionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -395,7 +395,7 @@ func (h *IngredientHandler) CreateIngredientSubmission(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, schemas.Response{
 		Code:    200,
-		Message: "提交成功，已加入私有食材库",
+		Message: "提交成功，管理员审核通过后将加入食材库并可用于饮食记录",
 		Data: schemas.IngredientSubmissionResponse{
 			SubmissionID:        submission.SubmissionID,
 			IngredientIDPrivate: submission.IngredientIDPrivate,
@@ -492,6 +492,7 @@ func (h *IngredientHandler) GetIngredientSubmissionList(c *gin.Context) {
 			WorkflowStatus:           item.WorkflowStatus,
 			ReviewNote:               item.ReviewNote,
 			CreatedAt:                item.CreatedAt,
+			UpdatedAt:                item.UpdatedAt,
 		})
 	}
 	c.JSON(http.StatusOK, schemas.Response{
@@ -538,6 +539,7 @@ func (h *IngredientHandler) GetMyIngredientSubmissionList(c *gin.Context) {
 			WorkflowStatus:           item.WorkflowStatus,
 			ReviewNote:               item.ReviewNote,
 			CreatedAt:                item.CreatedAt,
+			UpdatedAt:                item.UpdatedAt,
 		})
 	}
 	c.JSON(http.StatusOK, schemas.Response{

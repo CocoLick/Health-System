@@ -9,7 +9,7 @@
     <view class="header-card">
       <view>
         <view class="header-title">我的食材管理</view>
-        <view class="header-sub">查看新增食材状态，退回后可继续使用并修改重提</view>
+        <view class="header-sub">查看新增食材审核状态；通过后纳入食材库，退回可修改重提</view>
       </view>
       <view class="add-btn" bindtap="goSubmitNew">+ 新增</view>
     </view>

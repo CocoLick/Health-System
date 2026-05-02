@@ -10,6 +10,16 @@
     <view class="header-date">{{today}}</view>
   </view>
 
+  <view wx:if="{{ingredientShortcut}}" class="ingredient-shortcut card">
+    <view class="ingredient-shortcut-close" catchtap="dismissIngredientShortcut">×</view>
+    <view class="ingredient-shortcut-main" bindtap="goRecordApprovedIngredient">
+      <view class="ingredient-shortcut-kicker">快捷记录</view>
+      <view class="ingredient-shortcut-title">「{{ingredientShortcut.submitted_name}}」已通过审核</view>
+      <view class="ingredient-shortcut-desc">将自动填入该食材，请确认分量与餐次后保存</view>
+      <view class="ingredient-shortcut-cta">去记录饮食</view>
+    </view>
+  </view>
+
   <view class="metrics-section card">
     <view class="section-title">今日摄入概览</view>
     <view class="ring-grid">

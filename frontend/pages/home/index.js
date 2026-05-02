@@ -45,7 +45,8 @@ Page({
     healthTips: [
       { key: 'water', title: '多喝水', desc: '每次点击 +250ml，目标 2000ml' },
       { key: 'exercise', title: '适量运动', desc: '完成今日 30 分钟活动打卡' }
-    ]
+    ],
+    ingredientShortcut: null
   },
 
   onLoad() {
@@ -146,6 +147,63 @@ Page({
       .catch(() => {
         applyTotals(fromCache());
       });
+
+    this.loadIngredientShortcut();
+  },
+
+  loadIngredientShortcut() {
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      this.setData({ ingredientShortcut: null });
+      return;
+    }
+    api.ingredient
+      .getMySubmissions({ workflow_status: 'approved', page: 1, page_size: 50 })
+      .then((res) => {
+        if (!res || res.code !== 200 || !res.data || !res.data.items) {
+          this.setData({ ingredientShortcut: null });
+          return;
+        }
+        const dismissed = wx.getStorageSync('ingredientShortcutDismissedIds') || [];
+        const recorded = wx.getStorageSync('ingredientShortcutRecordedIds') || [];
+        const items = res.data.items.filter(
+          (it) =>
+            it.workflow_status === 'approved' &&
+            (it.ingredient_id_private || '').trim() &&
+            !dismissed.includes(it.submission_id) &&
+            !recorded.includes(it.submission_id)
+        );
+        items.sort((a, b) => {
+          const tb = new Date(b.updated_at || b.created_at).getTime();
+          const ta = new Date(a.updated_at || a.created_at).getTime();
+          return tb - ta;
+        });
+        this.setData({ ingredientShortcut: items[0] || null });
+      })
+      .catch(() => this.setData({ ingredientShortcut: null }));
+  },
+
+  dismissIngredientShortcut() {
+    const cur = this.data.ingredientShortcut;
+    if (!cur || !cur.submission_id) return;
+    const dismissed = wx.getStorageSync('ingredientShortcutDismissedIds') || [];
+    if (!dismissed.includes(cur.submission_id)) {
+      dismissed.push(cur.submission_id);
+      wx.setStorageSync('ingredientShortcutDismissedIds', dismissed);
+    }
+    this.setData({ ingredientShortcut: null });
+    this.loadIngredientShortcut();
+  },
+
+  goRecordApprovedIngredient() {
+    const cur = this.data.ingredientShortcut;
+    if (!cur || !(cur.ingredient_id_private || '').trim()) return;
+    const ing = encodeURIComponent(cur.ingredient_id_private.trim());
+    const sub = encodeURIComponent((cur.submission_id || '').trim());
+    const nm = encodeURIComponent((cur.submitted_name || '').trim());
+    wx.navigateTo({
+      url: `/pages/user/diet/add-record/index?ingredient_id=${ing}&submission_id=${sub}&shortcut_food_name=${nm}`
+    });
   },
 
   getGreetingText() {

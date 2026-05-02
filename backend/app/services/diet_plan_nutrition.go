@@ -122,7 +122,10 @@ func roundNutrient1(x float64) float64 {
 
 func loadIngredientList(db *gorm.DB) ([]models.Ingredient, error) {
 	var list []models.Ingredient
-	if err := db.Find(&list).Error; err != nil {
+	q := db.Model(&models.Ingredient{}).
+		Where("status = ?", "enabled").
+		Where("(review_status = ? OR review_status = '' OR review_status IS NULL)", "approved")
+	if err := q.Find(&list).Error; err != nil {
 		return nil, err
 	}
 	return list, nil

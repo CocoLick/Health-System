@@ -34,11 +34,27 @@ Page({
     unitIndex: 0 // 当前选中的单位索引
   },
 
-  onLoad() {
+  onLoad(options) {
+    this.prefillIngredientId = (options.ingredient_id || '').trim();
+    this.shortcutIngredientId = this.prefillIngredientId;
+    this.shortcutSubmissionId = (options.submission_id || '').trim();
+    let sfn = options.shortcut_food_name || '';
+    try {
+      if (typeof sfn === 'string' && /%[0-9A-Fa-f]{2}/.test(sfn)) {
+        sfn = decodeURIComponent(sfn.replace(/\+/g, ' '));
+      }
+    } catch (e) {
+      /* keep raw */
+    }
+    this.shortcutSubmittedName = typeof sfn === 'string' ? sfn : '';
+    this._prefillIngredientDone = false;
+    const mt = (options.meal_type || '').trim();
+    if (mt && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mt)) {
+      this.setData({ mealType: mt });
+    }
     if (!this.checkLogin()) {
       return;
     }
-    // 页面加载时获取食材列表
     this.loadIngredients();
   },
 
@@ -47,13 +63,14 @@ Page({
     if (this.data.isLoggedIn) {
       const submitFlag = wx.getStorageSync('ingredientSubmitRefreshFlag');
       if (submitFlag && submitFlag.shouldRefresh) {
-        const keyword = submitFlag.keyword || this.data.newFood.name || '';
         wx.removeStorageSync('ingredientSubmitRefreshFlag');
-        this.setData({
-          showAddForm: true,
-          'newFood.name': keyword,
-          searchQuery: keyword
-        });
+        if (submitFlag.pendingAudit) {
+          wx.showToast({
+            title: '待管理员审核，通过后即可搜索记录',
+            icon: 'none',
+            duration: 2800
+          });
+        }
       }
       this.loadIngredients();
     }
@@ -79,6 +96,7 @@ Page({
           wx.setStorageSync('cachedIngredients', ingredients);
           console.log('从后端更新食材数据并缓存');
           this.refreshSearchResultsAfterLoad();
+          this.tryApplyIngredientPrefill();
         }
       })
       .catch(() => {
@@ -90,12 +108,87 @@ Page({
               this.setData({ ingredients: ingredients });
               wx.setStorageSync('cachedIngredients', ingredients);
               this.refreshSearchResultsAfterLoad();
+              this.tryApplyIngredientPrefill();
             }
           })
           .catch(() => {
             console.log('从后端加载食材数据失败，使用本地缓存');
+            this.tryApplyIngredientPrefill();
           });
       });
+  },
+
+  tryApplyIngredientPrefill() {
+    const id = this.prefillIngredientId;
+    if (!id || this._prefillIngredientDone) {
+      return;
+    }
+    const finish = (ag) => {
+      if (!ag || !ag.name) {
+        wx.showToast({ title: '未找到该食材', icon: 'none' });
+        this.prefillIngredientId = '';
+        return;
+      }
+      const defaultAmount = (ag.unit || 'g') === 'g' ? '100' : '1';
+      this.applyIngredientToForm(ag, { amountStr: defaultAmount, openForm: true });
+      this._prefillIngredientDone = true;
+      this.prefillIngredientId = '';
+    };
+
+    const list = this.data.ingredients || [];
+    const hit = list.find((i) => i.ingredient_id === id);
+    if (hit) {
+      finish(hit);
+      return;
+    }
+
+    api.ingredient
+      .getDetail(id)
+      .then((res) => {
+        if (res.code === 200 && res.data) {
+          const d = res.data;
+          finish({
+            ingredient_id: d.ingredient_id,
+            name: d.name,
+            unit: d.unit || 'g',
+            gram_per_unit: d.gram_per_unit != null ? d.gram_per_unit : 100,
+            calorie_100g: d.calorie_100g,
+            nutrition_100g: d.nutrition_100g
+          });
+        } else {
+          finish(null);
+        }
+      })
+      .catch(() => finish(null));
+  },
+
+  applyIngredientToForm(ingredient, options = {}) {
+    const unit = ingredient.unit || 'g';
+    const gramPerUnit = ingredient.gram_per_unit != null ? ingredient.gram_per_unit : 100;
+    const unitOptions = ['g', '个', '碗', '杯', '勺'];
+    const unitIndex = unitOptions.indexOf(unit) >= 0 ? unitOptions.indexOf(unit) : 0;
+    const amountStr =
+      options.amountStr !== undefined ? String(options.amountStr) : this.data.newFood.amount;
+
+    const patch = {
+      'newFood.name': ingredient.name,
+      'newFood.unit': unit,
+      'newFood.gramPerUnit': gramPerUnit,
+      searchResults: [],
+      showSearchResults: false,
+      currentIngredient: ingredient,
+      unitIndex
+    };
+    if (options.amountStr !== undefined) {
+      patch['newFood.amount'] = String(options.amountStr);
+    }
+    if (options.openForm) {
+      patch.showAddForm = true;
+    }
+
+    this.setData(patch, () => {
+      this.calculateNutrition(ingredient.name, amountStr, gramPerUnit);
+    });
   },
 
   refreshSearchResultsAfterLoad() {
@@ -171,24 +264,7 @@ Page({
   selectIngredient(e) {
     const ingredient = e.currentTarget.dataset.ingredient;
     if (ingredient) {
-      // 设置当前食材及其单位信息
-      const unit = ingredient.unit || 'g';
-      const gramPerUnit = ingredient.gram_per_unit || 100;
-      const unitOptions = ['g', '个', '碗', '杯', '勺'];
-      const unitIndex = unitOptions.indexOf(unit) >= 0 ? unitOptions.indexOf(unit) : 0;
-      
-      this.setData({
-        'newFood.name': ingredient.name,
-        'newFood.unit': unit,
-        'newFood.gramPerUnit': gramPerUnit,
-        searchResults: [],
-        showSearchResults: false,
-        currentIngredient: ingredient,
-        unitIndex: unitIndex
-      });
-      
-      // 自动计算营养成分
-      this.calculateNutrition(ingredient.name, this.data.newFood.amount, gramPerUnit);
+      this.applyIngredientToForm(ingredient);
     }
   },
 
@@ -240,12 +316,28 @@ Page({
     const amountNum = parseFloat(amount);
     let nutrition = { calories: 0, protein: 0, carbohydrate: 0, fat: 0 };
 
-    // 从后端获取的食材列表中查找食物营养数据
     const ingredients = this.data.ingredients;
-    for (const ingredient of ingredients) {
-      if (ingredient.name && (ingredient.name.includes(foodName) || foodName.includes(ingredient.name))) {
-        // 解析营养成分
-        let baseNutrition = {
+    const cur = this.data.currentIngredient;
+    let picked = null;
+    if (cur && cur.ingredient_id) {
+      picked = ingredients.find((i) => i.ingredient_id === cur.ingredient_id);
+    }
+    if (!picked && cur && cur.ingredient_id && (cur.calorie_100g != null || cur.nutrition_100g)) {
+      picked = cur;
+    }
+    if (!picked) {
+      for (const ingredient of ingredients) {
+        if (ingredient.name && (ingredient.name.includes(foodName) || foodName.includes(ingredient.name))) {
+          picked = ingredient;
+          break;
+        }
+      }
+    }
+
+    if (picked) {
+      const ingredient = picked;
+      // 解析营养成分
+      let baseNutrition = {
           calories: ingredient.calorie_100g || 0,
           protein: 0,
           carbohydrate: 0,
@@ -275,14 +367,12 @@ Page({
         // 营养值 = (输入数量 × 每单位克数 / 100) × 每100g营养值
         const actualWeight = amountNum * gramPerUnit;
         const ratio = actualWeight / 100;
-        nutrition = {
-          calories: baseNutrition.calories * ratio,
-          protein: baseNutrition.protein * ratio,
-          carbohydrate: baseNutrition.carbohydrate * ratio,
-          fat: baseNutrition.fat * ratio
-        };
-        break;
-      }
+      nutrition = {
+        calories: baseNutrition.calories * ratio,
+        protein: baseNutrition.protein * ratio,
+        carbohydrate: baseNutrition.carbohydrate * ratio,
+        fat: baseNutrition.fat * ratio
+      };
     }
 
     this.setData({ 'newFood.nutrition': nutrition });
@@ -313,6 +403,10 @@ Page({
       gramPerUnit: gramPerUnit,
       nutrition: nutrition
     };
+    const ci = this.data.currentIngredient;
+    if (ci && ci.ingredient_id) {
+      food.ingredientId = ci.ingredient_id;
+    }
 
     let foods = [...this.data.foods];
     if (this.data.editingIndex >= 0) {
@@ -540,6 +634,8 @@ Page({
           wx.setStorageSync('todayNutritionRecords', todayRecords);
           wx.setStorageSync('nutritionRecords', allRecords);
 
+          this.markIngredientShortcutConsumed(foods);
+
           wx.showToast({ title: '记录成功', icon: 'success' });
 
           // 跳转回营养页面
@@ -553,6 +649,26 @@ Page({
       .catch(() => {
         wx.showToast({ title: '网络错误', icon: 'none' });
       });
+  },
+
+  markIngredientShortcutConsumed(foods) {
+    const sid = this.shortcutSubmissionId;
+    if (!sid) return;
+    const iid = this.shortcutIngredientId;
+    const expectName = (this.shortcutSubmittedName || '').trim();
+    let ok = false;
+    if (iid) {
+      ok = foods.some((f) => f.ingredientId && f.ingredientId === iid);
+    }
+    if (!ok && expectName) {
+      ok = foods.some((f) => (f.name || '').trim() === expectName);
+    }
+    if (!ok) return;
+    const arr = wx.getStorageSync('ingredientShortcutRecordedIds') || [];
+    if (!arr.includes(sid)) {
+      arr.push(sid);
+      wx.setStorageSync('ingredientShortcutRecordedIds', arr);
+    }
   },
 
   getMealTypeText(type) {

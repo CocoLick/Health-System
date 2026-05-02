@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -11,6 +12,95 @@ import (
 	"github.com/yourusername/nutrition-system/config"
 	"gorm.io/gorm"
 )
+
+func generateIngredientID() string {
+	return fmt.Sprintf("IG%x", uint64(time.Now().UnixNano()))
+}
+
+func ingredientFromSubmissionSnapshot(sub *models.IngredientSubmission, ingredientID, submissionID string, now time.Time) *models.Ingredient {
+	riskLevel := "normal"
+	riskScore := 0
+	if sub.AutoCheckResult == "abnormal" {
+		riskLevel = "abnormal"
+		riskScore = 90
+	}
+	return &models.Ingredient{
+		IngredientID:       ingredientID,
+		Name:               sub.SubmittedName,
+		Category:           sub.SubmittedCategory,
+		Calorie100g:        sub.SubmittedCaloriesPer100g,
+		Nutrition100g:      sub.SubmittedNutrition100g,
+		Unit:               sub.SubmittedUnit,
+		GramPerUnit:        sub.SubmittedGramPerUnit,
+		Scope:              "public",
+		OwnerUserID:        "",
+		SourceType:         "user_submission",
+		SourceSubmissionID: submissionID,
+		ReviewStatus:       "approved",
+		RiskLevel:          riskLevel,
+		RiskScore:          riskScore,
+		Status:             "enabled",
+		CreatedAt:          now,
+		UpdatedAt:          now,
+	}
+}
+
+func ingredientFromApproveEdit(req schemas.IngredientApproveWithEditRequest, ingredientID, submissionID string, now time.Time) (*models.Ingredient, error) {
+	autoCalories := req.Nutrition100g.Protein*4 + req.Nutrition100g.Carbohydrate*4 + req.Nutrition100g.Fat*9
+	base := req.Calorie100g
+	if base <= 0 {
+		base = 1
+	}
+	delta := math.Abs(req.Calorie100g-autoCalories) / base
+	riskLevel := "normal"
+	riskScore := 0
+	if delta > 0.2 {
+		riskLevel = "abnormal"
+		riskScore = 90
+	}
+	nutriJSON, err := json.Marshal(models.NutritionDetails{
+		Protein:      req.Nutrition100g.Protein,
+		Carbohydrate: req.Nutrition100g.Carbohydrate,
+		Fat:          req.Nutrition100g.Fat,
+		Fiber:        req.Nutrition100g.Fiber,
+		VitaminC:     req.Nutrition100g.VitaminC,
+		Calcium:      req.Nutrition100g.Calcium,
+		Iron:         req.Nutrition100g.Iron,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &models.Ingredient{
+		IngredientID:       ingredientID,
+		Name:               req.Name,
+		Category:           req.Category,
+		Calorie100g:        req.Calorie100g,
+		Nutrition100g:      string(nutriJSON),
+		Unit:               req.Unit,
+		GramPerUnit:        req.GramPerUnit,
+		Scope:              "public",
+		OwnerUserID:        "",
+		SourceType:         "user_submission",
+		SourceSubmissionID: submissionID,
+		ReviewStatus:       "approved",
+		RiskLevel:          riskLevel,
+		RiskScore:          riskScore,
+		Status:             "enabled",
+		CreatedAt:          now,
+		UpdatedAt:          now,
+	}, nil
+}
+
+func markSubmissionApproved(tx *gorm.DB, submissionID, reviewerID, reviewNote string, now time.Time) error {
+	return tx.Model(&models.IngredientSubmission{}).
+		Where("submission_id = ?", submissionID).
+		Updates(map[string]interface{}{
+			"workflow_status": "approved",
+			"reviewer_id":     reviewerID,
+			"review_note":     reviewNote,
+			"updated_at":      now,
+		}).Error
+}
 
 // IngredientService 食材服务
 type IngredientService struct{}
@@ -73,8 +163,11 @@ func (s *IngredientService) GetIngredientList(category string, page, pageSize in
 	var ingredients []models.Ingredient
 	var total int64
 
-	// 构建查询
-	query := config.DB.Model(&models.Ingredient{}).Where("status = ?", "enabled").Where("(scope = ? OR scope = '' OR scope IS NULL)", "public")
+	// 构建查询（仅已审核通过的公共食材）
+	query := config.DB.Model(&models.Ingredient{}).
+		Where("status = ?", "enabled").
+		Where("(scope = ? OR scope = '' OR scope IS NULL)", "public").
+		Where("(review_status = ? OR review_status = '' OR review_status IS NULL)", "approved")
 	if category != "" {
 		query = query.Where("category = ?", category)
 	}
@@ -150,6 +243,7 @@ func (s *IngredientService) SearchIngredients(keyword string, page, pageSize int
 	baseQuery := config.DB.Model(&models.Ingredient{}).
 		Where("status = ?", "enabled").
 		Where("(scope = ? OR scope = '' OR scope IS NULL)", "public").
+		Where("(review_status = ? OR review_status = '' OR review_status IS NULL)", "approved").
 		Where("name LIKE ? OR category LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
 	if err := baseQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -167,9 +261,13 @@ func (s *IngredientService) SearchIngredients(keyword string, page, pageSize int
 func (s *IngredientService) GetUserVisibleIngredients(userID, category string, page, pageSize int) ([]models.Ingredient, int64, error) {
 	var ingredients []models.Ingredient
 	var total int64
+	// 仅展示已审核通过的食材：待审工单不再对应可记账的 ingredient 行（方案 A）
 	query := config.DB.Model(&models.Ingredient{}).
 		Where("status = ?", "enabled").
-		Where("(scope = ? OR (scope = ? AND owner_user_id = ?))", "public", "private", userID)
+		Where(`(
+			(scope = 'public' AND (review_status = 'approved' OR review_status = '' OR review_status IS NULL))
+			OR (scope = 'private' AND owner_user_id = ? AND review_status = 'approved')
+		)`, userID)
 	if category != "" {
 		query = query.Where("category = ?", category)
 	}
@@ -198,13 +296,8 @@ func (s *IngredientService) CreateIngredientSubmission(userID string, req schema
 	}
 	delta := math.Abs(req.Calorie100g-autoCalories) / base
 	checkResult := "pass"
-	riskLevel := "normal"
-	riskScore := 0
-	switch {
-	case delta > 0.2:
+	if delta > 0.2 {
 		checkResult = "abnormal"
-		riskLevel = "abnormal"
-		riskScore = 90
 	}
 	nutriJSON, err := json.Marshal(models.NutritionDetails{
 		Protein:      req.Nutrition100g.Protein,
@@ -218,31 +311,11 @@ func (s *IngredientService) CreateIngredientSubmission(userID string, req schema
 	if err != nil {
 		return nil, nil, err
 	}
-	privateIngredientID := fmt.Sprintf("IG%s", now.Format("20060102150405"))
 	submissionID := fmt.Sprintf("IS%s", now.Format("20060102150405"))
-	privateIngredient := &models.Ingredient{
-		IngredientID:       privateIngredientID,
-		Name:               req.Name,
-		Category:           req.Category,
-		Calorie100g:        req.Calorie100g,
-		Nutrition100g:      string(nutriJSON),
-		Unit:               req.Unit,
-		GramPerUnit:        req.GramPerUnit,
-		Scope:              "private",
-		OwnerUserID:        userID,
-		SourceType:         "user_submission",
-		SourceSubmissionID: submissionID,
-		ReviewStatus:       "pending",
-		RiskLevel:          riskLevel,
-		RiskScore:          riskScore,
-		Status:             "enabled",
-		CreatedAt:          now,
-		UpdatedAt:          now,
-	}
 	submission := &models.IngredientSubmission{
 		SubmissionID:             submissionID,
 		UserID:                   userID,
-		IngredientIDPrivate:      privateIngredientID,
+		IngredientIDPrivate:      "",
 		SubmittedName:            req.Name,
 		SubmittedCategory:        req.Category,
 		SubmittedCaloriesPer100g: req.Calorie100g,
@@ -256,19 +329,10 @@ func (s *IngredientService) CreateIngredientSubmission(userID string, req schema
 		CreatedAt:                now,
 		UpdatedAt:                now,
 	}
-	err = config.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(privateIngredient).Error; err != nil {
-			return err
-		}
-		if err := tx.Create(submission).Error; err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
+	if err := config.DB.Create(submission).Error; err != nil {
 		return nil, nil, err
 	}
-	return submission, privateIngredient, nil
+	return submission, nil, nil
 }
 
 func (s *IngredientService) GetIngredientSubmissions(workflowStatus string, page, pageSize int) ([]models.IngredientSubmission, int64, error) {
@@ -312,49 +376,70 @@ func (s *IngredientService) ApproveIngredientSubmission(submissionID, reviewerID
 		if err := tx.Where("submission_id = ?", submissionID).First(&submission).Error; err != nil {
 			return err
 		}
-		// 审核通过时直接把用户私有记录升级为公共记录，避免同名双记录
-		if err := tx.Model(&models.Ingredient{}).
-			Where("ingredient_id = ?", submission.IngredientIDPrivate).
-			Updates(map[string]interface{}{
-				"scope":         "public",
-				"owner_user_id": "",
-				"review_status": "approved",
-				"status":        "enabled",
-				"updated_at":    time.Now(),
-			}).Error; err != nil {
+		if submission.WorkflowStatus != "pending" {
+			return fmt.Errorf("仅待审核的工单可通过审核")
+		}
+		now := time.Now()
+
+		// 兼容旧数据：此前已生成 pending 私有 ingredient 行则升级为公共
+		if submission.IngredientIDPrivate != "" {
+			var existing models.Ingredient
+			err := tx.Where("ingredient_id = ?", submission.IngredientIDPrivate).First(&existing).Error
+			if err == nil {
+				if err := tx.Model(&models.Ingredient{}).
+					Where("ingredient_id = ?", submission.IngredientIDPrivate).
+					Updates(map[string]interface{}{
+						"scope":          "public",
+						"owner_user_id":  "",
+						"review_status":  "approved",
+						"status":         "enabled",
+						"updated_at":     now,
+					}).Error; err != nil {
+					return err
+				}
+				return markSubmissionApproved(tx, submissionID, reviewerID, reviewNote, now)
+			}
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		}
+
+		ingID := generateIngredientID()
+		ing := ingredientFromSubmissionSnapshot(&submission, ingID, submissionID, now)
+		if err := tx.Create(ing).Error; err != nil {
 			return err
 		}
-		if err := tx.Model(&models.IngredientSubmission{}).
+		return tx.Model(&models.IngredientSubmission{}).
 			Where("submission_id = ?", submissionID).
 			Updates(map[string]interface{}{
-				"workflow_status": "approved",
-				"reviewer_id":     reviewerID,
-				"review_note":     reviewNote,
-				"updated_at":      time.Now(),
-			}).Error; err != nil {
-			return err
-		}
-		return nil
+				"ingredient_id_private": ingID,
+				"workflow_status":       "approved",
+				"reviewer_id":           reviewerID,
+				"review_note":           reviewNote,
+				"updated_at":            now,
+			}).Error
 	})
 }
 
 func (s *IngredientService) ReturnIngredientSubmission(submissionID, reviewerID, reviewNote string) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
+		now := time.Now()
 		if err := tx.Model(&models.IngredientSubmission{}).
 			Where("submission_id = ?", submissionID).
 			Updates(map[string]interface{}{
 				"workflow_status": "returned",
 				"reviewer_id":     reviewerID,
 				"review_note":     reviewNote,
-				"updated_at":      time.Now(),
+				"updated_at":      now,
 			}).Error; err != nil {
 			return err
 		}
+		// 方案 A 待审工单无 ingredient 行；旧数据可能存在 pending 私有行
 		if err := tx.Model(&models.Ingredient{}).
 			Where("source_submission_id = ?", submissionID).
 			Updates(map[string]interface{}{
 				"review_status": "returned",
-				"updated_at":    time.Now(),
+				"updated_at":    now,
 			}).Error; err != nil {
 			return err
 		}
@@ -406,43 +491,44 @@ func (s *IngredientService) ResubmitIngredientSubmission(userID, submissionID st
 		if submission.WorkflowStatus != "returned" {
 			return fmt.Errorf("仅已退回的提交可重新提交")
 		}
-		if err := tx.Model(&models.Ingredient{}).
-			Where("ingredient_id = ?", submission.IngredientIDPrivate).
-			Updates(map[string]interface{}{
-				"name":              req.Name,
-				"category":          req.Category,
-				"calories_per_100g": req.Calorie100g,
-				"nutrition100g":     string(nutriJSON),
-				"unit":              req.Unit,
-				"gram_per_unit":     req.GramPerUnit,
-				"review_status":     "pending",
-				"risk_level":        riskLevel,
-				"risk_score":        riskScore,
-				"status":            "enabled",
-				"updated_at":        now,
-			}).Error; err != nil {
-			return err
+
+		if submission.IngredientIDPrivate != "" {
+			var ing models.Ingredient
+			err := tx.Where("ingredient_id = ?", submission.IngredientIDPrivate).First(&ing).Error
+			if err == nil {
+				ing.Name = req.Name
+				ing.Category = req.Category
+				ing.Calorie100g = req.Calorie100g
+				ing.Nutrition100g = string(nutriJSON)
+				ing.Unit = req.Unit
+				ing.GramPerUnit = req.GramPerUnit
+				ing.ReviewStatus = "pending"
+				ing.RiskLevel = riskLevel
+				ing.RiskScore = riskScore
+				ing.Status = "enabled"
+				ing.UpdatedAt = now
+				if err := tx.Save(&ing).Error; err != nil {
+					return err
+				}
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
 		}
-		if err := tx.Model(&models.IngredientSubmission{}).
-			Where("submission_id = ?", submissionID).
-			Updates(map[string]interface{}{
-				"submitted_name":             req.Name,
-				"submitted_category":         req.Category,
-				"submitted_calories_per100g": req.Calorie100g,
-				"submitted_nutrition100g":    string(nutriJSON),
-				"submitted_unit":             req.Unit,
-				"submitted_gram_per_unit":    req.GramPerUnit,
-				"auto_calc_calories":         autoCalories,
-				"auto_delta_ratio":           delta,
-				"auto_check_result":          checkResult,
-				"workflow_status":            "pending",
-				"reviewer_id":                "",
-				"review_note":                "",
-				"updated_at":                 now,
-			}).Error; err != nil {
-			return err
-		}
-		return nil
+
+		submission.SubmittedName = req.Name
+		submission.SubmittedCategory = req.Category
+		submission.SubmittedCaloriesPer100g = req.Calorie100g
+		submission.SubmittedNutrition100g = string(nutriJSON)
+		submission.SubmittedUnit = req.Unit
+		submission.SubmittedGramPerUnit = req.GramPerUnit
+		submission.AutoCalcCalories = autoCalories
+		submission.AutoDeltaRatio = delta
+		submission.AutoCheckResult = checkResult
+		submission.WorkflowStatus = "pending"
+		submission.ReviewerID = ""
+		submission.ReviewNote = ""
+		submission.UpdatedAt = now
+		return tx.Save(&submission).Error
 	})
 }
 
@@ -479,49 +565,68 @@ func (s *IngredientService) ApproveIngredientSubmissionWithEdit(submissionID, re
 	if err != nil {
 		return err
 	}
+	nutriStr := string(nutriJSON)
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var submission models.IngredientSubmission
 		if err := tx.Where("submission_id = ?", submissionID).First(&submission).Error; err != nil {
 			return err
 		}
-		if err := tx.Model(&models.Ingredient{}).
-			Where("ingredient_id = ?", submission.IngredientIDPrivate).
-			Updates(map[string]interface{}{
-				"name":              req.Name,
-				"category":          req.Category,
-				"calories_per_100g": req.Calorie100g,
-				"nutrition100g":     string(nutriJSON),
-				"unit":              req.Unit,
-				"gram_per_unit":     req.GramPerUnit,
-				"scope":             "public",
-				"owner_user_id":     "",
-				"review_status":     "approved",
-				"risk_level":        riskLevel,
-				"risk_score":        riskScore,
-				"status":            "enabled",
-				"updated_at":        time.Now(),
-			}).Error; err != nil {
-			return err
+		if submission.WorkflowStatus != "pending" {
+			return fmt.Errorf("仅待审核的工单可审核")
 		}
-		if err := tx.Model(&models.IngredientSubmission{}).
-			Where("submission_id = ?", submissionID).
-			Updates(map[string]interface{}{
-				"submitted_name":             req.Name,
-				"submitted_category":         req.Category,
-				"submitted_calories_per100g": req.Calorie100g,
-				"submitted_nutrition100g":    string(nutriJSON),
-				"submitted_unit":             req.Unit,
-				"submitted_gram_per_unit":    req.GramPerUnit,
-				"auto_calc_calories":         autoCalories,
-				"auto_delta_ratio":           delta,
-				"auto_check_result":          checkResult,
-				"workflow_status":            "approved",
-				"reviewer_id":                reviewerID,
-				"review_note":                req.ReviewNote,
-				"updated_at":                 time.Now(),
-			}).Error; err != nil {
-			return err
+		now := time.Now()
+
+		updatedIngredient := false
+		if submission.IngredientIDPrivate != "" {
+			var existing models.Ingredient
+			err := tx.Where("ingredient_id = ?", submission.IngredientIDPrivate).First(&existing).Error
+			if err == nil {
+				existing.Name = req.Name
+				existing.Category = req.Category
+				existing.Calorie100g = req.Calorie100g
+				existing.Nutrition100g = nutriStr
+				existing.Unit = req.Unit
+				existing.GramPerUnit = req.GramPerUnit
+				existing.Scope = "public"
+				existing.OwnerUserID = ""
+				existing.ReviewStatus = "approved"
+				existing.RiskLevel = riskLevel
+				existing.RiskScore = riskScore
+				existing.Status = "enabled"
+				existing.UpdatedAt = now
+				if err := tx.Save(&existing).Error; err != nil {
+					return err
+				}
+				updatedIngredient = true
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
 		}
-		return nil
+		if !updatedIngredient {
+			ingID := generateIngredientID()
+			ing, err := ingredientFromApproveEdit(req, ingID, submissionID, now)
+			if err != nil {
+				return err
+			}
+			if err := tx.Create(ing).Error; err != nil {
+				return err
+			}
+			submission.IngredientIDPrivate = ingID
+		}
+
+		submission.SubmittedName = req.Name
+		submission.SubmittedCategory = req.Category
+		submission.SubmittedCaloriesPer100g = req.Calorie100g
+		submission.SubmittedNutrition100g = nutriStr
+		submission.SubmittedUnit = req.Unit
+		submission.SubmittedGramPerUnit = req.GramPerUnit
+		submission.AutoCalcCalories = autoCalories
+		submission.AutoDeltaRatio = delta
+		submission.AutoCheckResult = checkResult
+		submission.WorkflowStatus = "approved"
+		submission.ReviewerID = reviewerID
+		submission.ReviewNote = req.ReviewNote
+		submission.UpdatedAt = now
+		return tx.Save(&submission).Error
 	})
 }

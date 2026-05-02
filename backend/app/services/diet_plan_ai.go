@@ -237,7 +237,11 @@ func (s *DietPlanService) callDietPlanLLM(userID string, cycleDays int, goal str
 	_ = config.DB.Where("user_id = ?", userID).Order("updated_at DESC").First(&hd).Error
 
 	var ingredients []models.Ingredient
-	_ = config.DB.Where("status = ?", "enabled").Limit(40).Find(&ingredients).Error
+	_ = config.DB.Model(&models.Ingredient{}).
+		Where("status = ?", "enabled").
+		Where("(review_status = ? OR review_status = '' OR review_status IS NULL)", "approved").
+		Limit(40).
+		Find(&ingredients).Error
 	ingredientNames := make([]string, 0, len(ingredients))
 	for _, ing := range ingredients {
 		n := strings.TrimSpace(ing.Name)

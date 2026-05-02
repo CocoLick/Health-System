@@ -1,7 +1,7 @@
 <view class="container">
   <view class="card">
     <view class="title">{{isResubmitMode ? '编辑并重新提交' : '新增食材'}}</view>
-    <view class="sub">{{isResubmitMode ? '修改后重新提交，状态将变为待审核。' : '提交后会立即进入你的私有库，并同步进入管理员审核队列。'}}</view>
+    <view class="sub">{{isResubmitMode ? '修改后重新提交，状态将变为待审核。' : '提交后进入审核队列；管理员通过前无法在饮食记录中选择该食材。'}}</view>
     <view wx:if="{{isResubmitMode && returnReason}}" class="return-reason">
       退回原因：{{returnReason}}
     </view>
