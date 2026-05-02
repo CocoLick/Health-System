@@ -1158,47 +1158,28 @@ Page({
       return;
     }
 
-    // 构建完整的请求数据，包含所有字段
-    const requestData = {
-      ...this.data.healthData,
+    const requestPayload = {
       gender: backendGender(genderText),
       age: ageNum,
       activity_level: activityLevel,
       nutrition_goal: nutritionGoal
     };
 
-    // 移除不需要的字段
-    delete requestData.data_id;
-
     wx.showLoading({ title: '保存中...' });
 
-    if (this.data.isEditing) {
-      api.healthData.update(this.data.healthData.data_id || '', requestData).then(res => {
-        wx.hideLoading();
-        if (res.code === 200) {
-          this.handleBasicInfoSaveSuccess();
-        } else {
-          wx.showToast({ title: res.message || '更新失败', icon: 'none' });
-        }
-      }).catch(err => {
-        wx.hideLoading();
-        console.log('更新失败', err);
-        wx.showToast({ title: '更新失败', icon: 'none' });
-      });
-    } else {
-      api.healthData.submit(requestData).then(res => {
-        wx.hideLoading();
-        if (res.code === 200) {
-          this.handleBasicInfoSaveSuccess();
-        } else {
-          wx.showToast({ title: res.message || '保存失败', icon: 'none' });
-        }
-      }).catch(err => {
-        wx.hideLoading();
-        console.log('保存失败', err);
-        wx.showToast({ title: '保存失败', icon: 'none' });
-      });
-    }
+    api.healthData.saveBasicInfo(requestPayload).then(res => {
+      wx.hideLoading();
+      if (res.code === 200) {
+        this.handleBasicInfoSaveSuccess(res.data);
+      } else {
+        wx.showToast({ title: res.message || '保存失败', icon: 'none' });
+      }
+    }).catch(err => {
+      wx.hideLoading();
+      console.log('保存失败', err);
+      const msg = err.data && err.data.message ? err.data.message : '保存失败';
+      wx.showToast({ title: msg, icon: 'none' });
+    });
   },
 
   saveHealthMetrics() {
@@ -1307,11 +1288,33 @@ Page({
     }
   },
 
-  handleBasicInfoSaveSuccess() {
+  handleBasicInfoSaveSuccess(serverRow) {
+    const d = serverRow && typeof serverRow === 'object' ? serverRow : {};
+    const activityLevel = (d.activity_level && String(d.activity_level).trim()) || this.data.formData.activityLevel || '';
+    const nutritionGoal = (d.nutrition_goal && String(d.nutrition_goal).trim()) || this.data.formData.nutritionGoal || '';
+
     const healthData = {
       ...this.data.healthData,
-      ...this.data.formData
+      ...this.data.formData,
+      data_id: d.data_id || this.data.healthData.data_id || '',
+      gender: displayGender(d.gender) || this.data.formData.gender || '',
+      age: d.age != null && d.age !== '' ? d.age : this.data.formData.age,
+      height: d.height != null && d.height !== '' ? d.height : this.data.healthData.height,
+      weight: d.weight != null && d.weight !== '' ? d.weight : this.data.healthData.weight,
+      heartRate: d.heart_rate != null && d.heart_rate !== '' ? d.heart_rate : this.data.healthData.heartRate,
+      bloodPressure: d.blood_pressure != null && d.blood_pressure !== '' ? d.blood_pressure : this.data.healthData.bloodPressure,
+      bloodSugar: d.blood_sugar != null && d.blood_sugar !== '' ? d.blood_sugar : this.data.healthData.bloodSugar,
+      allergyHistory: d.allergy_history != null && d.allergy_history !== '' ? d.allergy_history : this.data.healthData.allergyHistory,
+      activityLevel,
+      nutritionGoal
     };
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo && typeof userInfo === 'object') {
+      userInfo.gender = d.gender || backendGender(healthData.gender) || userInfo.gender;
+      userInfo.age = d.age != null && d.age !== '' ? d.age : userInfo.age;
+      wx.setStorageSync('userInfo', userInfo);
+    }
 
     wx.setStorageSync('cachedHealthData', healthData);
 

@@ -1,7 +1,7 @@
 <view class="page">
   <view class="header">
     <view class="title">编写营养评估</view>
-    <view class="sub">请结合下方参考信息与维度提示撰写；带 * 为必填</view>
+    <view class="sub">按区块阅读图表并在同区块内填写对应项；维度提示可展开参考；带 * 为必填</view>
   </view>
 
   <view class="section">
@@ -22,22 +22,32 @@
       <text class="label">饮食目标</text>
       <view class="ctx-value">{{context.dietGoalText}}</view>
     </view>
-    <view class="ctx-core-tip">提示：优先参考下方趋势图与推荐偏差，快速完成本次评估结论。</view>
+    <view class="ctx-core-tip">提示：页面按「饮食记录与补充说明 → 能量 → 膳食结构 → 体征与体成分 → 结论与建议」分区；首节筛选区间与后续图表一致。</view>
   </view>
 
   <view class="accordion-tools">
     <view class="accordion-tool-btn" bindtap="toggleAllSections">
-      {{accordion.dietHistory && accordion.trendOverview && accordion.writingHints && accordion.evalForm ? '全部收起' : '全部展开'}}
+      {{accordion.dietHistory && accordion.writingHints ? '全部收起' : '全部展开'}}
     </view>
   </view>
 
-  <view class="section accordion-section" wx:if="{{userId}}">
-    <view class="section-title section-title-accordion" data-key="dietHistory" bindtap="toggleSection">
-      <text>历史饮食记录</text>
-      <text class="section-arrow">{{accordion.dietHistory ? '收起' : '展开'}}</text>
+  <view class="section accordion-section">
+    <view class="section-title section-title-accordion" data-key="writingHints" bindtap="toggleSection">
+      <text>维度提示（写作提纲）</text>
+      <text class="section-arrow">{{accordion.writingHints ? '收起' : '展开'}}</text>
     </view>
-    <view wx:if="{{accordion.dietHistory}}">
-      <view class="d7-hint">与当前评估用户（{{userId}}）的膳食记录，按天汇总；点选下方日期、天数后自动拉取，点击行可查看各餐与食材明细</view>
+    <view wx:if="{{accordion.writingHints}}">
+      <view class="hint">1. 体成分与 BMI：结合身高体重、腰围（若有）说明偏瘦/正常/超重等。</view>
+      <view class="hint">2. 膳食结构：供能比、多样性、油盐糖、优质蛋白来源；若缺少饮食记录请注明依据有限。</view>
+      <view class="hint">3. 能量与营养素：能量判断见下图表区；微量营养素与纤维写在「饮食记录与补充说明」。</view>
+      <view class="hint">4. 风险与禁忌：写在同区块，结合疾病、用药、过敏与记录中的线索。</view>
+      <view class="hint">5. 结论与配餐衔接：给出可执行的配餐优先事项。</view>
+    </view>
+  </view>
+
+  <view class="section theme-section" wx:if="{{userId}}">
+    <view class="section-title">饮食记录与补充说明</view>
+    <view class="hint theme-section-lead">先选定区间并查看明细，再填写微量营养素、纤维及风险禁忌；修改日期/天数会同步更新下方能量与宏量图表。</view>
     <view class="d7-filters">
       <view class="d7-filter">
         <text class="d7-filter-label">开始日期</text>
@@ -57,9 +67,16 @@
         </picker>
       </view>
     </view>
-      <view wx:if="{{diet7Loading}}" class="d7-hint d7-muted">加载中…</view>
-      <view wx:elif="{{diet7Error}}" class="d7-hint d7-warn">{{diet7Error}}</view>
-      <view wx:else>
+    <view wx:if="{{diet7Loading}}" class="d7-hint d7-muted">加载中…</view>
+    <view wx:elif="{{diet7Error}}" class="d7-hint d7-warn">{{diet7Error}}</view>
+    <block wx:else>
+      <view id="diet-records-anchor" class="diet-records-anchor"></view>
+      <view class="subsection-title subsection-title-accordion" data-key="dietHistory" bindtap="toggleSection">
+        <text>每日汇总明细</text>
+        <text class="section-arrow">{{accordion.dietHistory ? '收起' : '展开'}}</text>
+      </view>
+      <view wx:if="{{accordion.dietHistory}}">
+        <view class="d7-hint">用户 {{userId}}；点击行可查看各餐与食材明细</view>
         <view
           class="d7-row"
           wx:for="{{diet7Rows}}"
@@ -80,17 +97,25 @@
           </view>
         </view>
       </view>
-    </view>
+      <view wx:else class="d7-hint d7-muted">共 {{diet7Rows.length}} 天，展开可查看每日热量与宏量汇总。</view>
+    </block>
+    <view class="field-label">对膳食计划的建议（可选）</view>
+    <view class="hint field-hint-tight">可结合本区间记录写出能量区间、宏量调整方向、必须遵守的约束等。</view>
+    <textarea class="textarea" value="{{form.plan_recommendations}}" bindinput="onInput" data-field="plan_recommendations" placeholder="能量区间、宏量调整方向、必须遵守的约束等" />
+    <view class="chart-to-form-divider"></view>
+    <view class="field-label">微量营养素与纤维（可选）</view>
+    <view class="hint field-hint-tight">可结合食材明细中的多样化程度、蔬果与粗粮出现情况等推断；数据不足请写明依据有限。</view>
+    <textarea class="textarea" value="{{form.micronutrient_text}}" bindinput="onInput" data-field="micronutrient_text" placeholder="数据不足时可写「依据有限，建议补充膳食记录后再评」" />
+
+    <view class="field-label">风险与禁忌摘要</view>
+    <view class="hint field-hint-tight">结合过敏、慢病与用药；若记录中可见相关线索可简要引用。</view>
+    <textarea class="textarea" value="{{form.risks_text}}" bindinput="onInput" data-field="risks_text" placeholder="过敏、慢病相关饮食注意…" />
   </view>
 
-  <view class="section accordion-section" wx:if="{{userId}}">
-    <view class="section-title section-title-accordion" data-key="trendOverview" bindtap="toggleSection">
-      <text>用户营养趋势概览</text>
-      <text class="section-arrow">{{accordion.trendOverview ? '收起' : '展开'}}</text>
-    </view>
-    <view wx:if="{{accordion.trendOverview}}">
-
-    <view class="chart-block">
+  <!-- 方案 A：按主题「上图下文」分区 -->
+  <view class="section theme-section" wx:if="{{userId}}">
+    <view class="section-title">能量与摄入</view>
+    <view class="chart-block chart-block-tight-top">
       <view class="chart-title-row">
         <view class="chart-title">总热量趋势图（单位：{{energyChartUnit}}）</view>
         <view class="chart-title-side" wx:if="{{recommendation}}">推荐 {{recommendation.calories}} kcal/日</view>
@@ -126,8 +151,17 @@
         </view>
       </view>
     </view>
+    <view class="chart-to-form-divider"></view>
+    <view class="field-label">营养状态标签</view>
+    <view class="hint field-hint-tight">请结合上图与摘要选择；并在下方「专业评估结论」中概括能量与摄入判断。</view>
+    <picker mode="selector" range="{{statusLabels}}" value="{{statusIndex}}" bindchange="onStatusChange">
+      <view class="picker">{{statusLabels[statusIndex]}}</view>
+    </picker>
+  </view>
 
-    <view class="chart-block">
+  <view class="section theme-section" wx:if="{{userId}}">
+    <view class="section-title">膳食结构（宏量）</view>
+    <view class="chart-block chart-block-tight-top">
       <view class="chart-title">营养素结构图（供能占比）</view>
       <view class="nutri-compare-wrap" wx:if="{{nutrientStructCompare.length > 0}}">
         <view class="nutri-compare-title">每项营养素：实际占比 vs 推荐占比</view>
@@ -158,9 +192,20 @@
           </text>
         </view>
       </view>
+      <view class="hint" wx:else>暂无宏量对比（需有效饮食记录与用户推荐摄入）。仍可依据膳食记录描述结构问题。</view>
     </view>
+    <view class="chart-to-form-divider"></view>
+    <view class="field-label">饮食结构评估</view>
+    <view class="field-anchor-row">
+      <text class="hint field-hint-tight field-anchor-hint">请结合上图宏量占比、差值与饮食记录撰写。</text>
+      <text class="anchor-link" bindtap="scrollToDietRecords">跳转至饮食记录</text>
+    </view>
+    <textarea class="textarea" value="{{form.dietary_pattern_text}}" bindinput="onInput" data-field="dietary_pattern_text" placeholder="例如：碳水供能比偏高，蔬菜摄入可能不足…" />
+  </view>
 
-    <view class="chart-block">
+  <view class="section theme-section" wx:if="{{userId}}">
+    <view class="section-title">体征与体成分</view>
+    <view class="chart-block chart-block-tight-top">
       <view class="chart-title">体征趋势图（单位：{{healthTrendUnit}}）</view>
       <view class="tab-row">
         <view wx:for="{{healthTrendTabs}}" wx:key="key" class="tab-item {{healthTrendMetric === item.key ? 'on' : ''}}" data-metric="{{item.key}}" bindtap="switchHealthTrendMetric">{{item.label}}</view>
@@ -191,61 +236,28 @@
         </view>
       </scroll-view>
     </view>
+    <view class="ctx-inline-strip" wx:if="{{context.bmi}}">
+      <text class="ctx-inline-strip-label">参考 BMI（与顶部一致）</text>
+      <text class="ctx-inline-strip-value">{{context.bmi}}</text>
     </view>
-  </view>
-
-  <view class="section accordion-section">
-    <view class="section-title section-title-accordion" data-key="writingHints" bindtap="toggleSection">
-      <text>维度提示（写作提纲）</text>
-      <text class="section-arrow">{{accordion.writingHints ? '收起' : '展开'}}</text>
-    </view>
-    <view wx:if="{{accordion.writingHints}}">
-      <view class="hint">1. 体成分与 BMI：结合身高体重、腰围（若有）说明偏瘦/正常/超重等。</view>
-      <view class="hint">2. 膳食结构：供能比、多样性、油盐糖、优质蛋白来源；若缺少饮食记录请注明依据有限。</view>
-      <view class="hint">3. 能量与营养素：是否存在能量过剩/不足；微量营养素与纤维（有数据再写）。</view>
-      <view class="hint">4. 风险与禁忌：疾病、用药、过敏对饮食的影响。</view>
-      <view class="hint">5. 结论与配餐衔接：给出可执行的配餐优先事项。</view>
-    </view>
-  </view>
-
-  <view class="section accordion-section">
-    <view class="section-title section-title-accordion" data-key="evalForm" bindtap="toggleSection">
-      <text>评估表单</text>
-      <text class="section-arrow">{{accordion.evalForm ? '收起' : '展开'}}</text>
-    </view>
-    <view wx:if="{{accordion.evalForm}}">
-    <view class="field-label">营养状态标签</view>
-    <picker mode="selector" range="{{statusLabels}}" value="{{statusIndex}}" bindchange="onStatusChange">
-      <view class="picker">{{statusLabels[statusIndex]}}</view>
-    </picker>
-
+    <view class="chart-to-form-divider"></view>
     <view class="field-label">体成分与 BMI 判断</view>
-    <view class="hint">对应上文「体成分」维度</view>
+    <view class="hint field-hint-tight">结合上图体征趋势与 BMI；腰围等有数据可补充。</view>
     <textarea class="textarea" value="{{form.body_composition_text}}" bindinput="onInput" data-field="body_composition_text" placeholder="例如：BMI 26.2，属超重范围，建议控制总能量…" />
+  </view>
 
-    <view class="field-label">饮食结构评估</view>
-    <textarea class="textarea" value="{{form.dietary_pattern_text}}" bindinput="onInput" data-field="dietary_pattern_text" placeholder="例如：碳水供能比偏高，蔬菜摄入可能不足…" />
-
-    <view class="field-label">微量营养素与纤维（可选）</view>
-    <textarea class="textarea" value="{{form.micronutrient_text}}" bindinput="onInput" data-field="micronutrient_text" placeholder="数据不足时可写「依据有限，建议补充膳食记录后再评」" />
-
-    <view class="field-label">风险与禁忌摘要</view>
-    <textarea class="textarea" value="{{form.risks_text}}" bindinput="onInput" data-field="risks_text" placeholder="过敏、慢病相关饮食注意…" />
-
-    <view class="field-label">主要问题（每行一条，将存为列表）</view>
+  <view class="section theme-section">
+    <view class="section-title">结论与建议</view>
+    <view class="field-label field-label-first-in-section">主要问题（每行一条，将存为列表）</view>
     <textarea class="textarea" value="{{form.priority_lines}}" bindinput="onInput" data-field="priority_lines" placeholder="{{priorityPlaceholder}}" />
 
     <view class="field-label">专业评估结论 *</view>
     <textarea class="textarea textarea-lg" value="{{form.professional_conclusion}}" bindinput="onInput" data-field="professional_conclusion" placeholder="面向用户的总结性结论，2～4 段为宜" />
 
-    <view class="field-label">对膳食计划的建议（可选）</view>
-    <textarea class="textarea" value="{{form.plan_recommendations}}" bindinput="onInput" data-field="plan_recommendations" placeholder="能量区间、宏量调整方向、必须遵守的约束等" />
-
     <view class="field-label">评估有效期至（可选，默认约 3 个月）</view>
     <picker mode="date" value="{{form.valid_until}}" bindchange="onValidUntilChange">
       <view class="picker">{{form.valid_until || '使用默认'}}</view>
     </picker>
-    </view>
   </view>
 
   <view class="submit-spacer"></view>

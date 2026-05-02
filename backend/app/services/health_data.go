@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -8,6 +9,8 @@ import (
 	"github.com/yourusername/nutrition-system/app/models"
 	"github.com/yourusername/nutrition-system/app/schemas"
 	"github.com/yourusername/nutrition-system/config"
+
+	"gorm.io/gorm"
 )
 
 // HealthDataService 健康数据服务
@@ -60,6 +63,88 @@ func (s *HealthDataService) SubmitHealthData(userID string, req schemas.HealthDa
 	}
 
 	return healthData, nil
+}
+
+// UpsertHealthBasicInfo 仅更新/创建基本信息字段，并同步 user 表性别与年龄；尚无档案时插入占位身高体重以便后续补全
+func (s *HealthDataService) UpsertHealthBasicInfo(userID string, req schemas.HealthBasicInfoRequest) (*models.HealthData, error) {
+	gender := canonicalGender(req.Gender)
+	if gender == "" {
+		return nil, errors.New("性别格式不正确")
+	}
+	if req.Age < 1 || req.Age > 120 {
+		return nil, errors.New("年龄需在1-120岁")
+	}
+	if req.ActivityLevel == "" || req.NutritionGoal == "" {
+		return nil, errors.New("活动水平与营养目标不能为空")
+	}
+
+	now := time.Now()
+	if err := config.DB.Model(&models.User{}).Where("user_id = ?", userID).Updates(map[string]interface{}{
+		"gender":     gender,
+		"age":        req.Age,
+		"updated_at": now,
+	}).Error; err != nil {
+		return nil, err
+	}
+
+	latest, err := s.GetLatestHealthData(userID)
+	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		hd := &models.HealthData{
+			DataID:         generateDataID(),
+			UserID:         userID,
+			Gender:         gender,
+			Age:            req.Age,
+			Height:         0,
+			Weight:         0,
+			HeartRate:      0,
+			BloodPressure:  "",
+			BloodSugar:     0,
+			AllergyHistory: "",
+			ActivityLevel:  req.ActivityLevel,
+			NutritionGoal:  req.NutritionGoal,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+		if err := config.DB.Create(hd).Error; err != nil {
+			return nil, err
+		}
+		if err := s.appendHistorySnapshot(hd, "basic_info"); err != nil {
+			return nil, err
+		}
+		return hd, nil
+	}
+
+	var historyCount int64
+	if err := config.DB.Model(&models.HealthDataHistory{}).Where("user_id = ?", latest.UserID).Count(&historyCount).Error; err != nil {
+		return nil, err
+	}
+	if historyCount == 0 {
+		if err := s.appendHistorySnapshot(latest, "backfill_before_update"); err != nil {
+			return nil, err
+		}
+	}
+
+	updates := map[string]interface{}{
+		"gender":          gender,
+		"age":             req.Age,
+		"activity_level":  req.ActivityLevel,
+		"nutrition_goal":  req.NutritionGoal,
+		"updated_at":      now,
+	}
+	if err := config.DB.Model(&models.HealthData{}).Where("data_id = ?", latest.DataID).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	var out models.HealthData
+	if err := config.DB.Where("data_id = ?", latest.DataID).First(&out).Error; err != nil {
+		return nil, err
+	}
+	if err := s.appendHistorySnapshot(&out, "basic_info"); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 // GetLatestHealthData 获取最新健康数据

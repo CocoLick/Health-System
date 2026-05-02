@@ -65,6 +65,42 @@ func (h *HealthDataHandler) SubmitHealthData(c *gin.Context) {
 	})
 }
 
+// UpsertHealthBasicInfo 仅保存个人基本信息（不要求身高体重）
+func (h *HealthDataHandler) UpsertHealthBasicInfo(c *gin.Context) {
+	var req schemas.HealthBasicInfoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: "请求参数错误",
+		})
+		return
+	}
+
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, schemas.Response{
+			Code:    401,
+			Message: "用户未登录",
+		})
+		return
+	}
+
+	healthData, err := h.healthDataService.UpsertHealthBasicInfo(userID, req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, schemas.Response{
+		Code:    200,
+		Message: "基本信息保存成功",
+		Data:    healthData,
+	})
+}
+
 // GetLatestHealthData 获取最新健康数据
 // @Summary 获取最新健康数据
 // @Description 获取用户最新的一条健康数据
@@ -302,6 +338,7 @@ func RegisterHealthDataRoutes(router *gin.RouterGroup) {
 		healthDataGroup.POST("", handler.SubmitHealthData)
 		healthDataGroup.GET("", handler.GetHealthDataList)
 		healthDataGroup.GET("/latest", handler.GetLatestHealthData)
+		healthDataGroup.PUT("/basic-info", handler.UpsertHealthBasicInfo)
 		healthDataGroup.GET("/history", handler.GetHealthDataHistory)
 		healthDataGroup.GET("/change-summary", handler.GetHealthDataChangeSummary)
 		healthDataGroup.GET("/user/:user_id", handler.GetUserHealthDataByDietitian)

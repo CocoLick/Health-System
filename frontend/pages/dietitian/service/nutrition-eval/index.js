@@ -346,10 +346,9 @@ Page({
     recommendation: null,
     intakeDeviation: null,
     accordion: {
-      dietHistory: false,
-      trendOverview: false,
-      writingHints: false,
-      evalForm: true
+      /** 饮食记录与补充说明：每日汇总列表折叠 */
+      dietHistory: true,
+      writingHints: false
     }
   },
 
@@ -800,6 +799,27 @@ Page({
 
   noop() {},
 
+  scrollToDietRecords() {
+    if (this.data.diet7Loading) {
+      wx.showToast({ title: '饮食记录加载中', icon: 'none' });
+      return;
+    }
+    if (this.data.diet7Error) {
+      wx.showToast({ title: '饮食记录暂不可用', icon: 'none' });
+      return;
+    }
+    this.setData({ 'accordion.dietHistory': true });
+    setTimeout(() => {
+      wx.pageScrollTo({
+        selector: '#diet-records-anchor',
+        duration: 280,
+        fail: () => {
+          wx.showToast({ title: '跳转失败，请手动向上翻阅', icon: 'none' });
+        }
+      });
+    }, 120);
+  },
+
   onInput(e) {
     const field = e.currentTarget.dataset.field;
     const value = e.detail.value;
@@ -826,14 +846,12 @@ Page({
 
   toggleAllSections() {
     const cur = this.data.accordion || {};
-    const allOpen = !!(cur.dietHistory && cur.trendOverview && cur.writingHints && cur.evalForm);
+    const allOpen = !!(cur.dietHistory && cur.writingHints);
     const next = !allOpen;
     this.setData({
       accordion: {
         dietHistory: next,
-        trendOverview: next,
-        writingHints: next,
-        evalForm: next
+        writingHints: next
       }
     });
   },

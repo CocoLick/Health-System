@@ -220,6 +220,10 @@ const healthData = {
   submit: function(data) {
     return post('/api/health-data', data);
   },
+  // 仅保存个人基本信息（性别、年龄、活动水平、营养目标）
+  saveBasicInfo: function(data) {
+    return put('/api/health-data/basic-info', data);
+  },
   // 获取健康数据列表
   getList: function() {
     return get('/api/health-data');
