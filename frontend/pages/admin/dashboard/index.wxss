@@ -1585,6 +1585,17 @@
   margin-bottom: 14rpx;
 }
 
+.manage-item-main:active {
+  opacity: 0.92;
+}
+
+.item-tap-hint {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--c-text-3);
+}
+
 .item-status {
   border-radius: 999rpx;
   padding: 6rpx 14rpx;

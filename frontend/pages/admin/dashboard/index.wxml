@@ -503,10 +503,6 @@
             <text class="tab-icon">💬</text>
             <text>反馈管理</text>
           </view>
-          <view class="manage-tab {{manageSubTab === 'settings' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="settings">
-            <text class="tab-icon">⚙️</text>
-            <text>设置</text>
-          </view>
         </view>
         <view class="scroll-indicator" wx:if="{{hasMoreTabs}}">
           <text class="indicator-icon">→</text>
@@ -660,49 +656,36 @@
         </view>
 
         <view wx:if="{{manageSubTab === 'feedback'}}">
-          <view wx:for="{{feedbacks}}" wx:key="index" class="manage-item">
-            <view class="item-header">
-              <text class="item-title">{{item.title}}</text>
-              <text class="item-status {{item.status === '已处理' ? 'status-approved' : ''}}">{{item.status}}</text>
-            </view>
-            <view class="item-body">
-              <text class="item-desc">{{item.content}}</text>
-              <text class="item-time">{{item.time}}</text>
-            </view>
-            <view class="item-footer">
-              <view class="btn-primary" bindtap="replyFeedback" data-index="{{index}}">回复</view>
-              <view class="btn-secondary" bindtap="markFeedback" data-index="{{index}}">标记已处理</view>
-            </view>
+          <view wx:if="{{feedbacksLoading}}" class="empty-state">
+            <text class="empty-text">加载中…</text>
           </view>
-          <view wx:if="{{feedbacks.length === 0}}" class="empty-state">
-            <text class="empty-icon">💬</text>
-            <text class="empty-text">暂无反馈数据</text>
+          <view wx:elif="{{feedbacksHint}}" class="empty-state">
+            <text class="empty-text">{{feedbacksHint}}</text>
           </view>
-        </view>
-
-        <view wx:if="{{manageSubTab === 'settings'}}">
-          <view class="settings-list">
-            <view class="settings-item" bindtap="navigateToSettings">
-              <text class="settings-icon">🔔</text>
-              <text class="settings-text">消息通知设置</text>
-              <text class="settings-arrow">></text>
+          <block wx:else>
+            <view wx:for="{{feedbacks}}" wx:key="feedback_id" class="manage-item">
+              <view class="manage-item-main" bindtap="goAdminSystemFeedbackDetail" data-id="{{item.feedback_id}}">
+                <view class="item-header">
+                  <text class="item-title">{{item.title}}</text>
+                  <text class="item-status {{item.status === 'pending' ? 'status-inactive' : (item.status === 'closed' ? 'status-approved' : '')}}">{{item.status_label}}</text>
+                </view>
+                <view class="item-body">
+                  <text class="item-desc">{{item.content_preview}}</text>
+                  <text class="item-subtitle">用户 {{item.username}}（{{item.user_id}}）</text>
+                  <text class="item-time">{{item.display_time}}</text>
+                  <text class="item-tap-hint">点击查看详情</text>
+                </view>
+              </view>
+              <view class="item-footer" wx:if="{{item.status !== 'closed'}}">
+                <view class="btn-primary" bindtap="replyFeedback" data-index="{{index}}">回复</view>
+                <view class="btn-secondary" bindtap="markFeedback" data-index="{{index}}">标记已处理</view>
+              </view>
             </view>
-            <view class="settings-item" bindtap="navigateToSettings">
-              <text class="settings-icon">🔒</text>
-              <text class="settings-text">修改密码</text>
-              <text class="settings-arrow">></text>
+            <view wx:if="{{feedbacks.length === 0}}" class="empty-state">
+              <text class="empty-icon">💬</text>
+              <text class="empty-text">暂无系统类反馈（user_feedback.category=system）</text>
             </view>
-            <view class="settings-item" bindtap="navigateToSettings">
-              <text class="settings-icon">🛡️</text>
-              <text class="settings-text">安全设置</text>
-              <text class="settings-arrow">></text>
-            </view>
-            <view class="settings-item" bindtap="navigateToSettings">
-              <text class="settings-icon">ℹ️</text>
-              <text class="settings-text">系统信息</text>
-              <text class="settings-arrow">></text>
-            </view>
-          </view>
+          </block>
         </view>
       </view>
     </view>

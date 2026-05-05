@@ -175,15 +175,9 @@ Page({
     historyLoading: false,
     historyHint: '',
     users: [],
-    feedbacks: [
-      {
-        id: 1,
-        title: '建议增加更多食谱',
-        content: '希望能增加更多的健康食谱供用户选择...',
-        status: '待处理',
-        time: '2026-04-18 10:00'
-      }
-    ]
+    feedbacks: [],
+    feedbacksLoading: false,
+    feedbacksHint: ''
   },
 
   onLoad() {
@@ -212,6 +206,9 @@ Page({
     }
     if (this.data.activeTab === 'audit' && this.data.auditSubTab === 'history') {
       this.loadAuditHistory();
+    }
+    if (this.data.activeTab === 'manage' && this.data.manageSubTab === 'feedback') {
+      this.loadAdminSystemFeedbacks();
     }
   },
   formatPendingPlan(item) {
@@ -1242,6 +1239,46 @@ Page({
     this.setData({
       manageSubTab: subtab
     });
+    if (subtab === 'feedback') {
+      this.loadAdminSystemFeedbacks();
+    }
+  },
+
+  loadAdminSystemFeedbacks() {
+    this.setData({ feedbacksLoading: true, feedbacksHint: '' });
+    api.feedback
+      .adminSystemList()
+      .then((res) => {
+        const ok = res && Number(res.code) === 200;
+        const raw = ok ? res.data : null;
+        const rows = Array.isArray(raw) ? raw : [];
+        if (ok) {
+          const list = rows.map((it) => ({
+            feedback_id: it.feedback_id,
+            title: it.title || '—',
+            content_preview: it.content_preview || '',
+            status: it.status,
+            status_label: it.status_label || it.status,
+            user_id: it.user_id,
+            username: it.username || it.user_id,
+            display_time: this.formatDateTimeText(it.created_at)
+          }));
+          this.setData({ feedbacks: list, feedbacksLoading: false });
+          return;
+        }
+        this.setData({
+          feedbacks: [],
+          feedbacksLoading: false,
+          feedbacksHint: (res && res.message) || '加载失败'
+        });
+      })
+      .catch(() => {
+        this.setData({
+          feedbacks: [],
+          feedbacksLoading: false,
+          feedbacksHint: '网络错误，请稍后重试'
+        });
+      });
   },
 
   approvePlan(e) {
@@ -1522,33 +1559,85 @@ Page({
       });
   },
 
+  goAdminSystemFeedbackDetail(e) {
+    const id = (e.currentTarget.dataset.id || '').trim();
+    if (!id) {
+      return;
+    }
+    wx.navigateTo({
+      url: `/pages/admin/feedback/detail/index?id=${encodeURIComponent(id)}`
+    });
+  },
+
   replyFeedback(e) {
     const index = e.currentTarget.dataset.index;
-    const feedback = this.data.feedbacks[index];
-    console.log('回复反馈:', feedback);
-    wx.showToast({
-      title: '回复功能开发中',
-      icon: 'none'
+    const row = this.data.feedbacks[index];
+    if (!row || !row.feedback_id) {
+      return;
+    }
+    wx.showModal({
+      title: '管理员回复',
+      editable: true,
+      placeholderText: '请输入回复内容',
+      success: (r) => {
+        if (!r.confirm) {
+          return;
+        }
+        const body = (r.content || '').trim();
+        if (!body) {
+          wx.showToast({ title: '回复不能为空', icon: 'none' });
+          return;
+        }
+        wx.showLoading({ title: '提交中...' });
+        api.feedback
+          .adminSystemReply(row.feedback_id, { body })
+          .then((res) => {
+            wx.hideLoading();
+            if (res && res.code === 200) {
+              wx.showToast({ title: '已回复', icon: 'success' });
+              this.loadAdminSystemFeedbacks();
+              return;
+            }
+            wx.showToast({ title: (res && res.message) || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
     });
   },
 
   markFeedback(e) {
     const index = e.currentTarget.dataset.index;
-    const feedbacks = [...this.data.feedbacks];
-    feedbacks[index].status = '已处理';
-    this.setData({
-      feedbacks: feedbacks
-    });
-    wx.showToast({
-      title: '已标记为已处理',
-      icon: 'success'
-    });
-  },
-
-  navigateToSettings() {
-    wx.showToast({
-      title: '设置功能开发中',
-      icon: 'none'
+    const row = this.data.feedbacks[index];
+    if (!row || !row.feedback_id) {
+      return;
+    }
+    wx.showModal({
+      title: '标记已处理',
+      content: '将关闭该反馈工单（状态变为已关闭）。',
+      success: (r) => {
+        if (!r.confirm) {
+          return;
+        }
+        wx.showLoading({ title: '处理中...' });
+        api.feedback
+          .adminSystemClose(row.feedback_id)
+          .then((res) => {
+            wx.hideLoading();
+            if (res && res.code === 200) {
+              wx.showToast({ title: '已关闭', icon: 'success' });
+              this.loadAdminSystemFeedbacks();
+              return;
+            }
+            wx.showToast({ title: (res && res.message) || '操作失败', icon: 'none' });
+          })
+          .catch(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '网络错误', icon: 'none' });
+          });
+      }
     });
   },
 

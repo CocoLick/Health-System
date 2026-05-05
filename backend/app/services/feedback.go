@@ -438,6 +438,146 @@ func (s *FeedbackService) CountPendingForDietitian(dietitianID string) (int64, e
 	return n, err
 }
 
+// ListSystemForAdmin 管理员：user_feedback 中 category=system 的工单列表
+func (s *FeedbackService) ListSystemForAdmin() ([]schemas.FeedbackListItem, error) {
+	var rows []models.UserFeedback
+	// 与写入端 normalize 一致：库中可能存在大小写/首尾空格差异，避免列表为空
+	if err := s.db.Where("LOWER(TRIM(category)) = ?", "system").
+		Order("CASE WHEN status = 'pending' THEN 0 ELSE 1 END, updated_at DESC").
+		Limit(200).
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return []schemas.FeedbackListItem{}, nil
+	}
+	userIDs := make([]string, 0, len(rows))
+	feedbackIDs := make([]string, 0, len(rows))
+	seen := make(map[string]bool)
+	for _, r := range rows {
+		feedbackIDs = append(feedbackIDs, r.FeedbackID)
+		if !seen[r.UserID] {
+			seen[r.UserID] = true
+			userIDs = append(userIDs, r.UserID)
+		}
+	}
+	names := s.userNamesByIDs(userIDs)
+	latestUserReplyByFeedback := make(map[string]string, len(feedbackIDs))
+	if len(feedbackIDs) > 0 {
+		var replies []models.FeedbackReply
+		_ = s.db.
+			Where("feedback_id IN ? AND sender_type = ?", feedbackIDs, "user").
+			Order("created_at ASC").
+			Find(&replies).Error
+		for _, rp := range replies {
+			latestUserReplyByFeedback[rp.FeedbackID] = strings.TrimSpace(rp.Body)
+		}
+	}
+	out := make([]schemas.FeedbackListItem, 0, len(rows))
+	for _, r := range rows {
+		un := strings.TrimSpace(names[r.UserID])
+		if un == "" {
+			un = r.UserID
+		}
+		initial := "用"
+		rs := []rune(un)
+		if len(rs) > 0 {
+			initial = string(rs[0:1])
+		}
+		previewSource := strings.TrimSpace(latestUserReplyByFeedback[r.FeedbackID])
+		if previewSource == "" {
+			previewSource = r.Content
+		}
+		out = append(out, schemas.FeedbackListItem{
+			FeedbackID:     r.FeedbackID,
+			UserID:         r.UserID,
+			Username:       un,
+			UserInitial:    initial,
+			Category:       r.Category,
+			CategoryLabel:  categoryLabel(r.Category),
+			Title:          r.Title,
+			ContentPreview: previewContent(previewSource, 80),
+			Status:         r.Status,
+			StatusLabel:    statusLabel(r.Status),
+			RelatedPlanID:  r.RelatedPlanID,
+			CreatedAt:      r.CreatedAt,
+			UpdatedAt:      r.UpdatedAt,
+		})
+	}
+	return out, nil
+}
+
+// DetailForAdminSystem 管理员查看系统类反馈详情
+func (s *FeedbackService) DetailForAdminSystem(_ string, feedbackID string) (*schemas.FeedbackDetailResponse, error) {
+	fb, err := s.getFeedback(feedbackID)
+	if err != nil {
+		return nil, err
+	}
+	if normalizeFeedbackCategory(fb.Category) != "system" {
+		return nil, ErrFeedbackForbidden
+	}
+	return s.buildFeedbackDetail(fb)
+}
+
+// AddAdminReplyToSystem 管理员回复系统类反馈
+func (s *FeedbackService) AddAdminReplyToSystem(adminID, feedbackID, body string) error {
+	adminID = strings.TrimSpace(adminID)
+	body = strings.TrimSpace(body)
+	if adminID == "" || body == "" {
+		return fmt.Errorf("%w: 回复内容不能为空", ErrFeedbackValidation)
+	}
+	fb, err := s.getFeedback(feedbackID)
+	if err != nil {
+		return err
+	}
+	if normalizeFeedbackCategory(fb.Category) != "system" {
+		return ErrFeedbackForbidden
+	}
+	if fb.Status == "closed" {
+		return fmt.Errorf("%w: 工单已关闭", ErrFeedbackValidation)
+	}
+	now := time.Now()
+	reply := &models.FeedbackReply{
+		ReplyID:      newReplyID(),
+		FeedbackID:   feedbackID,
+		SenderType:   "admin",
+		SenderUserID: adminID,
+		Body:         body,
+		CreatedAt:    now,
+	}
+	if err := s.db.Create(reply).Error; err != nil {
+		return err
+	}
+	fb.Status = "replied"
+	fb.UpdatedAt = now
+	if fb.FirstReplyAt == nil {
+		fb.FirstReplyAt = &now
+	}
+	return s.db.Save(fb).Error
+}
+
+// CloseSystemFeedbackAdmin 管理员关闭系统类反馈工单
+func (s *FeedbackService) CloseSystemFeedbackAdmin(_ string, feedbackID string) error {
+	feedbackID = strings.TrimSpace(feedbackID)
+	fb, err := s.getFeedback(feedbackID)
+	if err != nil {
+		return err
+	}
+	if normalizeFeedbackCategory(fb.Category) != "system" {
+		return ErrFeedbackForbidden
+	}
+	if fb.Status == "closed" {
+		return fmt.Errorf("%w: 已关闭", ErrFeedbackValidation)
+	}
+	now := time.Now()
+	fb.Status = "closed"
+	fb.UpdatedAt = now
+	if fb.ClosedAt == nil {
+		fb.ClosedAt = &now
+	}
+	return s.db.Save(fb).Error
+}
+
 // buildFeedbackDetail 构造详情（含回复与展示名）
 func (s *FeedbackService) buildFeedbackDetail(fb *models.UserFeedback) (*schemas.FeedbackDetailResponse, error) {
 	un := strings.TrimSpace(s.userNamesByIDs([]string{fb.UserID})[fb.UserID])

@@ -23,6 +23,10 @@ func RegisterFeedbackRoutes(router *gin.RouterGroup) {
 	g := router.Group("/feedback")
 	{
 		g.GET("/admin/stats", h.AdminStats)
+		g.GET("/admin/system", h.ListAdminSystem)
+		g.GET("/admin/system/:id", h.DetailAdminSystem)
+		g.POST("/admin/system/:id/replies", h.AddAdminSystemReply)
+		g.PUT("/admin/system/:id/close", h.CloseAdminSystem)
 		g.GET("/dietitian/pending-count", h.PendingCount)
 		g.GET("/dietitian", h.ListDietitian)
 		g.GET("/dietitian/:id/reviews", h.ListDietitianReviewsForUser)
@@ -48,6 +52,107 @@ func (h *FeedbackHandler) AdminStats(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "ok", Data: stats})
+}
+
+// ListAdminSystem GET /api/feedback/admin/system 系统类反馈（user_feedback.category=system）
+func (h *FeedbackHandler) ListAdminSystem(c *gin.Context) {
+	if strings.TrimSpace(c.GetString("roleType")) != "admin" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅管理员可查看"})
+		return
+	}
+	list, err := h.svc.ListSystemForAdmin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "ok", Data: list})
+}
+
+// DetailAdminSystem GET /api/feedback/admin/system/:id
+func (h *FeedbackHandler) DetailAdminSystem(c *gin.Context) {
+	if strings.TrimSpace(c.GetString("roleType")) != "admin" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅管理员可查看"})
+		return
+	}
+	adminID := strings.TrimSpace(c.GetString("userID"))
+	id := strings.TrimSpace(c.Param("id"))
+	if id == "" {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "反馈ID不能为空"})
+		return
+	}
+	detail, err := h.svc.DetailForAdminSystem(adminID, id)
+	if err != nil {
+		if errors.Is(err, services.ErrFeedbackNotFound) {
+			c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "不存在"})
+			return
+		}
+		if errors.Is(err, services.ErrFeedbackForbidden) {
+			c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "无权查看"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "ok", Data: detail})
+}
+
+// AddAdminSystemReply POST /api/feedback/admin/system/:id/replies
+func (h *FeedbackHandler) AddAdminSystemReply(c *gin.Context) {
+	if strings.TrimSpace(c.GetString("roleType")) != "admin" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅管理员可回复"})
+		return
+	}
+	adminID := strings.TrimSpace(c.GetString("userID"))
+	var req schemas.FeedbackReplyCreate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "请求参数错误"})
+		return
+	}
+	err := h.svc.AddAdminReplyToSystem(adminID, c.Param("id"), req.Body)
+	if err != nil {
+		if errors.Is(err, services.ErrFeedbackNotFound) {
+			c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "不存在"})
+			return
+		}
+		if errors.Is(err, services.ErrFeedbackForbidden) {
+			c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "无权回复"})
+			return
+		}
+		if errors.Is(err, services.ErrFeedbackValidation) || strings.Contains(err.Error(), "工单") || strings.Contains(err.Error(), "回复内容") || strings.Contains(err.Error(), "不能为空") {
+			c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "已回复"})
+}
+
+// CloseAdminSystem PUT /api/feedback/admin/system/:id/close
+func (h *FeedbackHandler) CloseAdminSystem(c *gin.Context) {
+	if strings.TrimSpace(c.GetString("roleType")) != "admin" {
+		c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "仅管理员"})
+		return
+	}
+	adminID := strings.TrimSpace(c.GetString("userID"))
+	err := h.svc.CloseSystemFeedbackAdmin(adminID, strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		if errors.Is(err, services.ErrFeedbackNotFound) {
+			c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "不存在"})
+			return
+		}
+		if errors.Is(err, services.ErrFeedbackForbidden) {
+			c.JSON(http.StatusForbidden, schemas.Response{Code: 403, Message: "无权操作"})
+			return
+		}
+		if errors.Is(err, services.ErrFeedbackValidation) || strings.Contains(err.Error(), "已关闭") {
+			c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "已关闭"})
 }
 
 // ListDietitianReviewsForUser GET /api/feedback/dietitian/:id/reviews

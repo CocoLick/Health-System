@@ -84,5 +84,6 @@ type LoginResponse struct {
 type Response struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	// 不使用 omitempty：空切片在 json 中会被视为「空」而整段省略，小程序端 Array.isArray(res.data) 会失败
+	Data interface{} `json:"data"`
 }

@@ -353,6 +353,19 @@ const feedback = {
   adminStats: function() {
     return get('/api/feedback/admin/stats');
   },
+  /** 管理员：系统类反馈（user_feedback.category = system） */
+  adminSystemList: function() {
+    return get('/api/feedback/admin/system');
+  },
+  adminSystemDetail: function(id) {
+    return get(`/api/feedback/admin/system/${encodeURIComponent(id)}`);
+  },
+  adminSystemReply: function(id, data) {
+    return post(`/api/feedback/admin/system/${encodeURIComponent(id)}/replies`, data || {});
+  },
+  adminSystemClose: function(id) {
+    return put(`/api/feedback/admin/system/${encodeURIComponent(id)}/close`, {});
+  },
   submit: function(data) {
     return post('/api/feedback', data);
   },
