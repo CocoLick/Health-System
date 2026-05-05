@@ -112,17 +112,24 @@ Page({
     const waterProgress = targets ? Math.min((waterIntake / 2000) * 100, 100) : 0;
 
     const applyTotals = (totals) => {
+      const r1 = (x) => Math.round((Number(x) || 0) * 10) / 10;
       const metricProgress = this.getMetricProgress(totals, targets);
       const remaining = {
-        calories: Math.max((targets.calories || 0) - (totals.calories || 0), 0),
-        protein: Math.max((targets.protein || 0) - (totals.protein || 0), 0)
+        calories: r1(Math.max((targets.calories || 0) - (totals.calories || 0), 0)),
+        protein: r1(Math.max((targets.protein || 0) - (totals.protein || 0), 0))
+      };
+      const intake = {
+        calories: r1(totals.calories),
+        protein: r1(totals.protein),
+        fat: r1(totals.fat),
+        carbohydrate: r1(totals.carbohydrate)
       };
       this.setData({
         userInfo,
         displayName,
         greetingText,
         today,
-        todayIntake: totals,
+        todayIntake: intake,
         targets,
         metricProgress,
         remaining,
@@ -322,12 +329,17 @@ Page({
     return `${month}月${day}日`;
   },
 
+  /** 展示用：保留一位小数 */
+  roundDisplay1(v) {
+    return Math.round((Number(v) || 0) * 10) / 10;
+  },
+
   getTargets(currentPlan) {
     return {
-      calories: (currentPlan && Number(currentPlan.calories)) || 2000,
-      protein: (currentPlan && Number(currentPlan.protein)) || 90,
-      fat: (currentPlan && Number(currentPlan.fat)) || 60,
-      carbohydrate: (currentPlan && Number(currentPlan.carbohydrate)) || 260
+      calories: this.roundDisplay1((currentPlan && Number(currentPlan.calories)) || 2000),
+      protein: this.roundDisplay1((currentPlan && Number(currentPlan.protein)) || 90),
+      fat: this.roundDisplay1((currentPlan && Number(currentPlan.fat)) || 60),
+      carbohydrate: this.roundDisplay1((currentPlan && Number(currentPlan.carbohydrate)) || 260)
     };
   },
 

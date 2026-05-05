@@ -275,14 +275,18 @@ Page({
           const requests = res.data || [];
           console.log('请求列表长度:', requests.length);
           // 预处理所有请求，添加中文翻译字段
-          const processedRequests = requests.map((req) => ({
-            ...req,
-            statusText: this.getStatusText(req.status),
-            serviceTypeText: this.getServiceTypeText(req.service_type),
-            dietGoalText: this.getDietGoalText(req.diet_goal, req.other_goal),
-            createTimeText: this.formatDate(req.create_time),
-            updateTimeText: this.formatDate(req.update_time || req.create_time)
-          }));
+          const processedRequests = requests.map((req) => {
+            const uid = (req.user_id && String(req.user_id)) || '';
+            return {
+              ...req,
+              statusText: this.getStatusText(req.status),
+              serviceTypeText: this.getServiceTypeText(req.service_type),
+              dietGoalText: this.getDietGoalText(req.diet_goal, req.other_goal),
+              createTimeText: this.formatDate(req.create_time),
+              updateTimeText: this.formatDate(req.update_time || req.create_time),
+              user_initial: uid ? uid.trim().charAt(0) : '?'
+            };
+          });
           console.log('处理后数据:', JSON.stringify(processedRequests, null, 2));
           // 按状态分组
           const pendingRequests = processedRequests.filter((r) => r.status === 'pending');
@@ -324,6 +328,14 @@ Page({
     }));
   },
 
+  /** 详情弹窗展示用：补全 user_initial 等 */
+  ensureRequestDetailShape(req) {
+    if (!req) return null;
+    const uid = req.user_id != null ? String(req.user_id) : '';
+    const initial = req.user_initial || (uid.trim() ? uid.trim().charAt(0) : '?');
+    return { ...req, user_initial: initial };
+  },
+
   onHomeFeedTap(e) {
     const id = e.currentTarget.dataset.id;
     if (!id) {
@@ -339,7 +351,7 @@ Page({
       serviceSubTab: 'requests',
       filterType: 'all',
       searchKeyword: '',
-      selectedRequest: found,
+      selectedRequest: this.ensureRequestDetailShape(found),
       showRequestDetail: true
     });
     this.filterRequests();
@@ -373,7 +385,7 @@ Page({
     const index = e.currentTarget.dataset.index;
     const request = this.data.filteredRequests[index];
     this.setData({
-      selectedRequest: request,
+      selectedRequest: this.ensureRequestDetailShape(request),
       showRequestDetail: true
     });
   },
@@ -958,30 +970,6 @@ Page({
   changePassword() {
     wx.navigateTo({
       url: '/pages/user/settings/index'
-    });
-  },
-
-  viewServiceStats() {
-    wx.showModal({
-      title: '服务统计',
-      content: '服务统计功能开发中',
-      showCancel: false
-    });
-  },
-
-  viewPlanStats() {
-    wx.showModal({
-      title: '计划统计',
-      content: '计划统计功能开发中',
-      showCancel: false
-    });
-  },
-
-  viewHelp() {
-    wx.showModal({
-      title: '帮助中心',
-      content: '帮助中心功能开发中',
-      showCancel: false
     });
   },
 

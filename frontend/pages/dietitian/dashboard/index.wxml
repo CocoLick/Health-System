@@ -131,29 +131,29 @@
             </view>
           </view>
 
-          <view class="request-list">
-            <view wx:for="{{filteredRequests}}" wx:key="index" class="request-item" bindtap="viewRequestDetail" data-index="{{index}}">
-              <view class="request-header">
-                <view class="request-main">
-                  <view class="request-user">
-                    <view class="request-avatar">{{item.user_id ? item.user_id.substring(0, 1) : '?'}}</view>
-                    <view class="request-user-texts">
-                      <text class="request-user-id">{{item.user_id}}</text>
-                      <text class="request-time">{{item.createTimeText}}</text>
-                    </view>
+          <view class="request-list request-list--cards">
+            <view wx:for="{{filteredRequests}}" wx:key="request_id" class="request-item request-item-card" bindtap="viewRequestDetail" data-index="{{index}}">
+              <text class="request-card-eyebrow">服务申请</text>
+              <view class="request-card-header">
+                <view class="request-card-title-wrap">
+                  <text class="request-card-title">{{item.serviceTypeText}}</text>
+                  <view class="request-card-user">
+                    <text class="request-avatar request-avatar-inline">{{item.user_initial}}</text>
+                    <text class="request-card-username">{{item.user_id}}</text>
                   </view>
                 </view>
+                <text class="request-status request-status-inline {{item.status}}">{{item.statusText}}</text>
               </view>
-              <view class="request-status request-status-corner {{item.status}}">{{item.statusText}}</view>
-              <view class="request-body">
-                <view class="request-meta-row">
-                  <text class="request-meta-tag">{{item.serviceTypeText}}</text>
-                  <text class="request-meta-tag request-meta-goal">{{item.dietGoalText}}</text>
-                </view>
-                <view class="request-row">
-                  <text class="request-label">申请内容</text>
-                  <text class="request-value">{{item.serviceTypeText}} · {{item.dietGoalText}}</text>
-                </view>
+              <view class="request-card-meta">
+                <text class="request-card-time">提交于 {{item.createTimeText}}</text>
+              </view>
+              <view class="request-card-summary">
+                <text class="request-card-summary-label">饮食目标</text>
+                <text class="request-card-summary-text">{{item.dietGoalText}}</text>
+              </view>
+              <view class="request-card-extra" wx:if="{{item.other_goal}}">
+                <text class="request-card-extra-label">补充说明</text>
+                <text class="request-card-snippet">{{item.other_goal}}</text>
               </view>
               <view class="request-actions" catchtap="stopPropagation" wx:if="{{item.status === 'pending'}}">
                 <view class="action-btn approve" bindtap="approveRequest" data-requestid="{{item.request_id}}">通过</view>
@@ -248,53 +248,59 @@
       </view>
     </view>
 
-    <!-- 服务请求详情弹窗 -->
+    <!-- 服务请求详情弹窗（与个人中心弹窗同一套视觉，避免旧 modal 样式） -->
     <view wx:if="{{showRequestDetail}}" class="modal-mask" bindtap="closeRequestDetail">
-      <view class="request-detail-modal" catchtap="stopPropagation">
-        <view class="modal-header">
-          <text class="modal-title">申请详情</text>
-          <view class="modal-close" bindtap="closeRequestDetail">×</view>
+      <view class="personal-center-modal sr-request-detail-modal" catchtap="stopPropagation">
+        <view class="pc-head">
+          <view class="pc-head-left">
+            <text class="pc-eyebrow">SERVICE REQUEST</text>
+            <text class="pc-title">申请详情</text>
+          </view>
+          <view class="pc-close" bindtap="closeRequestDetail" hover-class="pc-close-press">×</view>
         </view>
-        <view class="modal-body" wx:if="{{selectedRequest}}">
-          <view class="detail-section">
-            <view class="detail-row">
-              <text class="detail-label">申请人ID：</text>
-              <text class="detail-value">{{selectedRequest.user_id}}</text>
-            </view>
-            <view class="detail-row">
-              <text class="detail-label">服务类型：</text>
-              <text class="detail-value">{{selectedRequest.serviceTypeText}}</text>
-            </view>
-            <view class="detail-row">
-              <text class="detail-label">饮食目标：</text>
-              <text class="detail-value">{{selectedRequest.dietGoalText}}</text>
-            </view>
-            <view class="detail-row">
-              <text class="detail-label">申请时间：</text>
-              <text class="detail-value">{{selectedRequest.createTimeText}}</text>
-            </view>
-            <view class="detail-row">
-              <text class="detail-label">当前状态：</text>
-              <text class="detail-value status-{{selectedRequest.status}}">{{selectedRequest.statusText}}</text>
+        <scroll-view scroll-y class="sr-request-detail-scroll" wx:if="{{selectedRequest}}" show-scrollbar="{{false}}">
+          <view class="sr-request-hero">
+            <view class="sr-request-avatar">{{selectedRequest.user_initial || '?'}}</view>
+            <view class="sr-request-hero-main">
+              <text class="sr-request-userid">{{selectedRequest.user_id}}</text>
+              <text class="request-status sr-request-status-pill {{selectedRequest.status}}">{{selectedRequest.statusText}}</text>
             </view>
           </view>
-          <view class="detail-section" wx:if="{{selectedRequest.health_data}}">
-            <text class="detail-section-title">健康信息</text>
-            <view class="detail-row" wx:if="{{selectedRequest.health_data.disease}}">
-              <text class="detail-label">疾病史：</text>
-              <text class="detail-value">{{selectedRequest.health_data.disease || '无'}}</text>
+          <view class="sr-request-goal-card">
+            <text class="sr-request-goal-label">饮食目标</text>
+            <text class="sr-request-goal-text">{{selectedRequest.dietGoalText}}</text>
+          </view>
+          <view class="sr-request-extra" wx:if="{{selectedRequest.other_goal}}">
+            <text class="sr-request-extra-label">补充说明</text>
+            <text class="sr-request-extra-text">{{selectedRequest.other_goal}}</text>
+          </view>
+          <view class="sr-request-kv">
+            <view class="sr-request-kv-row">
+              <text class="sr-request-kv-k">服务类型</text>
+              <text class="sr-request-kv-v">{{selectedRequest.serviceTypeText}}</text>
             </view>
-            <view class="detail-row" wx:if="{{selectedRequest.health_data.allergy}}">
-              <text class="detail-label">过敏食物：</text>
-              <text class="detail-value">{{selectedRequest.health_data.allergy || '无'}}</text>
-            </view>
-            <view class="detail-row" wx:if="{{selectedRequest.health_data.demand}}">
-              <text class="detail-label">特殊需求：</text>
-              <text class="detail-value">{{selectedRequest.health_data.demand || '无'}}</text>
+            <view class="sr-request-kv-row">
+              <text class="sr-request-kv-k">申请时间</text>
+              <text class="sr-request-kv-v">{{selectedRequest.createTimeText}}</text>
             </view>
           </view>
-        </view>
-        <view class="modal-footer" wx:if="{{selectedRequest && selectedRequest.status === 'pending'}}">
+          <view class="sr-request-health" wx:if="{{selectedRequest.health_data}}">
+            <text class="sr-request-health-title">健康信息</text>
+            <view class="sr-request-kv-row" wx:if="{{selectedRequest.health_data.disease}}">
+              <text class="sr-request-kv-k">疾病史</text>
+              <text class="sr-request-kv-v">{{selectedRequest.health_data.disease}}</text>
+            </view>
+            <view class="sr-request-kv-row" wx:if="{{selectedRequest.health_data.allergy}}">
+              <text class="sr-request-kv-k">过敏食物</text>
+              <text class="sr-request-kv-v">{{selectedRequest.health_data.allergy}}</text>
+            </view>
+            <view class="sr-request-kv-row" wx:if="{{selectedRequest.health_data.demand}}">
+              <text class="sr-request-kv-k">特殊需求</text>
+              <text class="sr-request-kv-v">{{selectedRequest.health_data.demand}}</text>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="sr-request-detail-footer" wx:if="{{selectedRequest && selectedRequest.status === 'pending'}}">
           <view class="modal-btn approve" bindtap="approveRequest" data-requestid="{{selectedRequest.request_id}}">批准申请</view>
           <view class="modal-btn reject" bindtap="rejectRequest" data-requestid="{{selectedRequest.request_id}}">拒绝申请</view>
         </view>
@@ -385,26 +391,7 @@
         </view>
 
         <view class="menu-section">
-          <text class="section-title">工作统计</text>
-          <view class="menu-item" bindtap="viewServiceStats">
-            <text class="menu-icon">📊</text>
-            <text class="menu-text">服务统计</text>
-            <text class="menu-arrow">→</text>
-          </view>
-          <view class="menu-item" bindtap="viewPlanStats">
-            <text class="menu-icon">📈</text>
-            <text class="menu-text">计划统计</text>
-            <text class="menu-arrow">→</text>
-          </view>
-        </view>
-
-        <view class="menu-section">
           <text class="section-title">其他</text>
-          <view class="menu-item" bindtap="viewHelp">
-            <text class="menu-icon">❓</text>
-            <text class="menu-text">帮助中心</text>
-            <text class="menu-arrow">→</text>
-          </view>
           <view class="menu-item" bindtap="viewAbout">
             <text class="menu-icon">ℹ️</text>
             <text class="menu-text">关于我们</text>

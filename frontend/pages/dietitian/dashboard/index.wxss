@@ -145,6 +145,7 @@
 
 .stat-card:active,
 .feedback-item:active,
+.request-item:active,
 .user-item:active {
   transform: translateY(2rpx);
   box-shadow: var(--shadow-press);
@@ -627,11 +628,181 @@
   color: #b42318;
 }
 
-.request-status-corner {
-  position: absolute;
-  top: 16rpx;
-  right: 16rpx;
-  z-index: 2;
+/* 服务申请卡片（服务中心 → 服务申请）：与 he-item / 反馈卡片同系，便于一眼区分旧版列表 */
+.request-list--cards {
+  padding-top: 2rpx;
+}
+
+.request-item.request-item-card {
+  padding: 20rpx 22rpx 18rpx 22rpx;
+  margin-bottom: 18rpx;
+  border-radius: 18rpx;
+  border-left: 8rpx solid var(--c-primary);
+}
+
+.request-item.request-item-card:last-child {
+  margin-bottom: 0;
+}
+
+.request-card-eyebrow {
+  display: block;
+  font-size: 20rpx;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--c-text-3);
+  margin-bottom: 10rpx;
+}
+
+.request-card-summary {
+  padding: 14rpx 16rpx;
+  background: rgba(45, 106, 79, 0.06);
+  border-radius: 12rpx;
+  border: 1rpx solid rgba(45, 106, 79, 0.16);
+  margin-bottom: 12rpx;
+}
+
+.request-card-summary-label {
+  display: block;
+  font-size: 21rpx;
+  color: var(--c-text-3);
+  margin-bottom: 6rpx;
+}
+
+.request-card-summary-text {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.45;
+}
+
+.request-card-extra {
+  padding: 12rpx 14rpx;
+  background: rgba(192, 123, 79, 0.08);
+  border-radius: 12rpx;
+  border: 1rpx solid rgba(192, 123, 79, 0.22);
+  margin-bottom: 12rpx;
+}
+
+.request-card-extra-label {
+  display: block;
+  font-size: 21rpx;
+  color: var(--c-text-3);
+  margin-bottom: 6rpx;
+}
+
+.request-item-card .request-avatar.request-avatar-inline {
+  width: 44rpx;
+  height: 44rpx;
+  min-width: 44rpx;
+  font-size: 22rpx;
+}
+
+.request-item-card .request-card-meta {
+  margin-bottom: 12rpx;
+  justify-content: flex-start;
+}
+
+/* 服务申请卡片：与反馈中心卡片同一信息层级 */
+.request-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-bottom: 10rpx;
+}
+
+.request-card-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.request-card-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--c-text);
+  line-height: 1.4;
+  margin-bottom: 8rpx;
+}
+
+.request-card-user {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.request-avatar-inline {
+  width: 40rpx;
+  height: 40rpx;
+  min-width: 40rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.request-card-username {
+  font-size: 23rpx;
+  color: var(--c-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 340rpx;
+}
+
+.request-status-inline {
+  position: static;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.request-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10rpx;
+  flex-wrap: wrap;
+  margin-bottom: 8rpx;
+}
+
+.request-chip {
+  font-size: 21rpx;
+  color: var(--c-primary);
+  background: rgba(45, 106, 79, 0.1);
+  border: 1rpx solid rgba(45, 106, 79, 0.22);
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-card-time {
+  font-size: 22rpx;
+  color: var(--c-text-3);
+  flex-shrink: 0;
+}
+
+.request-card-body {
+  background: rgba(45, 106, 79, 0.05);
+  border-radius: 10rpx;
+  padding: 12rpx;
+  margin-bottom: 10rpx;
+}
+
+.request-card-snippet {
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--c-text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .request-actions {
@@ -807,6 +978,187 @@
   height: 6rpx;
   background: linear-gradient(90deg, var(--c-primary) 0%, rgba(45, 106, 79, 0.4) 55%, rgba(192, 123, 79, 0.35) 100%);
   opacity: 0.9;
+}
+
+/* 服务申请「申请详情」弹窗：与个人中心 modal 同壳，内层为规划师端统一信息卡 */
+.sr-request-detail-modal {
+  width: 86%;
+  max-width: 620rpx;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sr-request-detail-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: 58vh;
+  padding-bottom: 8rpx;
+}
+
+.sr-request-hero {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 12rpx 28rpx 22rpx;
+  border-bottom: 1rpx solid var(--c-border);
+}
+
+.sr-request-avatar {
+  width: 88rpx;
+  height: 88rpx;
+  min-width: 88rpx;
+  border-radius: 50%;
+  background: var(--c-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.sr-request-hero-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.sr-request-userid {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--c-text);
+  word-break: break-all;
+}
+
+.sr-request-status-pill {
+  align-self: flex-start;
+}
+
+.sr-request-goal-card {
+  margin: 18rpx 28rpx 0;
+  padding: 18rpx 18rpx 16rpx;
+  background: rgba(45, 106, 79, 0.06);
+  border-radius: 14rpx;
+  border: 1rpx solid rgba(45, 106, 79, 0.16);
+}
+
+.sr-request-goal-label {
+  display: block;
+  font-size: 22rpx;
+  color: var(--c-text-3);
+  margin-bottom: 8rpx;
+}
+
+.sr-request-goal-text {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.45;
+}
+
+.sr-request-extra {
+  margin: 14rpx 28rpx 0;
+  padding: 14rpx 16rpx;
+  background: rgba(192, 123, 79, 0.08);
+  border-radius: 14rpx;
+  border: 1rpx solid rgba(192, 123, 79, 0.22);
+}
+
+.sr-request-extra-label {
+  display: block;
+  font-size: 22rpx;
+  color: var(--c-text-3);
+  margin-bottom: 6rpx;
+}
+
+.sr-request-extra-text {
+  display: block;
+  font-size: 26rpx;
+  color: var(--c-text-2);
+  line-height: 1.5;
+}
+
+.sr-request-kv {
+  padding: 8rpx 28rpx 4rpx;
+}
+
+.sr-request-kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid rgba(40, 38, 34, 0.06);
+}
+
+.sr-request-kv-row:last-child {
+  border-bottom: none;
+}
+
+.sr-request-kv-k {
+  font-size: 24rpx;
+  color: var(--c-text-3);
+  flex-shrink: 0;
+  width: 160rpx;
+}
+
+.sr-request-kv-v {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--c-text);
+  text-align: right;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.sr-request-health {
+  margin: 8rpx 28rpx 20rpx;
+  padding: 16rpx 18rpx 8rpx;
+  background: rgba(87, 107, 149, 0.06);
+  border-radius: 14rpx;
+  border: 1rpx solid rgba(87, 107, 149, 0.18);
+}
+
+.sr-request-health-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--c-text);
+  margin-bottom: 6rpx;
+}
+
+.sr-request-health .sr-request-kv-row {
+  border-bottom-color: rgba(87, 107, 149, 0.12);
+}
+
+.sr-request-detail-footer {
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx 28rpx 24rpx;
+  border-top: 1rpx solid var(--c-border);
+  flex-shrink: 0;
+}
+
+.sr-request-detail-footer .modal-btn {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+}
+
+.sr-request-detail-footer .modal-btn.approve {
+  background: rgba(45, 106, 79, 0.14);
+  color: var(--c-primary);
+}
+
+.sr-request-detail-footer .modal-btn.reject {
+  background: rgba(192, 123, 79, 0.16);
+  color: #8d4d27;
 }
 
 .pc-head {
