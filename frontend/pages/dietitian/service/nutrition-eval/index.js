@@ -799,6 +799,61 @@ Page({
 
   noop() {},
 
+  /**
+   * 锚点在 wx:else（非 loading/错误）内；pageScrollTo 在不可滚或 scrollTop 越界时易 Error: timeout。
+   */
+  _scrollToDietRecordsAnchorWithRetry(attempt) {
+    const n = typeof attempt === 'number' ? attempt : 0;
+    const maxAttempts = 24;
+    const winInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const winH = Number(winInfo.windowHeight || winInfo.screenHeight) || 667;
+
+    const query = wx.createSelectorQuery().in(this);
+    query.select('#diet-records-anchor').boundingClientRect();
+    query.select('.page').boundingClientRect();
+    query.selectViewport().scrollOffset();
+    query.exec((res) => {
+      const rect = res && res[0];
+      const containerRect = res && res[1];
+      const viewport = res && res[2];
+      if (
+        rect &&
+        viewport &&
+        typeof rect.top === 'number' &&
+        typeof viewport.scrollTop === 'number'
+      ) {
+        const offsetPx = 12;
+        const st = viewport.scrollTop || 0;
+        let maxScroll = Number.POSITIVE_INFINITY;
+        if (
+          containerRect &&
+          typeof containerRect.top === 'number' &&
+          typeof containerRect.height === 'number'
+        ) {
+          maxScroll = Math.max(0, Math.round(st + containerRect.top + containerRect.height - winH));
+        }
+        const desired = Math.round(st + rect.top - offsetPx);
+        const nextTop = Math.min(Math.max(0, desired), maxScroll);
+        if (Math.abs(nextTop - st) < 6) {
+          return;
+        }
+        wx.pageScrollTo({
+          scrollTop: nextTop,
+          duration: 280,
+          fail: () => {
+            wx.showToast({ title: '跳转失败，请手动向上翻阅', icon: 'none' });
+          }
+        });
+        return;
+      }
+      if (n >= maxAttempts) {
+        wx.showToast({ title: '跳转失败，请手动向上翻阅', icon: 'none' });
+        return;
+      }
+      setTimeout(() => this._scrollToDietRecordsAnchorWithRetry(n + 1), 72);
+    });
+  },
+
   scrollToDietRecords() {
     if (this.data.diet7Loading) {
       wx.showToast({ title: '饮食记录加载中', icon: 'none' });
@@ -808,16 +863,11 @@ Page({
       wx.showToast({ title: '饮食记录暂不可用', icon: 'none' });
       return;
     }
-    this.setData({ 'accordion.dietHistory': true });
-    setTimeout(() => {
-      wx.pageScrollTo({
-        selector: '#diet-records-anchor',
-        duration: 280,
-        fail: () => {
-          wx.showToast({ title: '跳转失败，请手动向上翻阅', icon: 'none' });
-        }
+    this.setData({ 'accordion.dietHistory': true }, () => {
+      wx.nextTick(() => {
+        this._scrollToDietRecordsAnchorWithRetry(0);
       });
-    }, 120);
+    });
   },
 
   onInput(e) {

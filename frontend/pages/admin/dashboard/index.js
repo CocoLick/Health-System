@@ -104,7 +104,6 @@ Page({
     total: 0,
     totalPages: 1,
     showTabHint: false,
-    hasMoreTabs: true,
     stats: {
       userCount: 0,
       dietitianCount: 15,
@@ -273,20 +272,6 @@ Page({
       showTabHint: false
     });
     wx.setStorageSync('has_visited_manage', true);
-  },
-
-  onTabsScroll(e) {
-    const { scrollLeft, scrollWidth, clientWidth } = e.detail;
-    // 当滚动到接近右侧时，隐藏滚动指示器
-    if (scrollWidth - scrollLeft - clientWidth < 50) {
-      this.setData({
-        hasMoreTabs: false
-      });
-    } else {
-      this.setData({
-        hasMoreTabs: true
-      });
-    }
   },
 
   loadSystemStats() {

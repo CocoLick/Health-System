@@ -611,6 +611,59 @@ Page({
     this.loadHealthData();
   },
 
+  /**
+   * 营养评估锚点滚动：selector 或未 clamp 的 scrollTop 在节点未就绪、或页面几乎不可滚时
+   * 易触发 Error: timeout。先查锚点 + 页根高度估算 maxScroll，再按需滚动。
+   */
+  _scrollToEvalAnchorWithRetry(attempt) {
+    const n = typeof attempt === 'number' ? attempt : 0;
+    const maxAttempts = 24;
+    const winInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
+    const winH = Number(winInfo.windowHeight || winInfo.screenHeight) || 667;
+
+    const query = wx.createSelectorQuery().in(this);
+    query.select('#eval-detail-anchor').boundingClientRect();
+    query.select('.page-surface-bg').boundingClientRect();
+    query.selectViewport().scrollOffset();
+    query.exec((res) => {
+      const rect = res && res[0];
+      const containerRect = res && res[1];
+      const viewport = res && res[2];
+      if (
+        rect &&
+        viewport &&
+        typeof rect.top === 'number' &&
+        typeof viewport.scrollTop === 'number'
+      ) {
+        const offsetPx = 12;
+        const st = viewport.scrollTop || 0;
+        let maxScroll = Number.POSITIVE_INFINITY;
+        if (
+          containerRect &&
+          typeof containerRect.top === 'number' &&
+          typeof containerRect.height === 'number'
+        ) {
+          maxScroll = Math.max(0, Math.round(st + containerRect.top + containerRect.height - winH));
+        }
+        const desired = Math.round(st + rect.top - offsetPx);
+        const nextTop = Math.min(Math.max(0, desired), maxScroll);
+        if (Math.abs(nextTop - st) < 6) {
+          return;
+        }
+        wx.pageScrollTo({
+          scrollTop: nextTop,
+          duration: 280,
+          fail: function () {}
+        });
+        return;
+      }
+      if (n >= maxAttempts) {
+        return;
+      }
+      setTimeout(() => this._scrollToEvalAnchorWithRetry(n + 1), 72);
+    });
+  },
+
   onShow() {
     const scrollEval = wx.getStorageSync('healthScrollToEvaluation');
     if (scrollEval) {
@@ -622,21 +675,21 @@ Page({
     if (ui && token && this.data.healthMainTab === 'education') {
       this.loadEducationReaderList();
     }
-    // 从膳食页跳转并滚动到营养评估：若当前停在其他 tab，#eval-detail-anchor 未渲染，pageScrollTo 会失败（控制台常见 Error: timeout）
     if (scrollEval && ui && token) {
-      const doScroll = () => {
-        setTimeout(() => {
-          wx.pageScrollTo({
-            selector: '#eval-detail-anchor',
-            duration: 300,
-            fail: function() {}
-          });
-        }, 400);
+      const afterTab = () => {
+        wx.nextTick(() => {
+          this._scrollToEvalAnchorWithRetry(0);
+        });
       };
-      if (this.data.healthMainTab !== 'evaluation') {
-        this.setData({ healthMainTab: 'evaluation' }, doScroll);
+      const needPatch =
+        this.data.healthMainTab !== 'evaluation' || !this.data.isLoggedIn;
+      if (needPatch) {
+        this.setData(
+          { healthMainTab: 'evaluation', isLoggedIn: true },
+          afterTab
+        );
       } else {
-        doScroll();
+        afterTab();
       }
     }
   },

@@ -316,54 +316,18 @@
   position: relative;
 }
 
-.scroll-indicator {
-  position: absolute;
-  right: 10rpx;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  width: 60rpx;
-  height: 60rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
-  z-index: 10;
-  animation: pulse 2s infinite;
-}
-
-.indicator-icon {
-  font-size: 36rpx;
-  color: #4caf50;
-  font-weight: bold;
-}
-
-@keyframes pulse {
-  0% {
-    transform: translateY(-50%) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translateY(-50%) scale(1.1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(-50%) scale(1);
-    opacity: 1;
-  }
-}
-
-.audit-tabs::after, .manage-tabs::after {
+/* 仅审核子 Tab 保留右侧渐隐；管理中心横向 Tab 与右侧「更多」叠层会盖住末项「反馈管理」 */
+.audit-tabs::after {
   content: '';
   position: absolute;
   right: 0;
   top: 0;
   bottom: 0;
   width: 60rpx;
-  background: linear-gradient(to left, white, transparent);
+  background: linear-gradient(to left, var(--c-surface), transparent);
   pointer-events: none;
   border-radius: 0 12rpx 12rpx 0;
+  z-index: 0;
 }
 
 .audit-tabs::-webkit-scrollbar, .manage-tabs::-webkit-scrollbar {
@@ -383,6 +347,7 @@
   color: #6c757d;
   transition: all 0.3s ease;
   position: relative;
+  z-index: 1;
 }
 
 .tab-hint {
@@ -1910,15 +1875,6 @@
   background: #ffffff;
   color: #6b7280;
   border: 1rpx solid #d1d5db;
-}
-
-.scroll-indicator {
-  background: rgba(255, 251, 245, 0.95);
-  box-shadow: 0 4rpx 14rpx rgba(33, 30, 26, 0.12);
-}
-
-.indicator-icon {
-  color: var(--c-primary);
 }
 
 .modal-mask {

@@ -486,7 +486,7 @@
     <!-- 管理中心 -->
     <view wx:if="{{activeTab === 'manage'}}" class="content-panel">
       <view class="manage-tabs-container">
-        <view class="manage-tabs" bindscroll="onTabsScroll">
+        <view class="manage-tabs">
           <view class="manage-tab {{manageSubTab === 'users' ? 'active' : ''}}" bindtap="switchManageSubTab" data-subtab="users">
             <text class="tab-icon">👥</text>
             <text>用户管理</text>
@@ -503,9 +503,6 @@
             <text class="tab-icon">💬</text>
             <text>反馈管理</text>
           </view>
-        </view>
-        <view class="scroll-indicator" wx:if="{{hasMoreTabs}}">
-          <text class="indicator-icon">→</text>
         </view>
       </view>
       
