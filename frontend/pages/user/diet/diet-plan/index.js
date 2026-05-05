@@ -1,4 +1,5 @@
 const api = require('../../../../utils/api');
+const mealPrefill = require('../../../../utils/dietPlanMealPrefill');
 
 // diet-plan/index.js
 Page({
@@ -144,13 +145,23 @@ Page({
                       fat: detailData.plan_days && detailData.plan_days.length > 0 ? detailData.plan_days[0].fat : 0,
                       createTime: detailData.published_at || new Date().toLocaleString(),
                       meals: detailData.plan_days && detailData.plan_days.length > 0 && detailData.plan_days[0].meals ? detailData.plan_days[0].meals.map(meal => ({
+                        id: meal.id,
+                        day_id: meal.day_id,
                         type: meal.type,
                         time: meal.time,
                         calories: meal.calories,
+                        protein: meal.protein,
+                        carbohydrate: meal.carbohydrate,
+                        fat: meal.fat,
+                        executed: !!meal.executed,
                         foods: meal.foods ? meal.foods.map(food => ({
+                          id: food.id,
                           name: food.name,
                           amount: food.amount,
-                          calories: food.calories
+                          calories: food.calories,
+                          protein: food.protein,
+                          carbohydrate: food.carbohydrate,
+                          fat: food.fat
                         })) : []
                       })) : [],
                       // 存储完整的plan_days数据
@@ -170,12 +181,19 @@ Page({
                           type: meal.type,
                           time: meal.time,
                           calories: meal.calories,
+                          protein: meal.protein,
+                          carbohydrate: meal.carbohydrate,
+                          fat: meal.fat,
+                          executed: !!meal.executed,
                           foods: meal.foods ? meal.foods.map(food => ({
                             id: food.id,
                             meal_id: food.meal_id,
                             name: food.name,
                             amount: food.amount,
-                            calories: food.calories
+                            calories: food.calories,
+                            protein: food.protein,
+                            carbohydrate: food.carbohydrate,
+                            fat: food.fat
                           })) : []
                         })) : []
                       })) : []
@@ -183,6 +201,12 @@ Page({
                     
                     // 存储到本地
                     wx.setStorageSync('currentDietPlan', currentPlan);
+
+                    const today = new Date();
+                    const ty = today.getFullYear();
+                    const tm = String(today.getMonth() + 1).padStart(2, '0');
+                    const td = String(today.getDate()).padStart(2, '0');
+                    const todayStr = `${ty}-${tm}-${td}`;
                     
                     this.setData({
                       selectedDietitian,
@@ -193,6 +217,7 @@ Page({
                     
                     this.determineStatus();
                     this.initDate();
+                    this.loadDayData(todayStr);
                   }
                 })
                 .catch(err => {
@@ -468,18 +493,40 @@ Page({
     });
   },
 
-  executeMeal(e) {
+  /** 从当日某一餐跳转记录饮食（保存成功后由记录页调用接口标记该餐已完成） */
+  openLogMealFromPlan(e) {
     const mealIndex = e.currentTarget.dataset.mealIndex;
     const plan = this.data.currentPlan;
-    if (plan && plan.meals[mealIndex]) {
-      plan.meals[mealIndex].executed = !plan.meals[mealIndex].executed;
-      wx.setStorageSync('currentDietPlan', plan);
-      this.setData({ currentPlan: plan });
-      wx.showToast({
-        title: plan.meals[mealIndex].executed ? '已标记完成' : '已取消完成',
-        icon: 'success'
-      });
+    if (!plan || !plan.meals || !plan.meals[mealIndex]) return;
+    const meal = plan.meals[mealIndex];
+    if (meal.executed) {
+      wx.showToast({ title: '该餐已从计划记入', icon: 'none' });
+      return;
     }
+    const mealId = meal.id;
+    const dayId = meal.day_id;
+    if (!mealId || !dayId) {
+      wx.showToast({ title: '计划数据不完整，请下拉刷新', icon: 'none' });
+      return;
+    }
+    const foods = mealPrefill.buildFoodsFromPlanMeal(meal);
+    if (!foods.length) {
+      wx.showToast({ title: '该餐暂无食物项', icon: 'none' });
+      return;
+    }
+    const mealType = mealPrefill.planMealTypeToRecordKey(meal.type);
+    wx.setStorageSync('dietPlanRecordPrefill', {
+      mealType,
+      foods,
+      pendingExecute: {
+        planId: plan.id,
+        dayId,
+        mealId
+      }
+    });
+    wx.navigateTo({
+      url: '/pages/user/diet/add-record/index'
+    });
   },
 
   switchTab(e) {
@@ -708,13 +755,23 @@ Page({
           carbohydrate: dayPlan.carbohydrate,
           fat: dayPlan.fat,
           meals: dayPlan.meals.map(meal => ({
+            id: meal.id,
+            day_id: meal.day_id,
             type: meal.type,
             time: meal.time,
             calories: meal.calories,
+            protein: meal.protein,
+            carbohydrate: meal.carbohydrate,
+            fat: meal.fat,
+            executed: !!meal.executed,
             foods: meal.foods.map(food => ({
+              id: food.id,
               name: food.name,
               amount: food.amount,
-              calories: food.calories
+              calories: food.calories,
+              protein: food.protein,
+              carbohydrate: food.carbohydrate,
+              fat: food.fat
             }))
           })),
           hasPlanForDate: true

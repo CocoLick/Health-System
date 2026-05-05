@@ -1359,6 +1359,14 @@
   margin: 12px 0 6px;
 }
 
+.plan-detail-view .plan-meal-hint {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: -2px 0 10px;
+  padding: 0 2px;
+}
+
 .plan-detail-view .timeline-list {
   padding: 0 2px;
 }

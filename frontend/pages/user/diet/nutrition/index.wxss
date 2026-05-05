@@ -832,34 +832,6 @@
   color: #666;
 }
 
-.export-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8f9fa;
-  color: #4caf50;
-  padding: 24rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid #4caf50;
-  transition: all 0.3s ease;
-  margin-bottom: 24rpx;
-}
-
-.export-btn:active {
-  background: #4caf50;
-  color: #fff;
-}
-
-.export-icon {
-  font-size: 32rpx;
-  margin-right: 12rpx;
-}
-
-.export-text {
-  font-size: 28rpx;
-  font-weight: 500;
-}
-
 /* --------------------------------
    Nutrition tab redesign (80/20)
 --------------------------------- */
@@ -1217,19 +1189,6 @@
 
 .bar {
   background: var(--nutr-green);
-}
-
-.export-btn {
-  border: none;
-  background: var(--nutr-surface);
-  color: var(--nutr-gray-2);
-  box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-lg);
-}
-
-.export-btn:active {
-  background: #f2f4f7;
-  color: var(--nutr-gray-1);
 }
 
 /* 今日饮食详情弹窗 */

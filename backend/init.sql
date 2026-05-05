@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS `meals` (
     `protein` FLOAT NOT NULL DEFAULT 0,
     `carbohydrate` FLOAT NOT NULL DEFAULT 0,
     `fat` FLOAT NOT NULL DEFAULT 0,
+    `executed` TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (`day_id`) REFERENCES `plan_days`(`day_id`)
 );
 

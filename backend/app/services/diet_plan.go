@@ -251,22 +251,28 @@ func (s *DietPlanService) GetDietPlanDetail(planID, userID string) (schemas.Diet
 			foodsDetail := make([]schemas.FoodDetail, len(foods))
 			for k, food := range foods {
 				foodsDetail[k] = schemas.FoodDetail{
-					FoodID:   food.FoodID,
-					MealID:   food.MealID,
-					Name:     food.Name,
-					Amount:   food.Amount,
-					Calories: food.Calories,
+					FoodID:       food.FoodID,
+					MealID:       food.MealID,
+					Name:         food.Name,
+					Amount:       food.Amount,
+					Calories:     food.Calories,
+					Protein:      food.Protein,
+					Carbohydrate: food.Carbohydrate,
+					Fat:          food.Fat,
 				}
 			}
 
 			mealsDetail[j] = schemas.MealDetail{
-				MealID:   meal.MealID,
-				DayID:    meal.DayID,
-				Type:     meal.Type,
-				Time:     meal.Time,
-				Calories: meal.Calories,
-				Executed: false, // 默认未执行
-				Foods:    foodsDetail,
+				MealID:       meal.MealID,
+				DayID:        meal.DayID,
+				Type:         meal.Type,
+				Time:         meal.Time,
+				Calories:     meal.Calories,
+				Protein:      meal.Protein,
+				Carbohydrate: meal.Carbohydrate,
+				Fat:          meal.Fat,
+				Executed:     meal.Executed,
+				Foods:        foodsDetail,
 			}
 		}
 
@@ -713,10 +719,30 @@ func (s *DietPlanService) getPlanForDietitianContext(planID, userID, dietitianID
 	return p, nil
 }
 
-// UpdateExecuteStatus 更新执行状态
+// UpdateExecuteStatus 更新执行状态（用户记入饮食成功后标记该餐已完成）
 func (s *DietPlanService) UpdateExecuteStatus(planID, userID string, req schemas.ExecutionStatusUpdate) error {
-	// 这里应该从数据库更新，现在返回模拟数据
-	return nil
+	var plan models.DietPlan
+	if err := config.DB.Where("plan_id = ? AND user_id = ?", planID, userID).First(&plan).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrDietPlanNotFound
+		}
+		return err
+	}
+	var day models.PlanDay
+	if err := config.DB.Where("day_id = ? AND plan_id = ?", req.DayID, planID).First(&day).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("执行记录不存在")
+		}
+		return err
+	}
+	var meal models.Meal
+	if err := config.DB.Where("meal_id = ? AND day_id = ?", req.MealID, req.DayID).First(&meal).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("执行记录不存在")
+		}
+		return err
+	}
+	return config.DB.Model(&meal).Update("executed", req.Executed).Error
 }
 
 // RequestOptimization 申请优化

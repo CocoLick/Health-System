@@ -153,22 +153,28 @@ type PlanDayDetail struct {
 
 // MealDetail 餐次详情响应
 type MealDetail struct {
-	MealID   string       `json:"id"`
-	DayID    string       `json:"day_id"`
-	Type     string       `json:"type"`
-	Time     string       `json:"time"`
-	Calories int          `json:"calories"`
-	Foods    []FoodDetail `json:"foods"`
-	Executed bool         `json:"executed"`
+	MealID       string       `json:"id"`
+	DayID        string       `json:"day_id"`
+	Type         string       `json:"type"`
+	Time         string       `json:"time"`
+	Calories     int          `json:"calories"`
+	Protein      float64      `json:"protein"`
+	Carbohydrate float64      `json:"carbohydrate"`
+	Fat          float64      `json:"fat"`
+	Foods        []FoodDetail `json:"foods"`
+	Executed     bool         `json:"executed"`
 }
 
 // FoodDetail 食物详情响应
 type FoodDetail struct {
-	FoodID   string `json:"id"`
-	MealID   string `json:"meal_id"`
-	Name     string `json:"name"`
-	Amount   string `json:"amount"`
-	Calories int    `json:"calories"`
+	FoodID       string  `json:"id"`
+	MealID       string  `json:"meal_id"`
+	Name         string  `json:"name"`
+	Amount       string  `json:"amount"`
+	Calories     int     `json:"calories"`
+	Protein      float64 `json:"protein"`
+	Carbohydrate float64 `json:"carbohydrate"`
+	Fat          float64 `json:"fat"`
 }
 
 // ExecutionStatusUpdate 执行状态更新请求

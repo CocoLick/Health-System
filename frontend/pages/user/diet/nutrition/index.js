@@ -688,28 +688,6 @@ Page({
       });
   },
 
-
-
-  // 导出数据
-  exportData() {
-    wx.showModal({
-      title: '导出数据',
-      content: '确定要导出历史饮食记录吗？',
-      success: (res) => {
-        if (res.confirm) {
-          wx.showLoading({ title: '导出中...' });
-          
-          // 模拟导出过程
-          setTimeout(() => {
-            wx.hideLoading();
-            wx.showToast({ title: '导出成功', icon: 'success' });
-          }, 1000);
-        }
-      }
-    });
-  }
-  ,
-
   checkLogin() {
     const userInfo = wx.getStorageSync('userInfo');
     const token = wx.getStorageSync('token');

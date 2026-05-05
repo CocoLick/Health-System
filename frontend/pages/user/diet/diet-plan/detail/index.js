@@ -1,4 +1,5 @@
 const api = require('../../../../../utils/api');
+const mealPrefill = require('../../../../../utils/dietPlanMealPrefill');
 
 // diet-plan/detail/index.js
 Page({
@@ -138,13 +139,23 @@ Page({
           carbohydrate: dayPlan.carbohydrate,
           fat: dayPlan.fat,
           meals: dayPlan.meals.map(meal => ({
+            id: meal.id,
+            day_id: meal.day_id,
             type: meal.type,
             time: meal.time,
             calories: meal.calories,
+            protein: meal.protein,
+            carbohydrate: meal.carbohydrate,
+            fat: meal.fat,
+            executed: !!meal.executed,
             foods: meal.foods.map(food => ({
+              id: food.id,
               name: food.name,
               amount: food.amount,
-              calories: food.calories
+              calories: food.calories,
+              protein: food.protein,
+              carbohydrate: food.carbohydrate,
+              fat: food.fat
             }))
           })),
           hasPlanForDate: true
@@ -188,6 +199,13 @@ Page({
     plan = this.withPlanDietitianDisplay(plan);
     this.setData({ plan });
     this.calculateNutritionPercentage();
+
+    const today = new Date();
+    const ty = today.getFullYear();
+    const tm = String(today.getMonth() + 1).padStart(2, '0');
+    const td = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${ty}-${tm}-${td}`;
+    this.loadDayData(todayStr);
 
     if (!plan.id) {
       return;
@@ -240,18 +258,39 @@ Page({
 
 
 
-  executeMeal(e) {
+  openLogMealFromPlan(e) {
     const mealIndex = e.currentTarget.dataset.mealIndex;
     const plan = this.data.plan;
-    if (plan && plan.meals[mealIndex]) {
-      plan.meals[mealIndex].executed = !plan.meals[mealIndex].executed;
-      wx.setStorageSync('currentDietPlan', plan);
-      this.setData({ plan });
-      wx.showToast({
-        title: plan.meals[mealIndex].executed ? '已标记完成' : '已取消完成',
-        icon: 'success'
-      });
+    if (!plan || !plan.meals || !plan.meals[mealIndex]) return;
+    const meal = plan.meals[mealIndex];
+    if (meal.executed) {
+      wx.showToast({ title: '该餐已从计划记入', icon: 'none' });
+      return;
     }
+    const mealId = meal.id;
+    const dayId = meal.day_id;
+    if (!mealId || !dayId) {
+      wx.showToast({ title: '计划数据不完整，请返回膳食页刷新', icon: 'none' });
+      return;
+    }
+    const foods = mealPrefill.buildFoodsFromPlanMeal(meal);
+    if (!foods.length) {
+      wx.showToast({ title: '该餐暂无食物项', icon: 'none' });
+      return;
+    }
+    const mealType = mealPrefill.planMealTypeToRecordKey(meal.type);
+    wx.setStorageSync('dietPlanRecordPrefill', {
+      mealType,
+      foods,
+      pendingExecute: {
+        planId: plan.id,
+        dayId,
+        mealId
+      }
+    });
+    wx.navigateTo({
+      url: '/pages/user/diet/add-record/index'
+    });
   },
 
   recordDiet() {

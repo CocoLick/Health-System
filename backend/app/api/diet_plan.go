@@ -437,7 +437,7 @@ func (h *DietPlanHandler) UpdateExecuteStatus(c *gin.Context) {
 
 	err := h.dietPlanService.UpdateExecuteStatus(planID, userID.(string), req)
 	if err != nil {
-		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: "执行记录不存在"})
+		c.JSON(http.StatusNotFound, schemas.Response{Code: 404, Message: err.Error()})
 		return
 	}
 

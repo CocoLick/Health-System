@@ -57,7 +57,7 @@
 
   <view class="section-title">每日膳食安排</view>
   <view class="timeline-list card">
-    <view class="timeline-item {{item.executed ? 'executed' : ''}}" wx:for="{{plan.meals}}" wx:key="type" bindtap="executeMeal" data-meal-index="{{index}}">
+    <view class="timeline-item {{item.executed ? 'executed' : ''}}" wx:for="{{plan.meals}}" wx:key="id" bindtap="openLogMealFromPlan" data-meal-index="{{index}}">
       <view class="timeline-left">
         <text class="meal-time">{{item.time}}</text>
         <view class="timeline-line"></view>

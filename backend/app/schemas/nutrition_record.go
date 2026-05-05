@@ -5,7 +5,8 @@ import "time"
 // NutritionRecordItemRequest 营养记录明细请求
 type NutritionRecordItemRequest struct {
 	FoodName   string  `json:"name" binding:"required"`
-	Amount     float64 `json:"amount" binding:"required"`
+	// amount：前端多为字符串数字 JSON；required 对 float64 也会拒绝合法值 0，故仅用 gte
+	Amount     float64 `json:"amount" binding:"gte=0"`
 	Unit       string  `json:"unit"`
 	GramPerUnit float64 `json:"gram_per_unit"`
 	Calories   float64 `json:"calories"`

@@ -291,11 +291,6 @@
           </view>
         </view>
       </view>
-
-      <view class="export-btn card" bindtap="exportData">
-        <text class="export-icon">📤</text>
-        <text class="export-text">导出数据</text>
-      </view>
     </view>
   </view>
 

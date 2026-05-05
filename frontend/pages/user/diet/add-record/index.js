@@ -52,10 +52,67 @@ Page({
     if (mt && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mt)) {
       this.setData({ mealType: mt });
     }
+    this.pendingDietPlanExecute = null;
     if (!this.checkLogin()) {
       return;
     }
+    this.applyDietPlanPrefill();
     this.loadIngredients();
+  },
+
+  applyDietPlanPrefill() {
+    const raw = wx.getStorageSync('dietPlanRecordPrefill');
+    if (!raw || !Array.isArray(raw.foods) || raw.foods.length === 0) {
+      return;
+    }
+    wx.removeStorageSync('dietPlanRecordPrefill');
+    const mealType = raw.mealType;
+    if (mealType && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mealType)) {
+      this.setData({ mealType });
+    }
+    const normalized = raw.foods.map((f) => ({
+      name: (f.name || '').trim() || '食物',
+      amount: String(f.amount != null ? f.amount : ''),
+      unit: f.unit || '份',
+      gramPerUnit: f.gramPerUnit != null ? f.gramPerUnit : 100,
+      nutrition: {
+        calories: Number((f.nutrition && f.nutrition.calories) || 0),
+        protein: Number((f.nutrition && f.nutrition.protein) || 0),
+        carbohydrate: Number((f.nutrition && f.nutrition.carbohydrate) || 0),
+        fat: Number((f.nutrition && f.nutrition.fat) || 0),
+        fiber: Number((f.nutrition && f.nutrition.fiber) || 0)
+      }
+    }));
+    const merged = [...this.data.foods, ...normalized];
+    this.pendingDietPlanExecute = raw.pendingExecute || null;
+    this.setData({ foods: merged, showAddForm: false }, () => {
+      this.calculateTotalNutrition(merged);
+    });
+  },
+
+  patchCachedPlanMealExecuted(pending) {
+    try {
+      const plan = wx.getStorageSync('currentDietPlan');
+      if (!plan || plan.id !== pending.planId || !plan.plan_days) return;
+      plan.plan_days.forEach((day) => {
+        if ((day.id || '') !== pending.dayId || !day.meals) return;
+        day.meals.forEach((m) => {
+          if ((m.id || '') === pending.mealId) {
+            m.executed = true;
+          }
+        });
+      });
+      if (plan.meals && Array.isArray(plan.meals)) {
+        plan.meals.forEach((m) => {
+          if ((m.id || '') === pending.mealId) {
+            m.executed = true;
+          }
+        });
+      }
+      wx.setStorageSync('currentDietPlan', plan);
+    } catch (err) {
+      console.warn('patchCachedPlanMealExecuted', err);
+    }
   },
 
   onShow() {
@@ -581,6 +638,12 @@ Page({
     wx.showToast({ title: `已导入${importedFoods.length}项`, icon: 'success' });
   },
 
+  /** 提交给后端的数值字段须为 JSON 数字；字符串会导致 Go 绑定 400 */
+  toReqFloat(v, fallback = 0) {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : fallback;
+  },
+
   submitRecord() {
     const { mealType, foods, totalNutrition } = this.data;
 
@@ -589,20 +652,34 @@ Page({
       return;
     }
 
+    const tn = totalNutrition || {};
     const record = {
       meal_type: mealType,
-      foods: foods.map(food => ({
-        name: food.name,
-        amount: food.amount,
-        unit: food.unit || 'g',
-        gram_per_unit: food.gramPerUnit || 100,
-        calories: food.nutrition.calories,
-        protein: food.nutrition.protein,
-        carbohydrate: food.nutrition.carbohydrate,
-        fat: food.nutrition.fat,
-        fiber: food.nutrition.fiber || 0
-      })),
-      total_nutrition: totalNutrition
+      foods: foods.map((food) => {
+        const nut = food.nutrition || {};
+        let amt = this.toReqFloat(food.amount, 0);
+        if (!(amt > 0)) {
+          amt = 1;
+        }
+        return {
+          name: String(food.name || '').trim() || '食物',
+          amount: amt,
+          unit: food.unit || 'g',
+          gram_per_unit: this.toReqFloat(food.gramPerUnit, 100) || 100,
+          calories: this.toReqFloat(nut.calories, 0),
+          protein: this.toReqFloat(nut.protein, 0),
+          carbohydrate: this.toReqFloat(nut.carbohydrate, 0),
+          fat: this.toReqFloat(nut.fat, 0),
+          fiber: this.toReqFloat(nut.fiber, 0)
+        };
+      }),
+      total_nutrition: {
+        calories: this.toReqFloat(tn.calories, 0),
+        protein: this.toReqFloat(tn.protein, 0),
+        carbohydrate: this.toReqFloat(tn.carbohydrate, 0),
+        fat: this.toReqFloat(tn.fat, 0),
+        fiber: this.toReqFloat(tn.fiber, 0)
+      }
     };
 
     // 调用后端API保存记录
@@ -638,10 +715,37 @@ Page({
 
           wx.showToast({ title: '记录成功', icon: 'success' });
 
-          // 跳转回营养页面
-          setTimeout(() => {
-            wx.navigateBack();
-          }, 1000);
+          const pending = this.pendingDietPlanExecute;
+          this.pendingDietPlanExecute = null;
+
+          const finishNav = () => {
+            setTimeout(() => {
+              wx.navigateBack();
+            }, 1000);
+          };
+
+          if (pending && pending.planId && pending.dayId && pending.mealId) {
+            api.dietPlan
+              .updateExecuteStatus(pending.planId, {
+                day_id: pending.dayId,
+                meal_id: pending.mealId,
+                executed: true
+              })
+              .then((er) => {
+                if (er.code === 200) {
+                  this.patchCachedPlanMealExecuted(pending);
+                } else {
+                  wx.showToast({ title: '记录成功，计划完成状态未同步', icon: 'none' });
+                }
+                finishNav();
+              })
+              .catch(() => {
+                wx.showToast({ title: '记录成功，计划完成状态未同步', icon: 'none' });
+                finishNav();
+              });
+          } else {
+            finishNav();
+          }
         } else {
           wx.showToast({ title: '记录失败', icon: 'none' });
         }

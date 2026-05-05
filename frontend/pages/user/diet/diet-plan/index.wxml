@@ -71,9 +71,10 @@
     </view>
 
     <view class="section-title">每日膳食安排</view>
+    <view class="plan-meal-hint">点击某一餐打开记录饮食，保存后标记该餐已完成（每餐仅可记入一次）</view>
     <view class="timeline-list">
       <view wx:if="{{currentPlan.hasPlanForDate !== false && currentPlan.meals.length > 0}}">
-        <view class="timeline-item {{item.executed ? 'executed' : ''}}" wx:for="{{currentPlan.meals}}" wx:key="type" bindtap="executeMeal" data-meal-index="{{index}}">
+        <view class="timeline-item {{item.executed ? 'executed' : ''}}" wx:for="{{currentPlan.meals}}" wx:key="id" bindtap="openLogMealFromPlan" data-meal-index="{{index}}">
           <view class="timeline-left">
             <text class="meal-time">{{item.time}}</text>
             <view class="timeline-line"></view>
