@@ -612,12 +612,13 @@ Page({
   },
 
   /**
-   * 营养评估锚点滚动：selector 或未 clamp 的 scrollTop 在节点未就绪、或页面几乎不可滚时
-   * 易触发 Error: timeout。先查锚点 + 页根高度估算 maxScroll，再按需滚动。
+   * 营养评估锚点滚动：pageScrollTo 在节点未就绪、越界、或 Windows 模拟器带动画时易 Error: timeout。
+   * 用测量 + clamp、duration:0、任务代数取消与短延迟调用降低失败率。
    */
-  _scrollToEvalAnchorWithRetry(attempt) {
+  _scrollToEvalAnchorWithRetry(attempt, gen) {
     const n = typeof attempt === 'number' ? attempt : 0;
     const maxAttempts = 24;
+    const g = gen != null ? gen : this._evalScrollGen || 0;
     const winInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const winH = Number(winInfo.windowHeight || winInfo.screenHeight) || 667;
 
@@ -626,6 +627,9 @@ Page({
     query.select('.page-surface-bg').boundingClientRect();
     query.selectViewport().scrollOffset();
     query.exec((res) => {
+      if (g !== this._evalScrollGen) {
+        return;
+      }
       const rect = res && res[0];
       const containerRect = res && res[1];
       const viewport = res && res[2];
@@ -650,18 +654,55 @@ Page({
         if (Math.abs(nextTop - st) < 6) {
           return;
         }
-        wx.pageScrollTo({
-          scrollTop: nextTop,
-          duration: 280,
-          fail: function () {}
-        });
+        if (Number.isFinite(maxScroll) && maxScroll < 1) {
+          return;
+        }
+        const run = () => {
+          if (g !== this._evalScrollGen) {
+            return;
+          }
+          const pages = getCurrentPages();
+          const top = pages.length ? pages[pages.length - 1] : null;
+          const route = top && top.route ? String(top.route) : '';
+          if (route !== 'pages/user/health/index') {
+            return;
+          }
+          wx.pageScrollTo({
+            scrollTop: nextTop,
+            duration: 0,
+            fail: function () {}
+          });
+        };
+        wx.nextTick(() => setTimeout(run, 48));
         return;
       }
       if (n >= maxAttempts) {
         return;
       }
-      setTimeout(() => this._scrollToEvalAnchorWithRetry(n + 1), 72);
+      const pages = getCurrentPages();
+      const top = pages.length ? pages[pages.length - 1] : null;
+      const route = top && top.route ? String(top.route) : '';
+      if (route !== 'pages/user/health/index') {
+        return;
+      }
+      if (this._evalScrollTimer) {
+        clearTimeout(this._evalScrollTimer);
+      }
+      this._evalScrollTimer = setTimeout(() => {
+        this._evalScrollTimer = null;
+        if (g === this._evalScrollGen) {
+          this._scrollToEvalAnchorWithRetry(n + 1, g);
+        }
+      }, 72);
     });
+  },
+
+  _cancelEvalScrollTasks() {
+    this._evalScrollGen = (this._evalScrollGen || 0) + 1;
+    if (this._evalScrollTimer) {
+      clearTimeout(this._evalScrollTimer);
+      this._evalScrollTimer = null;
+    }
   },
 
   onShow() {
@@ -676,9 +717,11 @@ Page({
       this.loadEducationReaderList();
     }
     if (scrollEval && ui && token) {
+      this._evalScrollGen = (this._evalScrollGen || 0) + 1;
+      const g = this._evalScrollGen;
       const afterTab = () => {
         wx.nextTick(() => {
-          this._scrollToEvalAnchorWithRetry(0);
+          this._scrollToEvalAnchorWithRetry(0, g);
         });
       };
       const needPatch =
@@ -692,6 +735,14 @@ Page({
         afterTab();
       }
     }
+  },
+
+  onHide() {
+    this._cancelEvalScrollTasks();
+  },
+
+  onUnload() {
+    this._cancelEvalScrollTasks();
   },
 
   onPullDownRefresh() {
@@ -1500,6 +1551,7 @@ Page({
   },
 
   gotoLogin() {
+    this._cancelEvalScrollTasks();
     wx.navigateTo({
       url: '/pages/auth/login/login'
     });

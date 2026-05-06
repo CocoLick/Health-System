@@ -373,6 +373,22 @@ Page({
     this.setData({ todayYmd: todayYmd() });
   },
 
+  _cancelDietScrollTasks() {
+    this._dietScrollGen = (this._dietScrollGen || 0) + 1;
+    if (this._dietScrollTimer) {
+      clearTimeout(this._dietScrollTimer);
+      this._dietScrollTimer = null;
+    }
+  },
+
+  onHide() {
+    this._cancelDietScrollTasks();
+  },
+
+  onUnload() {
+    this._cancelDietScrollTasks();
+  },
+
   loadContext() {
     const { userId, serviceRequestId } = this.data;
     wx.showLoading({ title: '加载中...' });
@@ -800,11 +816,12 @@ Page({
   noop() {},
 
   /**
-   * 锚点在 wx:else（非 loading/错误）内；pageScrollTo 在不可滚或 scrollTop 越界时易 Error: timeout。
+   * 锚点在 wx:else（非 loading/错误）内；pageScrollTo 易在动画/越界/Windows 模拟器下 Error: timeout。
    */
-  _scrollToDietRecordsAnchorWithRetry(attempt) {
+  _scrollToDietRecordsAnchorWithRetry(attempt, gen) {
     const n = typeof attempt === 'number' ? attempt : 0;
     const maxAttempts = 24;
+    const g = gen != null ? gen : this._dietScrollGen || 0;
     const winInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
     const winH = Number(winInfo.windowHeight || winInfo.screenHeight) || 667;
 
@@ -813,6 +830,9 @@ Page({
     query.select('.page').boundingClientRect();
     query.selectViewport().scrollOffset();
     query.exec((res) => {
+      if (g !== this._dietScrollGen) {
+        return;
+      }
       const rect = res && res[0];
       const containerRect = res && res[1];
       const viewport = res && res[2];
@@ -837,20 +857,49 @@ Page({
         if (Math.abs(nextTop - st) < 6) {
           return;
         }
-        wx.pageScrollTo({
-          scrollTop: nextTop,
-          duration: 280,
-          fail: () => {
-            wx.showToast({ title: '跳转失败，请手动向上翻阅', icon: 'none' });
+        if (Number.isFinite(maxScroll) && maxScroll < 1) {
+          return;
+        }
+        const run = () => {
+          if (g !== this._dietScrollGen) {
+            return;
           }
-        });
+          const pages = getCurrentPages();
+          const top = pages.length ? pages[pages.length - 1] : null;
+          const route = top && top.route ? String(top.route) : '';
+          if (route !== 'pages/dietitian/service/nutrition-eval/index') {
+            return;
+          }
+          wx.pageScrollTo({
+            scrollTop: nextTop,
+            duration: 0,
+            fail: () => {
+              wx.showToast({ title: '跳转失败，请手动向上翻阅', icon: 'none' });
+            }
+          });
+        };
+        wx.nextTick(() => setTimeout(run, 48));
         return;
       }
       if (n >= maxAttempts) {
         wx.showToast({ title: '跳转失败，请手动向上翻阅', icon: 'none' });
         return;
       }
-      setTimeout(() => this._scrollToDietRecordsAnchorWithRetry(n + 1), 72);
+      const pages2 = getCurrentPages();
+      const top2 = pages2.length ? pages2[pages2.length - 1] : null;
+      const route2 = top2 && top2.route ? String(top2.route) : '';
+      if (route2 !== 'pages/dietitian/service/nutrition-eval/index') {
+        return;
+      }
+      if (this._dietScrollTimer) {
+        clearTimeout(this._dietScrollTimer);
+      }
+      this._dietScrollTimer = setTimeout(() => {
+        this._dietScrollTimer = null;
+        if (g === this._dietScrollGen) {
+          this._scrollToDietRecordsAnchorWithRetry(n + 1, g);
+        }
+      }, 72);
     });
   },
 
@@ -863,9 +912,11 @@ Page({
       wx.showToast({ title: '饮食记录暂不可用', icon: 'none' });
       return;
     }
+    this._dietScrollGen = (this._dietScrollGen || 0) + 1;
+    const g = this._dietScrollGen;
     this.setData({ 'accordion.dietHistory': true }, () => {
       wx.nextTick(() => {
-        this._scrollToDietRecordsAnchorWithRetry(0);
+        this._scrollToDietRecordsAnchorWithRetry(0, g);
       });
     });
   },

@@ -1,11 +1,13 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/yourusername/nutrition-system/app/schemas"
 	"github.com/yourusername/nutrition-system/app/services"
+	"gorm.io/gorm"
 )
 
 // HealthDataHandler 健康数据处理器
@@ -121,9 +123,17 @@ func (h *HealthDataHandler) GetLatestHealthData(c *gin.Context) {
 
 	healthData, err := h.healthDataService.GetLatestHealthData(userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, schemas.Response{
-			Code:    400,
-			Message: "暂无健康数据",
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, schemas.Response{
+				Code:    200,
+				Message: "暂无健康数据",
+				Data:    nil,
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{
+			Code:    500,
+			Message: "查询健康数据失败",
 		})
 		return
 	}
@@ -190,10 +200,17 @@ func (h *HealthDataHandler) GetUserHealthDataByDietitian(c *gin.Context) {
 
 	healthData, err := h.healthDataService.GetLatestHealthData(userID)
 	if err != nil {
-		c.JSON(http.StatusOK, schemas.Response{
-			Code:    200,
-			Message: "暂无健康数据",
-			Data:    nil,
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, schemas.Response{
+				Code:    200,
+				Message: "暂无健康数据",
+				Data:    nil,
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{
+			Code:    500,
+			Message: "查询健康数据失败",
 		})
 		return
 	}

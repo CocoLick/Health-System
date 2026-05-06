@@ -153,6 +153,9 @@ Page({
   onReady() {
     if (this._pendingScrollForm) {
       this._pendingScrollForm = false;
+      if (!this.data.isLoggedIn) {
+        return;
+      }
       wx.nextTick(() => {
         this.setData({ scrollIntoView: 'anchor-new-form' });
         setTimeout(() => {

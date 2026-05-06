@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/yourusername/nutrition-system/app/schemas"
 	"github.com/yourusername/nutrition-system/app/services"
 	"github.com/yourusername/nutrition-system/config"
+	"gorm.io/gorm"
 )
 
 // NutritionRecommendationHandler 营养推荐处理器
@@ -127,8 +129,16 @@ func (h *NutritionRecommendationHandler) GetNutritionRecommendation(c *gin.Conte
 	// 获取用户最新健康数据
 	healthData, err := h.healthDataService.GetLatestHealthData(userID.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, schemas.Response{
-			Code:    400,
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, schemas.Response{
+				Code:    200,
+				Message: "请先完善健康档案",
+				Data:    nil,
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{
+			Code:    500,
 			Message: "获取健康数据失败",
 		})
 		return
@@ -168,7 +178,11 @@ func (h *NutritionRecommendationHandler) GetUserNutritionRecommendationByDietiti
 	}
 	healthData, err := h.healthDataService.GetLatestHealthData(userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, schemas.Response{Code: 400, Message: "获取健康数据失败"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, schemas.Response{Code: 200, Message: "请先完善健康档案", Data: nil})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, schemas.Response{Code: 500, Message: "获取健康数据失败"})
 		return
 	}
 	recommendation := buildNutritionRecommendation(healthData, c.Query("activity_level"))
