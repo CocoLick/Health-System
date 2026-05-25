@@ -1,0 +1,613 @@
+@startuml 健康膳食管理系统-概念ER-Chen风格-实现版
+title 图 数据库概念设计 E-R 图（Chen 表示法·实现对应）\n说明：矩形=实体，椭圆=属性，菱形=联系，连线旁 1 / n 表示基数；分域多页排版
+
+skinparam shadowing false
+skinparam handwritten false
+skinparam defaultFontName 微软雅黑
+skinparam defaultFontSize 9
+skinparam linetype ortho
+skinparam wrapWidth 120
+scale 0.42
+
+skinparam rectangle {
+    BackgroundColor #E8F5E9
+    BorderColor #1B5E20
+    FontStyle bold
+}
+skinparam usecase {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+skinparam agent {
+    BackgroundColor #FCE4EC
+    BorderColor #880E4F
+    FontStyle bold
+}
+
+' ---------- 菱形：用 agent 表示联系 ----------
+agent "拥有\n档案" as R_user_health
+agent "产生\n快照" as R_health_hist
+
+rectangle "用户" as EUser
+(user编号PK) as U1
+(用户名) as U2
+(姓名) as U3
+(登录密码) as U4
+(手机号) as U5
+(性别) as U6
+(年龄) as U7
+(邮箱) as U8
+(角色类型) as U9
+(账号状态) as U10
+(创建时间) as U11
+(更新时间) as U12
+
+EUser - U1
+EUser - U2
+EUser - U3
+EUser - U4
+EUser - U5
+EUser - U6
+EUser - U7
+EUser - U8
+EUser - U9
+EUser - U10
+EUser - U11
+EUser - U12
+
+rectangle "健康数据" as EHealth
+(数据编号PK) as H1
+(用户编号FK) as H2
+(性别) as H3
+(年龄) as H4
+(身高) as H5
+(体重) as H6
+(心率) as H7
+(血压) as H8
+(血糖) as H9
+(过敏史) as H10
+(活动水平) as H11
+(营养目标) as H12
+(创建时间) as H13
+(更新时间) as H14
+
+EHealth - H1
+EHealth - H2
+EHealth - H3
+EHealth - H4
+EHealth - H5
+EHealth - H6
+EHealth - H7
+EHealth - H8
+EHealth - H9
+EHealth - H10
+EHealth - H11
+EHealth - H12
+EHealth - H13
+EHealth - H14
+
+rectangle "健康数据\n历史快照" as EHist
+(快照编号PK) as HH1
+(数据编号FK) as HH2
+(用户编号FK) as HH3
+(体征快照字段) as HH4
+(来源) as HH5
+(快照时间) as HH6
+(创建时间) as HH7
+
+EHist - HH1
+EHist - HH2
+EHist - HH3
+EHist - HH4
+EHist - HH5
+EHist - HH6
+EHist - HH7
+
+' 联系与基数
+EUser "1" -down- R_user_health
+R_user_health -down- "n" EHealth : 一对多
+
+EHealth "1" -down- R_health_hist
+R_health_hist -down- "n" EHist : 一对多
+
+note bottom
+  【分图 1】账号与健康域\n用户与健康数据、历史快照
+end note
+
+newpage 图 数据库概念设计 E-R 图（分图 2·规划师与服务·膳食计划结构）
+
+skinparam defaultFontName 微软雅黑
+scale 0.40
+
+agent "制定\n计划" as R_diet_plan
+agent "基于\n申请" as R_req_plan
+agent "包含\n计划日" as R_plan_day
+agent "包含\n餐次" as R_day_meal
+agent "包含\n食物行" as R_meal_food
+
+rectangle "规划师" as EDiet
+(账号编号PK) as D1
+(登录名) as D2
+(姓名) as D3
+(登录密码) as D4
+(角色类型) as D5
+(职称) as D6
+(专业领域) as D7
+(简介) as D8
+(联系方式) as D9
+(当前服务人数) as D10
+(历史服务人数) as D11
+(历史均分) as D12
+(评分次数) as D13
+(状态) as D14
+(创建时间) as D15
+(更新时间) as D16
+
+EDiet - D1
+EDiet - D2
+EDiet - D3
+EDiet - D4
+EDiet - D5
+EDiet - D6
+EDiet - D7
+EDiet - D8
+EDiet - D9
+EDiet - D10
+EDiet - D11
+EDiet - D12
+EDiet - D13
+EDiet - D14
+EDiet - D15
+EDiet - D16
+
+rectangle "服务请求" as EReq
+(请求编号PK) as RQ1
+(用户编号FK) as RQ2
+(规划师编号FK) as RQ3
+(服务类型) as RQ4
+(饮食目标) as RQ5
+(其它目标) as RQ6
+(健康数据快照) as RQ7
+(请求状态) as RQ8
+(创建时间) as RQ9
+(更新时间) as RQ10
+
+EReq - RQ1
+EReq - RQ2
+EReq - RQ3
+EReq - RQ4
+EReq - RQ5
+EReq - RQ6
+EReq - RQ7
+EReq - RQ8
+EReq - RQ9
+EReq - RQ10
+
+rectangle "膳食计划" as EPlan
+(计划编号PK) as P1
+(用户编号FK) as P2
+(服务请求编号FK) as P3
+(规划师编号FK) as P4
+(计划标题) as P5
+(来源) as P6
+(饮食目标) as P7
+(周期天数) as P8
+(审核状态) as P9
+(审核意见) as P10
+(审核人) as P11
+(审核时间) as P12
+(发布时间) as P13
+(更新时间) as P14
+
+EPlan - P1
+EPlan - P2
+EPlan - P3
+EPlan - P4
+EPlan - P5
+EPlan - P6
+EPlan - P7
+EPlan - P8
+EPlan - P9
+EPlan - P10
+EPlan - P11
+EPlan - P12
+EPlan - P13
+EPlan - P14
+
+rectangle "计划日" as EDay
+(计划日编号PK) as PD1
+(膳食计划编号FK) as PD2
+(第几天) as PD3
+(计划日期) as PD4
+(日热量) as PD5
+(日蛋白质) as PD6
+(日碳水) as PD7
+(日脂肪) as PD8
+
+EDay - PD1
+EDay - PD2
+EDay - PD3
+EDay - PD4
+EDay - PD5
+EDay - PD6
+EDay - PD7
+EDay - PD8
+
+rectangle "餐次" as EMeal
+(餐次编号PK) as M1
+(计划日编号FK) as M2
+(餐别) as M3
+(时间) as M4
+(餐热量) as M5
+(餐蛋白质) as M6
+(餐碳水) as M7
+(餐脂肪) as M8
+(是否已执行) as M9
+
+EMeal - M1
+EMeal - M2
+EMeal - M3
+EMeal - M4
+EMeal - M5
+EMeal - M6
+EMeal - M7
+EMeal - M8
+EMeal - M9
+
+rectangle "餐食明细\n(食物行)" as EFood
+(食物行编号PK) as F1
+(餐次编号FK) as F2
+(食物名称) as F3
+(用量描述) as F4
+(热量) as F5
+(蛋白质) as F6
+(碳水化合物) as F7
+(脂肪) as F8
+
+EFood - F1
+EFood - F2
+EFood - F3
+EFood - F4
+EFood - F5
+EFood - F6
+EFood - F7
+EFood - F8
+
+' 用户—膳食计划
+rectangle "用户" as EUser2
+EUser2 "1" - R_diet_plan
+R_diet_plan "n" - EPlan : 一对多\n拥有
+
+EDiet "1" - R_diet_plan
+R_diet_plan "n" - EPlan : 一对多\n制定
+
+EReq "1" - R_req_plan
+R_req_plan "0..n" - EPlan : 一对多\n可选关联
+
+EPlan "1" - R_plan_day
+R_plan_day "n" - EDay : 一对多
+
+EDay "1" - R_day_meal
+R_day_meal "n" - EMeal : 一对多
+
+EMeal "1" - R_meal_food
+R_meal_food "n" - EFood : 一对多
+
+note bottom
+  【分图 2】规划师、服务请求与膳食计划分解结构\n服务请求与计划为可选关联（0..n 侧在计划）
+end note
+
+newpage 图 数据库概念设计 E-R 图（分图 3·营养与食材）
+
+skinparam defaultFontName 微软雅黑
+scale 0.40
+
+agent "拥有\n记录" as R_user_nr
+agent "含有\n明细" as R_nr_item
+agent "报送\n食材" as R_user_sub
+agent "参照\n选用" as R_food_ing
+
+rectangle "用户" as EUser3
+
+rectangle "营养记录" as ENr
+(记录编号PK) as NR1
+(用户编号FK) as NR2
+(用餐日期) as NR3
+(餐次类型) as NR4
+(总热量) as NR5
+(总蛋白质) as NR6
+(总碳水) as NR7
+(总脂肪) as NR8
+(总膳食纤维) as NR9
+(创建时间) as NR10
+(更新时间) as NR11
+
+ENr - NR1
+ENr - NR2
+ENr - NR3
+ENr - NR4
+ENr - NR5
+ENr - NR6
+ENr - NR7
+ENr - NR8
+ENr - NR9
+ENr - NR10
+ENr - NR11
+
+rectangle "营养记录\n明细" as ENri
+(明细编号PK) as NRI1
+(记录编号FK) as NRI2
+(食物名称) as NRI3
+(用量) as NRI4
+(单位) as NRI5
+(每单位克数) as NRI6
+(热量) as NRI7
+(蛋白质) as NRI8
+(碳水) as NRI9
+(脂肪) as NRI10
+(纤维) as NRI11
+
+ENri - NRI1
+ENri - NRI2
+ENri - NRI3
+ENri - NRI4
+ENri - NRI5
+ENri - NRI6
+ENri - NRI7
+ENri - NRI8
+ENri - NRI9
+ENri - NRI10
+ENri - NRI11
+
+rectangle "食材" as EIng
+(食材编号PK) as I1
+(名称) as I2
+(类别) as I3
+(每百克热量) as I4
+(每百克营养JSON) as I5
+(单位) as I6
+(每单位克数) as I7
+(可见范围) as I8
+(所有者用户) as I9
+(来源类型) as I10
+(来源报送编号) as I11
+(审核状态) as I12
+(风险等级) as I13
+(风险分) as I14
+(启用状态) as I15
+(创建时间) as I16
+(更新时间) as I17
+
+EIng - I1
+EIng - I2
+EIng - I3
+EIng - I4
+EIng - I5
+EIng - I6
+EIng - I7
+EIng - I8
+EIng - I9
+EIng - I10
+EIng - I11
+EIng - I12
+EIng - I13
+EIng - I14
+EIng - I15
+EIng - I16
+EIng - I17
+
+rectangle "食材报送\n工单" as ESub
+(报送编号PK) as S1
+(用户编号FK) as S2
+(私有食材标识) as S3
+(填报名称) as S4
+(填报类别) as S5
+(填报热量) as S6
+(填报营养JSON) as S7
+(自动校验结果) as S8
+(流程状态) as S9
+(审核人) as S10
+(审核备注) as S11
+(创建时间) as S12
+(更新时间) as S13
+
+ESub - S1
+ESub - S2
+ESub - S3
+ESub - S4
+ESub - S5
+ESub - S6
+ESub - S7
+ESub - S8
+ESub - S9
+ESub - S10
+ESub - S11
+ESub - S12
+ESub - S13
+
+EUser3 "1" - R_user_nr
+R_user_nr "n" - ENr : 一对多
+
+ENr "1" - R_nr_item
+R_nr_item "n" - ENri : 一对多
+
+EUser3 "1" - R_user_sub
+R_user_sub "n" - ESub : 一对多
+
+rectangle "餐食明细\n(食物行)" as EFoodP3
+(食物行编号PK) as FP1
+(餐次编号FK) as FP2
+(食物名称) as FP3
+(用量与营养素\n快照字段) as FP4
+
+EFoodP3 - FP1
+EFoodP3 - FP2
+EFoodP3 - FP3
+EFoodP3 - FP4
+
+EFoodP3 "n" - R_food_ing
+R_food_ing "n" - EIng : 多对多\n(弱联系)
+
+note right of R_food_ing
+  与分图2中「餐食明细」为同一概念；\n实现上无强制外键，\n业务上可多行餐食参照多条食材。
+end note
+
+EUser3 -[hidden]- ENr
+
+note bottom
+  【分图 3】营养摄入与食材域
+end note
+
+newpage 图 数据库概念设计 E-R 图（分图 4·健康教育·反馈·评估）
+
+skinparam defaultFontName 微软雅黑
+scale 0.40
+
+agent "发布" as R_diet_he
+agent "提交" as R_user_fb
+agent "被指向" as R_diet_fb
+agent "回复" as R_fb_reply
+agent "出具" as R_diet_eval
+agent "归属\n用户" as R_user_eval
+agent "基于\n申请" as R_req_eval
+
+rectangle "规划师" as EDiet4
+
+rectangle "健康教育" as EHe
+(内容编号PK) as HE1
+(规划师编号FK) as HE2
+(标题) as HE3
+(摘要) as HE4
+(正文) as HE5
+(分类) as HE6
+(可见范围) as HE7
+(指派用户列表) as HE8
+(内容状态) as HE9
+(审核状态) as HE10
+(审核备注) as HE11
+(创建时间) as HE12
+(更新时间) as HE13
+
+EHe - HE1
+EHe - HE2
+EHe - HE3
+EHe - HE4
+EHe - HE5
+EHe - HE6
+EHe - HE7
+EHe - HE8
+EHe - HE9
+EHe - HE10
+EHe - HE11
+EHe - HE12
+EHe - HE13
+
+rectangle "用户" as EUser4
+
+rectangle "意见反馈\n工单" as EFb
+(反馈编号PK) as FB1
+(用户编号FK) as FB2
+(类别) as FB3
+(标题) as FB4
+(正文) as FB5
+(评分) as FB6
+(关联计划编号) as FB7
+(对象规划师编号) as FB8
+(处理状态) as FB9
+(首次回复时间) as FB10
+(关闭时间) as FB11
+(创建时间) as FB12
+(更新时间) as FB13
+
+EFb - FB1
+EFb - FB2
+EFb - FB3
+EFb - FB4
+EFb - FB5
+EFb - FB6
+EFb - FB7
+EFb - FB8
+EFb - FB9
+EFb - FB10
+EFb - FB11
+EFb - FB12
+EFb - FB13
+
+rectangle "反馈回复" as EFr
+(回复编号PK) as FR1
+(反馈编号FK) as FR2
+(发送者类型) as FR3
+(发送者用户编号) as FR4
+(回复正文) as FR5
+(创建时间) as FR6
+
+EFr - FR1
+EFr - FR2
+EFr - FR3
+EFr - FR4
+EFr - FR5
+EFr - FR6
+
+rectangle "营养评估" as EEv
+(评估编号PK) as EV1
+(用户编号FK) as EV2
+(规划师编号FK) as EV3
+(服务请求编号FK) as EV4
+(来源) as EV5
+(状态) as EV6
+(BMI) as EV7
+(能量需求千卡) as EV8
+(营养状况概括) as EV9
+(体成分/膳食模式等\n长文本字段组) as EV10
+(专业结论) as EV11
+(计划建议) as EV12
+(输入快照JSON) as EV13
+(有效期) as EV14
+(创建时间) as EV15
+(更新时间) as EV16
+
+EEv - EV1
+EEv - EV2
+EEv - EV3
+EEv - EV4
+EEv - EV5
+EEv - EV6
+EEv - EV7
+EEv - EV8
+EEv - EV9
+EEv - EV10
+EEv - EV11
+EEv - EV12
+EEv - EV13
+EEv - EV14
+EEv - EV15
+EEv - EV16
+
+rectangle "服务请求" as EReq4
+
+EDiet4 "1" - R_diet_he
+R_diet_he "n" - EHe : 一对多
+
+EUser4 "1" - R_user_fb
+R_user_fb "n" - EFb : 一对多
+
+EDiet4 "1" - R_diet_fb
+R_diet_fb "0..n" - EFb : 一对多\n可选
+
+EFb "1" - R_fb_reply
+R_fb_reply "n" - EFr : 一对多
+
+EDiet4 "1" - R_diet_eval
+R_diet_eval "n" - EEv : 一对多\n规划师出具
+
+EUser4 "1" - R_user_eval
+R_user_eval "n" - EEv : 一对多\n评估归属用户
+
+EReq4 "1" - R_req_eval
+R_req_eval "0..n" - EEv : 一对多\n可选
+
+note bottom
+  【分图 4】健康教育、意见反馈与营养评估\n评估可同时关联用户、规划师与服务请求
+end note
+
+@enduml

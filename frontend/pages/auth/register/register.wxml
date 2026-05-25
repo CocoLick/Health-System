@@ -17,7 +17,7 @@
     <view class="auth-card-inner auth-card-inner--tall">
       <view class="auth-section-head">
         <text class="auth-welcome-title">创建账户</text>
-        <text class="auth-welcome-desc">填写信息完成注册，与系统其他模块风格一致、数据互通</text>
+        <text class="auth-welcome-desc">填写信息完成注册</text>
       </view>
 
       <view class="input-group">

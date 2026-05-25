@@ -1,0 +1,29 @@
+@startuml 系统包图-实现版
+title 健康膳食管理系统 — 包图（主依赖关系·实现版）
+
+skinparam shadowing false
+skinparam wrapWidth 220
+left to right direction
+scale 0.85
+skinparam nodesep 26
+skinparam ranksep 42
+
+skinparam package {
+    BackgroundColor #f8f9fa
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 11
+}
+
+package "表示层\n<<微信小程序>>\nfrontend/" as PView
+package "接口层\n<<Gin>>\nbackend/app/api" as PApi
+package "业务层\nbackend/app/services" as PSvc
+package "持久层\nbackend/app/models" as PModel
+package "公共与支撑\nconfig · middleware · schemas" as PCommon
+
+PView -right-> PApi : HTTPS /api
+PApi -right-> PSvc : 调用
+PSvc -right-> PModel : 持久化
+PModel -right-> PCommon : GORM 与运行配置
+
+@enduml

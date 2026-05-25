@@ -1,0 +1,54 @@
+@startuml 健康膳食管理系统-部署图-实现版
+title 健康膳食管理系统 — 部署图（微信小程序 + Go/Gin + MySQL）
+
+skinparam shadowing false
+skinparam wrapWidth 200
+top to bottom direction
+scale 0.9
+
+skinparam node {
+    BackgroundColor #f0f8ff
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 10
+}
+skinparam artifact {
+    BackgroundColor #e9ecef
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 10
+}
+skinparam cloud {
+    BackgroundColor #fffef5
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 10
+}
+
+node "用户终端" as U {
+    artifact "智能手机" as Phone
+    artifact "微信客户端" as WeChat
+    artifact "微信小程序\n(本系统前端包)" as MP
+    Phone --> WeChat : 运行环境
+    WeChat --> MP : 加载执行
+}
+
+cloud "互联网\n(HTTPS，需配置小程序\nrequest 合法域名)" as Net
+
+node "业务应用服务器\n(实现：Go 1.x + Gin，独立进程\n非 Tomcat/JSP)" as App {
+    artifact "Gin HTTP 服务\n(main.go，默认 :8000)" as Gin
+    artifact "REST /api\n+ JWT 鉴权" as Api
+    artifact "业务逻辑 + GORM\n(services / models)" as Core
+    Gin --> Api
+    Api --> Core
+}
+
+node "数据库服务器" as DbNode {
+    artifact "MySQL 8\n(业务库，GORM 访问)" as MySQL
+}
+
+MP --> Net : wx.request\n(JSON)
+Net --> Gin : TCP/HTTPS
+Core --> MySQL : TCP/3306\n(config/.env)
+
+@enduml

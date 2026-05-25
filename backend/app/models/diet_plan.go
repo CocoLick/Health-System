@@ -82,7 +82,8 @@ func (Food) TableName() string {
 	return "foods"
 }
 
-// PlanExecution 计划执行模型
+// PlanExecution 计划执行模型（表 plan_execution 由迁移建表，业务未使用：
+// 计划打卡状态由 meals.executed 字段维护，无对本模型的读写。）
 type PlanExecution struct {
 	ExecutionID string    `json:"execution_id" gorm:"primaryKey;column:execution_id"`
 	DayID       string    `json:"day_id" gorm:"column:day_id;index"`

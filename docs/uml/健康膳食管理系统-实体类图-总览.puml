@@ -1,0 +1,71 @@
+@startuml 健康膳食管理系统-数据域依赖总览（包图）
+' 包图总览：左右窄、上下长，适合论文竖版栏宽
+' 布局：left to right + together 右列纵向堆叠子域
+' 详图：实体类图-膳食计划.puml、实体类图-营养记录.puml
+
+title 健康膳食管理系统 — 数据子域依赖总览（包图）
+
+skinparam package {
+    BackgroundColor #e6f7ff
+    BorderColor #333333
+    FontName "Microsoft YaHei"
+}
+skinparam ArrowColor #333333
+skinparam linetype ortho
+skinparam ranksep 26
+skinparam nodesep 14
+skinparam wrapWidth 180
+skinparam LegendFontSize 9
+
+left to right direction
+
+package "账户域" as pkgAccount #f9f9f9
+
+together {
+    package "健康档案域" as pkgHealth #f9f9f9
+    package "服务与评估域" as pkgService #f9f9f9
+    package "膳食计划域" as pkgDiet #fff8e6
+    package "营养记录域" as pkgNutrition #fff8e6
+    package "食材域" as pkgIngredient #f9f9f9
+    package "反馈与内容域" as pkgFeedback #f9f9f9
+}
+
+pkgHealth -[hidden]down-> pkgService
+pkgService -[hidden]down-> pkgDiet
+pkgDiet -[hidden]down-> pkgNutrition
+pkgNutrition -[hidden]down-> pkgIngredient
+pkgIngredient -[hidden]down-> pkgFeedback
+
+pkgAccount --> pkgHealth : user_id
+
+pkgAccount --> pkgService : 用户/\n规划师
+
+pkgAccount --> pkgDiet : 用户/\n规划师
+
+pkgAccount --> pkgNutrition : user_id
+
+pkgAccount --> pkgIngredient : user_id
+
+pkgAccount --> pkgFeedback : 用户/\n规划师
+
+pkgService --> pkgDiet : 可选请求
+
+pkgFeedback ..> pkgDiet : 可选计划
+
+legend bottom
+**各域所含逻辑表（与实现一致）**
+— **账户域**：user，dietitian
+— **健康档案域**：health_data，health_data_history
+— **服务与评估域**：service_request，nutrition_evaluation
+— **膳食计划域**：diet_plan，plan_days，meals，foods（属性级见「实体类图-膳食计划」；plan_execution 表未使用，执行态见 meals.executed）
+— **营养记录域**：nutrition_record，nutrition_record_item（属性级见「实体类图-营养记录」）
+— **食材域**：ingredient，ingredient_submission
+— **反馈与内容域**：user_feedback，feedback_reply，health_education
+----
+**读图**：域内表级关联不在本图展开。食材与膳食「食物」、营养明细无库表外键，选食材后以快照落库。数据库中 plan_execution 未参与业务，打卡写入餐次表 executed 字段。
+endlegend
+
+' 限制导出宽度，便于嵌入论文单栏（若渲染器不支持可删本行）
+scale max 400 width
+
+@enduml

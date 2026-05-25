@@ -1,0 +1,154 @@
+@startuml 数据模型-物理-核心八表-实现版
+title 物理模型（MySQL 8 · 核心八表）\n表：user、dietitian、diet_plan、plan_days、meals、foods、ingredient、nutrition_record\n本图不表示表间外键连线，仅列结构与类型示意（与 backend/app/models 一致）
+
+skinparam shadowing false
+scale 0.55
+top to bottom direction
+
+skinparam entity {
+    BackgroundColor #ffffff
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 8
+}
+skinparam package {
+    BackgroundColor #f0f8ff
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 9
+}
+
+package "账号域" {
+    entity "user" as t_u {
+        * user_id : VARCHAR PK
+        --
+        username : VARCHAR NOT NULL
+        name : VARCHAR
+        password : VARCHAR NOT NULL
+        phone : VARCHAR
+        gender : VARCHAR
+        age : INT
+        email : VARCHAR
+        role_type : VARCHAR NOT NULL
+        status : VARCHAR
+        created_at : DATETIME NOT NULL
+        updated_at : DATETIME NOT NULL
+    }
+
+    entity "dietitian" as t_d {
+        * account_id : VARCHAR(20) PK
+        --
+        username : VARCHAR(50) UK NOT NULL
+        name : VARCHAR(100)
+        password : VARCHAR(100) NOT NULL
+        role_type : VARCHAR(20) NOT NULL INDEX
+        title : VARCHAR(100)
+        specialty : VARCHAR(255)
+        introduction : TEXT
+        contact : VARCHAR(50)
+        current_service_user_count : INT NOT NULL DEFAULT 0
+        historical_service_user_count : INT NOT NULL DEFAULT 0
+        historical_avg_rating : DECIMAL(3,1) NOT NULL DEFAULT 0.0
+        rating_count : INT NOT NULL DEFAULT 0
+        status : VARCHAR(20) DEFAULT '启用' INDEX
+        created_at : DATETIME NOT NULL
+        updated_at : DATETIME NOT NULL
+    }
+}
+
+package "膳食计划结构域" {
+    entity "diet_plan" as t_dp {
+        * plan_id : VARCHAR PK
+        --
+        user_id : VARCHAR
+        service_request_id : VARCHAR
+        dietitian_id : VARCHAR
+        plan_title : VARCHAR
+        source : VARCHAR
+        diet_goal : VARCHAR
+        cycle_days : INT
+        audit_status : VARCHAR
+        audit_note : VARCHAR
+        audited_by : VARCHAR
+        audited_at : DATETIME NULL
+        published_at : DATETIME
+        updated_at : DATETIME
+    }
+
+    entity "plan_days" as t_pd {
+        * day_id : VARCHAR PK
+        --
+        plan_id : VARCHAR INDEX
+        day_index : INT
+        plan_date : DATETIME
+        calories : INT
+        protein : DOUBLE
+        carbohydrate : DOUBLE
+        fat : DOUBLE
+    }
+
+    entity "meals" as t_m {
+        * meal_id : VARCHAR PK
+        --
+        day_id : VARCHAR INDEX
+        type : VARCHAR
+        time : VARCHAR
+        calories : INT
+        protein : DOUBLE
+        carbohydrate : DOUBLE
+        fat : DOUBLE
+        executed : BOOL / TINYINT(1)
+    }
+
+    entity "foods" as t_f {
+        * food_id : VARCHAR PK
+        --
+        meal_id : VARCHAR INDEX
+        name : VARCHAR
+        amount : VARCHAR
+        calories : INT
+        protein : DOUBLE
+        carbohydrate : DOUBLE
+        fat : DOUBLE
+    }
+}
+
+package "食材与营养记录" {
+    entity "ingredient" as t_i {
+        * ingredient_id : VARCHAR PK
+        --
+        name : VARCHAR NOT NULL
+        category : VARCHAR NOT NULL
+        calories_per_100g : DOUBLE NOT NULL
+        nutrition_100g : TEXT NOT NULL
+        unit : VARCHAR NOT NULL DEFAULT 'g'
+        gram_per_unit : DOUBLE DEFAULT 100
+        scope : VARCHAR(20) DEFAULT 'public' INDEX
+        owner_user_id : VARCHAR(64) INDEX
+        source_type : VARCHAR(30) DEFAULT 'system_seed'
+        source_submission_id : VARCHAR(64) INDEX
+        review_status : VARCHAR(20) DEFAULT 'approved' INDEX
+        risk_level : VARCHAR(20) DEFAULT 'normal'
+        risk_score : INT DEFAULT 0
+        status : VARCHAR DEFAULT 'enabled'
+        created_at : DATETIME
+        updated_at : DATETIME
+    }
+
+    entity "nutrition_record" as t_nr {
+        * record_id : VARCHAR PK
+        --
+        user_id : VARCHAR NOT NULL INDEX
+        meal_date : DATE NOT NULL
+        meal_type : VARCHAR(20) NOT NULL
+        total_calories : DECIMAL(10,2) DEFAULT 0
+        total_protein : DECIMAL(10,2) DEFAULT 0
+        total_carbohydrate : DECIMAL(10,2) DEFAULT 0
+        total_fat : DECIMAL(10,2) DEFAULT 0
+        total_fiber : DECIMAL(10,2) DEFAULT 0
+        created_at : DATETIME
+        updated_at : DATETIME
+    }
+}
+
+@enduml

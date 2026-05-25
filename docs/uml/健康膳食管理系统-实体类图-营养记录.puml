@@ -1,0 +1,57 @@
+@startuml 健康膳食管理系统-实体类图-营养记录域（内部横向）
+' 用户日常摄入：主表汇总 + 明细行
+' 明细不关联食材表，以食物名称与营养数值落库
+
+skinparam class {
+    BackgroundColor #f9f9f9
+    BorderColor #333333
+    FontName "Microsoft YaHei"
+}
+skinparam package {
+    BackgroundColor #e6f7ff
+    FontName "Microsoft YaHei"
+}
+
+package "外部引用" #eeeeee {
+    class 用户 <<外部>> {
+        - 用户ID
+    }
+}
+
+package "营养记录域" {
+    left to right direction
+    ' 包内类左右并排
+
+    class 营养记录 <<实体>> {
+        - 记录ID
+        - 用户ID
+        - 用餐日期
+        - 餐次类型
+        - 总热量
+        - 总蛋白质
+        - 总碳水化合物
+        - 总脂肪
+        - 总膳食纤维
+        - 创建时间
+        - 更新时间
+    }
+
+    class 营养记录明细 <<实体>> {
+        - 明细ID
+        - 记录ID
+        - 食物名称
+        - 用量
+        - 单位
+        - 每单位克数
+        - 热量
+        - 蛋白质
+        - 碳水化合物
+        - 脂肪
+        - 膳食纤维
+    }
+}
+
+用户 "1" --> "n" 营养记录 : 录入
+营养记录 "1" *-- "n" 营养记录明细 : 包含
+
+@enduml

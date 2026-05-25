@@ -1,0 +1,189 @@
+@startuml 数据模型-物理-扩展表-实现版
+title 物理模型（MySQL 8 · 除核心八表外的业务表）\n不含：user、dietitian、diet_plan、plan_days、meals、foods、ingredient、nutrition_record\n不绘制：plan_execution（业务未使用）\n本图不表示表间外键连线，仅列结构与类型示意
+
+skinparam shadowing false
+scale 0.55
+top to bottom direction
+
+skinparam entity {
+    BackgroundColor #fffef8
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 8
+}
+skinparam package {
+    BackgroundColor #f0f8ff
+    BorderColor #333333
+    FontName 微软雅黑
+    FontSize 9
+}
+
+package "健康数据域" {
+    entity "health_data" as t_hd {
+        * data_id : VARCHAR PK
+        --
+        user_id : VARCHAR(50) INDEX
+        gender : VARCHAR
+        age : INT
+        height : DOUBLE
+        weight : DOUBLE
+        heart_rate : INT
+        blood_pressure : VARCHAR
+        blood_sugar : DOUBLE
+        allergy_history : VARCHAR
+        activity_level : VARCHAR
+        nutrition_goal : VARCHAR
+        created_at : DATETIME
+        updated_at : DATETIME
+    }
+
+    entity "health_data_history" as t_hdh {
+        * history_id : VARCHAR(40) PK
+        --
+        data_id : VARCHAR(40) INDEX
+        user_id : VARCHAR(50) INDEX
+        gender : VARCHAR
+        age : INT
+        height : DOUBLE
+        weight : DOUBLE
+        heart_rate : INT
+        blood_pressure : VARCHAR
+        blood_sugar : DOUBLE
+        allergy_history : VARCHAR
+        activity_level : VARCHAR
+        nutrition_goal : VARCHAR
+        source : VARCHAR(24)
+        snapshot_at : DATETIME INDEX
+        created_at : DATETIME
+    }
+}
+
+package "营养记录明细" {
+    entity "nutrition_record_item" as t_nri {
+        * item_id : VARCHAR PK
+        --
+        record_id : VARCHAR INDEX NOT NULL
+        food_name : VARCHAR(100) NOT NULL
+        amount : DECIMAL(10,2) NOT NULL
+        unit : VARCHAR(20) DEFAULT 'g'
+        gram_per_unit : DECIMAL(10,2) DEFAULT 100
+        calories : DECIMAL(10,2) DEFAULT 0
+        protein : DECIMAL(10,2) DEFAULT 0
+        carbohydrate : DECIMAL(10,2) DEFAULT 0
+        fat : DECIMAL(10,2) DEFAULT 0
+        fiber : DECIMAL(10,2) DEFAULT 0
+    }
+}
+
+package "食材审核工单" {
+    entity "ingredient_submission" as t_is {
+        * submission_id : VARCHAR PK
+        --
+        user_id : VARCHAR INDEX NOT NULL
+        ingredient_id_private : VARCHAR INDEX NOT NULL
+        submitted_name : VARCHAR NOT NULL
+        submitted_category : VARCHAR NOT NULL
+        submitted_calories_per_100g : DOUBLE NOT NULL
+        submitted_nutrition_100g : TEXT NOT NULL
+        submitted_unit : VARCHAR NOT NULL DEFAULT 'g'
+        submitted_gram_per_unit : DOUBLE DEFAULT 100
+        auto_calc_calories : DOUBLE NOT NULL
+        auto_delta_ratio : DOUBLE NOT NULL
+        auto_check_result : VARCHAR(20) NOT NULL INDEX
+        workflow_status : VARCHAR(20) NOT NULL DEFAULT 'pending' INDEX
+        reviewer_id : VARCHAR(64)
+        review_note : TEXT
+        created_at : DATETIME
+        updated_at : DATETIME
+    }
+}
+
+package "意见反馈" {
+    entity "user_feedback" as t_uf {
+        * feedback_id : VARCHAR(32) PK
+        --
+        user_id : VARCHAR(32) NOT NULL INDEX
+        category : VARCHAR(32) NOT NULL INDEX
+        title : VARCHAR(200) NOT NULL
+        content : TEXT NOT NULL
+        rating : INT NULL
+        related_plan_id : VARCHAR(32) INDEX
+        target_dietitian_id : VARCHAR(32) INDEX
+        status : VARCHAR(20) NOT NULL DEFAULT 'pending' INDEX
+        first_reply_at : DATETIME NULL
+        closed_at : DATETIME NULL
+        created_at : DATETIME
+        updated_at : DATETIME
+    }
+
+    entity "feedback_reply" as t_fr {
+        * reply_id : VARCHAR(32) PK
+        --
+        feedback_id : VARCHAR(32) NOT NULL INDEX
+        sender_type : VARCHAR(20) NOT NULL
+        sender_user_id : VARCHAR(32) NOT NULL
+        body : TEXT NOT NULL
+        created_at : DATETIME
+    }
+}
+
+package "健康教育" {
+    entity "health_education" as t_he {
+        * he_id : VARCHAR(32) PK
+        --
+        dietitian_id : VARCHAR(32) NOT NULL INDEX
+        title : VARCHAR(200) NOT NULL
+        summary : VARCHAR(500)
+        body : LONGTEXT NOT NULL
+        category : VARCHAR(50)
+        visibility : VARCHAR(20) NOT NULL DEFAULT 'public'
+        target_user_ids : TEXT
+        content_status : VARCHAR(20) NOT NULL DEFAULT 'draft'
+        audit_status : VARCHAR(20) NOT NULL DEFAULT 'none'
+        review_note : VARCHAR(500)
+        created_at : DATETIME
+        updated_at : DATETIME
+    }
+}
+
+package "规划服务与评估" {
+    entity "service_request" as t_sr {
+        * request_id : VARCHAR(20) PK
+        --
+        user_id : VARCHAR(20) NOT NULL INDEX
+        dietitian_id : VARCHAR(20) NOT NULL INDEX
+        service_type : VARCHAR(50) NOT NULL
+        diet_goal : VARCHAR(50) NOT NULL
+        other_goal : VARCHAR(255)
+        health_data : TEXT
+        status : VARCHAR(20) NOT NULL DEFAULT 'pending'
+        create_time : DATETIME NOT NULL INDEX
+        update_time : DATETIME NOT NULL
+    }
+
+    entity "nutrition_evaluation" as t_ne {
+        * evaluation_id : VARCHAR(32) PK
+        --
+        user_id : VARCHAR(20) NOT NULL INDEX
+        dietitian_id : VARCHAR(20) NOT NULL INDEX
+        service_request_id : VARCHAR(32) INDEX
+        source : VARCHAR(20) NOT NULL DEFAULT 'professional'
+        status : VARCHAR(20) NOT NULL DEFAULT 'submitted'
+        bmi : DOUBLE NULL
+        energy_need_kcal : INT NULL
+        nutrition_status : VARCHAR(64)
+        body_composition_text : TEXT
+        dietary_pattern_text : TEXT
+        micronutrient_text : TEXT
+        risks_text : TEXT
+        priority_issues_json : TEXT
+        professional_conclusion : TEXT NOT NULL
+        plan_recommendations : TEXT
+        input_snapshot_json : TEXT
+        valid_until : DATE NULL
+        created_at : DATETIME
+        updated_at : DATETIME
+    }
+}
+
+@enduml
